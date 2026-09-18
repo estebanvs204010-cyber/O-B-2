@@ -1,0 +1,26 @@
+POST http://localhost:8002/api/auth/login
+    Content-Type: application/json
+
+    { 
+        "correo": "andresffonseca5@gmail.com", 
+        "contrasena": "NuevaClave123"
+    }
+
+
+###
+POST http://localhost:8002/api/auth/solicitar-recuperacion
+Content-Type: application/json
+
+{ 
+    "correo": "andresffonseca5@gmail.com"
+}
+
+
+### Restablecer contraseña
+POST http://localhost:8002/api/auth/restablecer-password
+Content-Type: application/json
+
+{
+  "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
+  "nuevaContrasena": "NuevaClave123"
+}
