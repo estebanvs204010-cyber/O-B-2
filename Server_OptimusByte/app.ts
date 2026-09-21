@@ -18,5 +18,5 @@ routes.forEach((router) => {
 
 const PORT = 8002;
 
-console.log(`Servidor OptimusByte corriendo en http://localhost:${PORT}`);
+console.log(`Servidor OptimusByte lo mas gey del sistema corriendo en http://localhost:${PORT}`);
 await app.listen({ port: PORT });
