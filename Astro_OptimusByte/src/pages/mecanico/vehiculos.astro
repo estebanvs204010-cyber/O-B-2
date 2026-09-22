@@ -1,0 +1,76 @@
+---
+import MecanicoLayout from "../../layouts/MecanicoLayout.astro";
+---
+
+<MecanicoLayout title="Vehículos" active="vehiculos">
+  <div class="topbar">
+    <div>
+      <h1>Vehículos</h1>
+      <p>Carros en los que has trabajado, con su propietario</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="ob-content"><p class="loading">Cargando vehículos…</p></div>
+  </div>
+
+  <script>
+    import { apiFetch } from "../../lib/api";
+
+    interface VehiculoMecanico {
+      id_vehiculo: number;
+      placa: string;
+      marca: string;
+      modelo: string;
+      anio: number;
+      color: string | null;
+      km_actuales: number;
+      propietario: string;
+      propietario_telefono: string;
+      propietario_correo: string;
+    }
+
+    const contentEl = document.getElementById("ob-content")!;
+
+    async function cargar() {
+      try {
+        const resultado = await apiFetch<VehiculoMecanico[]>("/api/mecanico/vehiculos");
+        const vehiculos = resultado.data ?? [];
+
+        if (vehiculos.length === 0) {
+          contentEl.innerHTML = `<p class="empty">Aún no tienes vehículos asociados a órdenes tuyas.</p>`;
+          return;
+        }
+
+        contentEl.innerHTML = `
+          <table class="list-table">
+            <thead>
+              <tr><th>Placa</th><th>Vehículo</th><th>Km</th><th>Propietario</th><th>Contacto</th></tr>
+            </thead>
+            <tbody>
+              ${vehiculos
+                .map(
+                  (v) => `
+                <tr>
+                  <td><strong>${v.placa}</strong></td>
+                  <td>${v.marca} ${v.modelo} ${v.anio} ${v.color ? `· ${v.color}` : ""}</td>
+                  <td>${v.km_actuales.toLocaleString("es-CO")}</td>
+                  <td>${v.propietario}</td>
+                  <td>${v.propietario_telefono}<br/><span class="sub">${v.propietario_correo}</span></td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        contentEl.innerHTML = `<div class="alert alert-error">${
+          error instanceof Error ? error.message : "No se pudieron cargar los vehículos"
+        }</div>`;
+      }
+    }
+
+    cargar();
+  </script>
+</MecanicoLayout>
