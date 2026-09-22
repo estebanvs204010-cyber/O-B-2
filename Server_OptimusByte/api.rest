@@ -1,10 +1,22 @@
+### Login (dale nombre con @name)
+# @name login
 POST http://localhost:8002/api/auth/login
-    Content-Type: application/json
+Content-Type: application/json
 
-    { 
-        "correo": "andresffonseca5@gmail.com", 
-        "contrasena": "NuevaClave123"
-    }
+{
+  "correo": "andresffonseca5@gmail.com",
+  "contrasena": "NuevaClave123"
+}
+
+### Login (dale nombre con @name)
+# @name loginCliente
+POST http://localhost:8002/api/auth/login
+Content-Type: application/json
+
+{
+  "correo": "juan.perez@example.com",
+  "contrasena": "ClaveSegura123"
+}
 
 
 ###
@@ -32,3 +44,115 @@ Content-Type: application/json
   "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
   "nuevaContrasena": "NuevaClave123"
 }
+
+
+### Auto-registro de cliente
+POST http://localhost:8002/api/auth/registro-cliente
+Content-Type: application/json
+
+{
+  "nombre_completo": "Juan Pérez",
+  "tipo_documento": "CC",
+  "num_documento": "1122334455",
+  "telefono": "3001234567",
+  "correo": "juan.perez@example.com",
+  "contrasena": "ClaveSegura123"
+}
+
+### Cliente creado por Admin (usa el token del login de arriba)
+POST http://localhost:8002/api/clientes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "María Gómez",
+  "tipo_documento": "CC",
+  "num_documento": "9988776655",
+  "telefono": "3109876543",
+  "correo": "maria.gomez@example.com"
+}
+
+
+### Crear Mecánico
+POST http://localhost:8002/api/usuarios/mecanico
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "Carlos Ruiz",
+  "correo": "carlos.ruiz@optimusbyte.com",
+  "telefono": "3005557777",
+  "contrasena": "MecanicoClave123"
+}
+
+
+### Listar mecánicos
+GET http://localhost:8002/api/usuarios/mecanico
+Authorization: Bearer {{login.response.body.token}}
+
+
+
+
+### Obtener un cliente
+GET http://localhost:8002/api/clientes/1
+Authorization: Bearer {{login.response.body.token}}
+
+### Editar un cliente
+PUT http://localhost:8002/api/clientes/1
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "Juan Pérez Actualizado",
+  "tipo_documento": "CC",
+  "num_documento": "1122334455",
+  "telefono": "3009998888",
+  "correo": "juan.perez@example.com",
+  "direccion": "Calle 10 # 20-30"
+}
+
+### Desactivar un cliente
+DELETE http://localhost:8002/api/clientes/1
+Authorization: Bearer {{login.response.body.token}}
+
+
+### Crear vehículo (usa un id_cliente real de tu tabla clientes)
+POST http://localhost:8002/api/vehiculos
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "id_cliente": 1,
+  "placa": "ABC123",
+  "marca": "Mazda",
+  "modelo": "3",
+  "anio": 2020,
+  "color": "Rojo",
+  "km_actuales": 45000
+}
+
+### Listar todos los vehículos
+GET http://localhost:8002/api/vehiculos
+Authorization: Bearer {{login.response.body.token}}
+
+### Listar solo los de un cliente
+GET http://localhost:8002/api/vehiculos?id_cliente=1
+Authorization: Bearer {{login.response.body.token}}
+
+
+### Prueba que rechace bajar el kilometraje
+PUT http://localhost:8002/api/vehiculos/1
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "placa": "ABC123",
+  "marca": "Mazda",
+  "modelo": "3",
+  "anio": 2020,
+  "km_actuales": 100
+}
+
+### Desactivar
+DELETE http://localhost:8002/api/vehiculos/1
+Authorization: Bearer {{login.response.body.token}}
