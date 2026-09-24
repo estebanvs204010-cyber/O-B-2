@@ -79,10 +79,10 @@ Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-  "nombre_completo": "Carlos Ruiz",
-  "correo": "carlos.ruiz@optimusbyte.com",
-  "telefono": "3005557777",
-  "contrasena": "MecanicoClave123"
+  "nombre_completo": "andres pro",
+  "correo": "2130milu@gmail.com",
+  "telefono": "3185094430",
+  "contrasena": "2130luna"
 }
 
 
@@ -155,4 +155,77 @@ Authorization: Bearer {{login.response.body.token}}
 
 ### Desactivar
 DELETE http://localhost:8002/api/vehiculos/1
+Authorization: Bearer {{login.response.body.token}}
+
+### ============================================================
+### MÓDULO MECÁNICO: agenda de órdenes, vehículos y solicitudes de repuesto
+### ============================================================
+
+### Login como mecánico (ajusta correo/contraseña a uno con rol Mecanico)
+# @name loginMecanico
+POST http://localhost:8002/api/auth/login
+Content-Type: application/json
+
+{
+  "correo": "2130milu@gmail.com",
+  "contrasena": "2130luna"
+}
+
+### Agenda: todas mis órdenes asignadas
+GET http://localhost:8002/api/mecanico/ordenes
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Agenda: solo las pendientes
+GET http://localhost:8002/api/mecanico/ordenes?estado=Pendiente
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Carros en los que he trabajado, con su dueño
+GET http://localhost:8002/api/mecanico/vehiculos
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Detalle de una orden (vista tipo "OT-9" de la imagen)
+GET http://localhost:8002/api/mecanico/ordenes/1
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Cambiar el estado de una orden
+PUT http://localhost:8002/api/mecanico/ordenes/1/estado
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "estado": "En Proceso",
+  "observacion": "Se inicia el diagnóstico"
+}
+
+### Definir la fecha estimada de entrega
+PUT http://localhost:8002/api/mecanico/ordenes/1/tiempo-estimado
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "fecha_entrega_estimada": "2026-09-25 17:00:00"
+}
+
+### Pedir un repuesto para una orden
+POST http://localhost:8002/api/mecanico/solicitudes-repuesto
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "id_orden": 1,
+  "nombre_repuesto": "Batería 12V",
+  "cantidad": 1,
+  "motivo": "La batería actual no retiene carga"
+}
+
+### Mis solicitudes de repuesto
+GET http://localhost:8002/api/mecanico/solicitudes-repuesto
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Detalle de una solicitud (vista "pedido de la pieza")
+GET http://localhost:8002/api/mecanico/solicitudes-repuesto/1
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Marcar una solicitud como atendida (Admin)
+PUT http://localhost:8002/api/mecanico/solicitudes-repuesto/1/atender
 Authorization: Bearer {{login.response.body.token}}

@@ -1,0 +1,62 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  active: "agenda" | "vehiculos" | "solicitudes";
+}
+const { title, active } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · OptimusByte</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">🔧 Optimus<span class="accent">Byte</span></div>
+
+        <div class="sidebar-section">Mi trabajo</div>
+        <a href="/mecanico" class:list={["sidebar-link", { active: active === "agenda" }]}>📋 Agenda / Órdenes</a>
+        <a href="/mecanico/vehiculos" class:list={["sidebar-link", { active: active === "vehiculos" }]}>🚗 Vehículos</a>
+        <a href="/mecanico/solicitudes" class:list={["sidebar-link", { active: active === "solicitudes" }]}>🔩 Solicitudes de repuesto</a>
+
+        <div class="sidebar-user">
+          <div class="avatar" id="ob-avatar">?</div>
+          <div style="flex:1; min-width:0;">
+            <div id="ob-nombre" style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              Cargando…
+            </div>
+            <button id="ob-logout">Cerrar sesión</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <slot />
+      </main>
+    </div>
+
+    <script>
+      import { exigirRol, cerrarSesion } from "../lib/api";
+
+      const usuario = exigirRol(["Mecanico", "Admin"]);
+      if (usuario) {
+        const nombreEl = document.getElementById("ob-nombre");
+        const avatarEl = document.getElementById("ob-avatar");
+        if (nombreEl) nombreEl.textContent = usuario.nombre_completo;
+        if (avatarEl) avatarEl.textContent = usuario.nombre_completo.slice(0, 1).toUpperCase();
+      }
+
+      document.getElementById("ob-logout")?.addEventListener("click", () => {
+        cerrarSesion();
+        window.location.href = "/login";
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,69 @@
+---
+import AuthLayout from "../layouts/AuthLayout.astro";
+---
+
+<AuthLayout title="Iniciar sesión">
+  <p class="auth-sub">Ingresa con tu correo y contraseña</p>
+
+  <div id="ob-alert" class="alert alert-error" style="display:none;"></div>
+
+  <form id="ob-login-form">
+    <div class="field">
+      <label for="correo">Correo</label>
+      <input id="correo" name="correo" type="email" placeholder="tucorreo@ejemplo.com" required />
+    </div>
+    <div class="field">
+      <label for="contrasena">Contraseña</label>
+      <input id="contrasena" name="contrasena" type="password" placeholder="••••••••" required />
+    </div>
+
+    <button id="ob-submit" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+  </form>
+
+  <p class="auth-footer">
+    ¿Aún no tienes cuenta? <a href="/registro">Regístrate</a>
+  </p>
+
+  <script>
+    import { apiFetch, guardarSesion, rutaSegunRol } from "../lib/api";
+
+    const form = document.getElementById("ob-login-form") as HTMLFormElement;
+    const alertBox = document.getElementById("ob-alert") as HTMLDivElement;
+    const submitBtn = document.getElementById("ob-submit") as HTMLButtonElement;
+
+    function mostrarError(msg: string) {
+      alertBox.textContent = msg;
+      alertBox.style.display = "block";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Ingresando…";
+
+      const correo = (document.getElementById("correo") as HTMLInputElement).value.trim();
+      const contrasena = (document.getElementById("contrasena") as HTMLInputElement).value;
+
+      try {
+        const resultado = await apiFetch("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ correo, contrasena }),
+        });
+
+        if (!resultado.success || !resultado.token || !resultado.usuario) {
+          mostrarError(resultado.message ?? "No se pudo iniciar sesión");
+          return;
+        }
+
+        guardarSesion(resultado.token, resultado.usuario);
+        window.location.href = rutaSegunRol(resultado.usuario.rol);
+      } catch (error) {
+        mostrarError(error instanceof Error ? error.message : "Correo o contraseña incorrectos");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Iniciar sesión";
+      }
+    });
+  </script>
+</AuthLayout>
