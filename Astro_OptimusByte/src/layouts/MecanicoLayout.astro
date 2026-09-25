@@ -1,11 +1,13 @@
 ---
 import "../styles/global.css";
+import { getRolSSR } from "../utils/auth";
 
 interface Props {
   title: string;
   active: "agenda" | "vehiculos" | "solicitudes";
 }
 const { title, active } = Astro.props;
+const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
 ---
 
 <!doctype html>
@@ -26,11 +28,11 @@ const { title, active } = Astro.props;
         <a href="/mecanico/vehiculos" class:list={["sidebar-link", { active: active === "vehiculos" }]}>🚗 Vehículos</a>
         <a href="/mecanico/solicitudes" class:list={["sidebar-link", { active: active === "solicitudes" }]}>🔩 Solicitudes de repuesto</a>
 
-        <div class="sidebar-user">
-          <div class="avatar" id="ob-avatar">?</div>
+                <div class="sidebar-user">
+          <div class="avatar">{rol.slice(0, 1)}</div>
           <div style="flex:1; min-width:0;">
-            <div id="ob-nombre" style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              Cargando…
+            <div style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              {rol}
             </div>
             <button id="ob-logout">Cerrar sesión</button>
           </div>
@@ -42,20 +44,13 @@ const { title, active } = Astro.props;
       </main>
     </div>
 
-    <script>
-      import { exigirRol, cerrarSesion } from "../lib/api";
-
-      const usuario = exigirRol(["Mecanico", "Admin"]);
-      if (usuario) {
-        const nombreEl = document.getElementById("ob-nombre");
-        const avatarEl = document.getElementById("ob-avatar");
-        if (nombreEl) nombreEl.textContent = usuario.nombre_completo;
-        if (avatarEl) avatarEl.textContent = usuario.nombre_completo.slice(0, 1).toUpperCase();
-      }
-
-      document.getElementById("ob-logout")?.addEventListener("click", () => {
-        cerrarSesion();
-        window.location.href = "/login";
+        <script>
+      document.getElementById("ob-logout")?.addEventListener("click", async () => {
+        try {
+          await fetch("/api/auth/logout", { method: "POST" });
+        } finally {
+          window.location.href = "/login";
+        }
       });
     </script>
   </body>

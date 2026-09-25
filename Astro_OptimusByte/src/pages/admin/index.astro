@@ -1,0 +1,33 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Dashboard" active="dashboard">
+  <section class="admin-welcome">
+    <p>Resumen operativo</p>
+    <h2>Todo bajo control</h2>
+    <span>Consulta el estado actual del taller.</span>
+  </section>
+
+  <section class="admin-summary">
+    <article>
+      <span>Ordenes activas</span>
+      <strong>--</strong>
+    </article>
+
+    <article>
+      <span>Clientes registrados</span>
+      <strong>--</strong>
+    </article>
+
+    <article>
+      <span>Vehiculos registrados</span>
+      <strong>--</strong>
+    </article>
+
+    <article>
+      <span>Solicitudes pendientes</span>
+      <strong>--</strong>
+    </article>
+  </section>
+</AdminLayout>
