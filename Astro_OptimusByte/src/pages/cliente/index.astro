@@ -1,273 +1,481 @@
 ---
 import ClienteLayout from "../../layouts/ClienteLayout.astro";
-
-const cliente: any = null;
-
-const vehiculos: any[] = [];
-const ordenes: any[] = [];
-const citas: any[] = [];
-const pagos: any[] = [];
-const recordatorios: any[] = [];
 ---
 
 <ClienteLayout title="Panel del Cliente" active="inicio">
-  <section class="page-grid">
-    <div class="summary-grid" aria-label="Resumen del cliente">
-      <article class="metric-card">
-        <p class="metric-label">Vehiculos</p>
-        <div>
-          <p class="metric-value">{vehiculos.length}</p>
-          <p class="metric-note">Registrados en tu cuenta</p>
-        </div>
-      </article>
+  <section class="card">
+    <h2>Resumen de tu cuenta</h2>
 
-      <article class="metric-card">
-        <p class="metric-label">Ordenes</p>
-        <div>
-          <p class="metric-value">{ordenes.length}</p>
-          <p class="metric-note">Historial reciente</p>
-        </div>
-      </article>
+    <div class="grid-2">
+      <a class="card summary-link" href="#vehiculos">
+        <h3>Vehiculos registrados</h3>
+        <strong id="vehiculosCount">0</strong>
+        <p>Ver los vehiculos asociados a tu cuenta.</p>
+        <span class="summary-action">Ver vehiculos →</span>
+      </a>
 
-      <article class="metric-card">
-        <p class="metric-label">Citas</p>
-        <div>
-          <p class="metric-value">{citas.length}</p>
-          <p class="metric-note">Proximas visitas</p>
-        </div>
-      </article>
+      <a class="card summary-link" href="#ordenes">
+        <h3>Ordenes de servicio</h3>
+        <strong id="ordenesCount">0</strong>
+        <p>Consultar el estado de tus servicios.</p>
+        <span class="summary-action">Ver ordenes →</span>
+      </a>
 
-      <article class="metric-card">
-        <p class="metric-label">Pagos</p>
-        <div>
-          <p class="metric-value">{pagos.length}</p>
-          <p class="metric-note">Facturas y pagos</p>
+      <a class="card summary-link" href="#citas">
+        <h3>Citas programadas</h3>
+        <strong id="citasCount">0</strong>
+        <p>Revisar tus proximas visitas.</p>
+        <span class="summary-action">Ver citas →</span>
+      </a>
+
+      <a class="card summary-link" href="#pagos">
+        <h3>Pagos registrados</h3>
+        <strong id="pagosCount">0</strong>
+        <p>Consultar facturas y pagos.</p>
+        <span class="summary-action">Ver pagos →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div>
+      <section class="card" id="perfil">
+        <div class="panel-heading-row">
+          <div>
+            <h2>Mi perfil</h2>
+            <p>Actualiza tus datos de contacto.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnEditarPerfil" type="button">
+            Editar perfil
+          </button>
         </div>
-      </article>
+
+        <div id="perfilEstado" class="loading">Cargando perfil...</div>
+
+        <div id="perfilDatos" hidden>
+          <p><strong>Nombre:</strong> <span id="perfilNombre"></span></p>
+          <p><strong>Correo:</strong> <span id="perfilCorreo"></span></p>
+          <p><strong>Telefono:</strong> <span id="perfilTelefono"></span></p>
+          <p><strong>Documento:</strong> <span id="perfilDocumento"></span></p>
+          <p><strong>Direccion:</strong> <span id="perfilDireccion">-</span></p>
+        </div>
+
+        <form id="formPerfil" class="vehicle-form" hidden>
+          <h3>Editar informacion</h3>
+
+          <div class="field">
+            <label for="perfilNombreInput">Nombre completo</label>
+            <input id="perfilNombreInput" name="nombre_completo" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="perfilCorreoInput">Correo</label>
+              <input id="perfilCorreoInput" name="correo" type="email" required />
+            </div>
+            <div class="field">
+              <label for="perfilTelefonoInput">Telefono</label>
+              <input id="perfilTelefonoInput" name="telefono" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="perfilDireccionInput">Direccion</label>
+            <input id="perfilDireccionInput" name="direccion" />
+          </div>
+
+          <div class="field">
+            <label for="perfilDocumentoInput">Documento</label>
+            <input id="perfilDocumentoInput" disabled />
+          </div>
+
+          <div id="perfilMensaje" class="alert" hidden></div>
+
+          <div class="vehicle-actions">
+            <button class="btn btn-outline" id="btnCancelarPerfil" type="button">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+
+        <div class="password-section">
+          <h3>Contraseña</h3>
+          <p>Recibiras un enlace de verificacion en tu correo.</p>
+          <button class="btn btn-outline btn-sm" id="btnCambiarContrasena" type="button">
+            Cambiar contraseña por correo
+          </button>
+          <div id="passwordMensaje" class="alert" hidden></div>
+        </div>
+      </section>
+
+      <section class="card" id="vehiculos">
+        <div class="panel-heading-row">
+          <div>
+            <h2>Mis vehiculos</h2>
+            <p>Consulta o registra los vehiculos asociados a tu cuenta.</p>
+          </div>
+
+          <div class="vehicle-actions">
+            <button class="btn btn-outline btn-sm" id="btnVerVehiculos" type="button">
+              Ver vehiculos
+            </button>
+            <button class="btn btn-primary btn-sm" id="btnMostrarRegistro" type="button">
+              Registrar vehiculo
+            </button>
+          </div>
+        </div>
+
+        <div id="vehiculosEstado" class="loading">Cargando vehiculos...</div>
+        <div id="vehiculosLista" class="orden-list"></div>
+
+        <form id="formVehiculo" class="vehicle-form" hidden>
+          <h3>Registrar vehiculo</h3>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="placa">Placa</label>
+              <input id="placa" name="placa" maxlength="10" required />
+            </div>
+            <div class="field">
+              <label for="marca">Marca</label>
+              <input id="marca" name="marca" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="modelo">Modelo</label>
+              <input id="modelo" name="modelo" required />
+            </div>
+            <div class="field">
+              <label for="anio">Ano</label>
+              <input id="anio" name="anio" type="number" min="1900" max="2100" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="color">Color</label>
+              <input id="color" name="color" />
+            </div>
+            <div class="field">
+              <label for="vin">VIN</label>
+              <input id="vin" name="vin" maxlength="30" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="km_actuales">Kilometraje actual</label>
+            <input id="km_actuales" name="km_actuales" type="number" min="0" value="0" required />
+          </div>
+
+          <div id="vehiculoMensaje" class="alert" hidden></div>
+
+          <div class="vehicle-actions">
+            <button class="btn btn-outline" id="btnCancelarRegistro" type="button">Cancelar</button>
+            <button class="btn btn-primary" type="submit">Guardar vehiculo</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="ordenes">
+        <h2>Ordenes de servicio</h2>
+        <div class="empty">Las ordenes apareceran aqui cuando el taller las registre.</div>
+      </section>
     </div>
 
-    <div class="content-columns">
-      <div class="page-grid">
-        <section class="panel" id="vehiculos">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Mis vehiculos</h2>
-              <p class="panel-subtitle">Aqui apareceran los vehiculos asociados a tu cuenta.</p>
-            </div>
-            <a class="secondary-button" href="#citas">Agendar cita</a>
-          </div>
+    <div>
+      <section class="card" id="citas">
+        <h2>Proximas citas</h2>
+        <div class="empty">No tienes citas programadas.</div>
+      </section>
 
-          <div class="panel-body">
-            {vehiculos.length === 0 ? (
-              <div class="empty-state">
-                <strong>No tienes vehiculos registrados todavia.</strong>
-                <span>Cuando el taller registre un vehiculo a tu nombre, aparecera aqui.</span>
-              </div>
-            ) : (
-              <div class="vehicle-grid">
-                {vehiculos.map((vehiculo) => (
-                  <article class="vehicle-card">
-                    <h3>{vehiculo.nombre}</h3>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+      <section class="card" id="pagos">
+        <h2>Pagos y facturas</h2>
+        <div class="empty">No tienes pagos registrados.</div>
+      </section>
 
-        <section class="panel" id="ordenes">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Ordenes de servicio</h2>
-              <p class="panel-subtitle">Aqui veras el estado de tus ordenes.</p>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            {ordenes.length === 0 ? (
-              <div class="empty-state">
-                <strong>No tienes ordenes registradas.</strong>
-                <span>Cuando el taller cree una orden para tu vehiculo, se mostrara en esta seccion.</span>
-              </div>
-            ) : (
-              <div class="table-wrap">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Orden</th>
-                      <th>Vehiculo</th>
-                      <th>Servicio</th>
-                      <th>Fecha</th>
-                      <th>Estado</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ordenes.map((orden) => (
-                      <tr>
-                        <td>{orden.id}</td>
-                        <td>{orden.vehiculo}</td>
-                        <td>{orden.servicio}</td>
-                        <td>{orden.fecha}</td>
-                        <td>{orden.estado}</td>
-                        <td>{orden.total}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section class="panel" id="pagos">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Pagos y facturas</h2>
-              <p class="panel-subtitle">Aqui apareceran tus pagos y facturas.</p>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            {pagos.length === 0 ? (
-              <div class="empty-state">
-                <strong>No tienes pagos registrados.</strong>
-                <span>Cuando realices un pago o se genere una factura, aparecera aqui.</span>
-              </div>
-            ) : (
-              <div class="table-wrap">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Factura</th>
-                      <th>Concepto</th>
-                      <th>Fecha</th>
-                      <th>Estado</th>
-                      <th>Valor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pagos.map((pago) => (
-                      <tr>
-                        <td>{pago.factura}</td>
-                        <td>{pago.concepto}</td>
-                        <td>{pago.fecha}</td>
-                        <td>{pago.estado}</td>
-                        <td>{pago.valor}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <aside class="page-grid">
-        <section class="profile-card" id="perfil">
-          <p class="eyebrow">Cuenta</p>
-          <h2 class="panel-title">Mi perfil</h2>
-
-          {cliente === null ? (
-            <div class="empty-state">
-              <strong>Informacion no cargada.</strong>
-              <span>Cuando el login y el backend del cliente esten conectados, tus datos apareceran aqui.</span>
-            </div>
-          ) : (
-            <dl>
-              <div>
-                <dt>Correo</dt>
-                <dd>{cliente.correo}</dd>
-              </div>
-              <div>
-                <dt>Telefono</dt>
-                <dd>{cliente.telefono}</dd>
-              </div>
-              <div>
-                <dt>Documento</dt>
-                <dd>{cliente.documento}</dd>
-              </div>
-            </dl>
-          )}
-        </section>
-
-        <section class="panel" id="citas">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Proximas citas</h2>
-              <p class="panel-subtitle">Agenda y seguimiento.</p>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            {citas.length === 0 ? (
-              <div class="empty-state">
-                <strong>No tienes citas programadas.</strong>
-                <span>Cuando se agende una cita, aparecera en esta seccion.</span>
-              </div>
-            ) : (
-              <div class="list-stack">
-                {citas.map((cita) => (
-                  <article class="list-item">
-                    <strong>{cita.servicio}</strong>
-                    <span>{cita.fecha} - {cita.hora}</span>
-                    <span>Vehiculo {cita.vehiculo}</span>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Recordatorios</h2>
-              <p class="panel-subtitle">Mantenimiento recomendado.</p>
-            </div>
-          </div>
-
-          <div class="panel-body">
-            {recordatorios.length === 0 ? (
-              <div class="empty-state">
-                <strong>No tienes recordatorios activos.</strong>
-                <span>Cuando tu vehiculo este cerca de un mantenimiento, lo veras aqui.</span>
-              </div>
-            ) : (
-              <div class="list-stack">
-                {recordatorios.map((recordatorio) => (
-                  <article class="list-item">
-                    <strong>{recordatorio}</strong>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </aside>
+      <section class="card" id="recordatorios">
+        <h2>Recordatorios</h2>
+        <div class="empty">No tienes recordatorios activos.</div>
+      </section>
     </div>
   </section>
 </ClienteLayout>
 
-<style>
-  .empty-state {
-    min-height: 120px;
-    display: grid;
-    align-content: center;
-    gap: 8px;
-    padding: 18px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 8px;
-    background: #f8fbff;
+<script>
+  import { apiFetch, exigirRol } from "../../lib/api";
+
+  exigirRol(["Cliente"]);
+
+  type Cliente = {
+    nombre_completo?: string;
+    correo?: string;
+    telefono?: string;
+    tipo_documento?: string;
+    num_documento?: string;
+    direccion?: string;
+  };
+
+  type Vehiculo = {
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    anio?: number;
+    km_actuales?: number;
+  };
+
+  const perfilEstado = document.getElementById("perfilEstado");
+  const perfilDatos = document.getElementById("perfilDatos");
+  const vehiculosEstado = document.getElementById("vehiculosEstado");
+  const vehiculosLista = document.getElementById("vehiculosLista");
+  const vehiculosCount = document.getElementById("vehiculosCount");
+  const btnEditarPerfil = document.getElementById("btnEditarPerfil");
+  const btnCancelarPerfil = document.getElementById("btnCancelarPerfil");
+  const formPerfil = document.getElementById("formPerfil") as HTMLFormElement | null;
+  const perfilMensaje = document.getElementById("perfilMensaje");
+  const btnCambiarContrasena = document.getElementById("btnCambiarContrasena");
+  const passwordMensaje = document.getElementById("passwordMensaje");
+  const btnVerVehiculos = document.getElementById("btnVerVehiculos");
+  const btnMostrarRegistro = document.getElementById("btnMostrarRegistro");
+  const btnCancelarRegistro = document.getElementById("btnCancelarRegistro");
+  const formVehiculo = document.getElementById("formVehiculo") as HTMLFormElement | null;
+  const vehiculoMensaje = document.getElementById("vehiculoMensaje");
+
+  async function cargarPortal() {
+    try {
+      const perfilResponse = await apiFetch<Cliente>("/api/cliente/me");
+      const perfil = perfilResponse.data;
+
+      if (perfil) {
+        document.getElementById("perfilNombre")!.textContent = perfil.nombre_completo ?? "-";
+        document.getElementById("perfilCorreo")!.textContent = perfil.correo ?? "-";
+        document.getElementById("perfilTelefono")!.textContent = perfil.telefono ?? "-";
+        document.getElementById("perfilDocumento")!.textContent =
+          `${perfil.tipo_documento ?? ""} ${perfil.num_documento ?? ""}`.trim() || "-";
+
+        document.getElementById("perfilDireccion")!.textContent = perfil.direccion ?? "-";
+
+        const nombreInput = document.getElementById("perfilNombreInput") as HTMLInputElement | null;
+        const correoInput = document.getElementById("perfilCorreoInput") as HTMLInputElement | null;
+        const telefonoInput = document.getElementById("perfilTelefonoInput") as HTMLInputElement | null;
+        const direccionInput = document.getElementById("perfilDireccionInput") as HTMLInputElement | null;
+        const documentoInput = document.getElementById("perfilDocumentoInput") as HTMLInputElement | null;
+
+        if (nombreInput) nombreInput.value = perfil.nombre_completo ?? "";
+        if (correoInput) correoInput.value = perfil.correo ?? "";
+        if (telefonoInput) telefonoInput.value = perfil.telefono ?? "";
+        if (direccionInput) direccionInput.value = perfil.direccion ?? "";
+        if (documentoInput) {
+          documentoInput.value = `${perfil.tipo_documento ?? ""} ${perfil.num_documento ?? ""}`.trim();
+        }
+
+        perfilEstado?.setAttribute("hidden", "true");
+        perfilDatos?.removeAttribute("hidden");
+      }
+
+      const vehiculosResponse = await apiFetch<Vehiculo[]>("/api/cliente/mis-vehiculos");
+      const vehiculos = vehiculosResponse.data ?? [];
+
+      if (vehiculosCount) vehiculosCount.textContent = String(vehiculos.length);
+      vehiculosLista?.replaceChildren();
+      vehiculosEstado?.setAttribute("hidden", "true");
+
+      if (vehiculos.length === 0) {
+        if (vehiculosEstado) {
+          vehiculosEstado.textContent = "No tienes vehiculos registrados actualmente.";
+          vehiculosEstado.className = "empty";
+          vehiculosEstado.removeAttribute("hidden");
+        }
+        return;
+      }
+
+      vehiculos.forEach((vehiculo) => {
+        const article = document.createElement("article");
+        article.className = "orden-row";
+
+        const identificacion = document.createElement("div");
+        const placa = document.createElement("strong");
+        placa.textContent = vehiculo.placa ?? "Sin placa";
+        const descripcion = document.createElement("div");
+        descripcion.className = "sub";
+        descripcion.textContent = `${vehiculo.marca ?? ""} ${vehiculo.modelo ?? ""}`.trim();
+        identificacion.append(placa, descripcion);
+
+        const anio = document.createElement("div");
+        anio.textContent = `Ano: ${vehiculo.anio ?? "-"}`;
+
+        const kilometraje = document.createElement("div");
+        kilometraje.textContent = `Km: ${vehiculo.km_actuales ?? 0}`;
+
+        article.append(identificacion, anio, kilometraje);
+        vehiculosLista?.appendChild(article);
+      });
+    } catch (error) {
+      const mensaje = error instanceof Error
+        ? error.message
+        : "No se pudo cargar la informacion";
+
+      if (perfilEstado) {
+        perfilEstado.textContent = mensaje;
+        perfilEstado.className = "alert alert-error";
+      }
+
+      if (vehiculosEstado) {
+        vehiculosEstado.textContent = "No se pudieron cargar los vehiculos.";
+        vehiculosEstado.className = "alert alert-error";
+        vehiculosEstado.removeAttribute("hidden");
+      }
+    }
   }
 
-  .empty-state strong {
-    color: #1f2937;
-  }
+  btnVerVehiculos?.addEventListener("click", () => {
+    document.getElementById("vehiculosLista")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
 
-  .empty-state span {
-    color: #64748b;
-    line-height: 1.5;
-  }
-</style>
+  btnMostrarRegistro?.addEventListener("click", () => {
+    formVehiculo?.removeAttribute("hidden");
+    formVehiculo?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  btnCancelarRegistro?.addEventListener("click", () => {
+    formVehiculo?.reset();
+    formVehiculo?.setAttribute("hidden", "true");
+    vehiculoMensaje?.setAttribute("hidden", "true");
+  });
+
+  formVehiculo?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const datos = Object.fromEntries(new FormData(formVehiculo).entries());
+    const botonGuardar = formVehiculo.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement | null;
+
+    if (botonGuardar) {
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Guardando...";
+    }
+
+    try {
+      const resultado = await apiFetch("/api/cliente/mis-vehiculos", {
+        method: "POST",
+        body: JSON.stringify(datos),
+      });
+
+      if (vehiculoMensaje) {
+        vehiculoMensaje.textContent = resultado.message ?? "Vehiculo registrado correctamente";
+        vehiculoMensaje.className = "alert alert-ok";
+        vehiculoMensaje.removeAttribute("hidden");
+      }
+
+      formVehiculo.reset();
+      formVehiculo.setAttribute("hidden", "true");
+      await cargarPortal();
+    } catch (error) {
+      if (vehiculoMensaje) {
+        vehiculoMensaje.textContent = error instanceof Error
+          ? error.message
+          : "No se pudo registrar el vehiculo";
+        vehiculoMensaje.className = "alert alert-error";
+        vehiculoMensaje.removeAttribute("hidden");
+      }
+    } finally {
+      if (botonGuardar) {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent = "Guardar vehiculo";
+      }
+    }
+  });
+
+  btnEditarPerfil?.addEventListener("click", () => {
+    formPerfil?.removeAttribute("hidden");
+    formPerfil?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  btnCancelarPerfil?.addEventListener("click", () => {
+    formPerfil?.reset();
+    formPerfil?.setAttribute("hidden", "true");
+    perfilMensaje?.setAttribute("hidden", "true");
+    void cargarPortal();
+  });
+
+  formPerfil?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const datos = Object.fromEntries(new FormData(formPerfil).entries());
+    const botonGuardar = formPerfil.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement | null;
+
+    if (botonGuardar) {
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Guardando...";
+    }
+
+    try {
+      const resultado = await apiFetch("/api/cliente/me", {
+        method: "PUT",
+        body: JSON.stringify(datos),
+      });
+
+      if (perfilMensaje) {
+        perfilMensaje.textContent = resultado.message ?? "Perfil actualizado correctamente";
+        perfilMensaje.className = "alert alert-ok";
+        perfilMensaje.removeAttribute("hidden");
+      }
+
+      formPerfil.setAttribute("hidden", "true");
+      await cargarPortal();
+    } catch (error) {
+      if (perfilMensaje) {
+        perfilMensaje.textContent = error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el perfil";
+        perfilMensaje.className = "alert alert-error";
+        perfilMensaje.removeAttribute("hidden");
+      }
+    } finally {
+      if (botonGuardar) {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent = "Guardar cambios";
+      }
+    }
+  });
+
+  btnCambiarContrasena?.addEventListener("click", async () => {
+    const correo = (document.getElementById("perfilCorreoInput") as HTMLInputElement | null)?.value;
+
+    if (!correo) return;
+
+    try {
+      const resultado = await apiFetch("/api/auth/solicitar-recuperacion", {
+        method: "POST",
+        body: JSON.stringify({ correo }),
+      });
+
+      if (passwordMensaje) {
+        passwordMensaje.textContent = resultado.message ?? "Revisa tu correo";
+        passwordMensaje.className = "alert alert-ok";
+        passwordMensaje.removeAttribute("hidden");
+      }
+    } catch (error) {
+      if (passwordMensaje) {
+        passwordMensaje.textContent = error instanceof Error
+          ? error.message
+          : "No se pudo enviar el correo";
+        passwordMensaje.className = "alert alert-error";
+        passwordMensaje.removeAttribute("hidden");
+      }
+    }
+  });
+
+  void cargarPortal();
+</script>
+Ñ

@@ -57,6 +57,7 @@ export function exigirRol(rolesPermitidos: Array<Usuario["rol"]>): Usuario | nul
 export function rutaSegunRol(rol: Usuario["rol"]): string {
   if (rol === "Mecanico") return "/mecanico";
   if (rol === "Admin") return "/admin";
+  if (rol === "Cliente") return "/cliente";
   return "/portal";
 }
 
