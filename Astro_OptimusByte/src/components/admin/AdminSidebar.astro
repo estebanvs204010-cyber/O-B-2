@@ -1,6 +1,6 @@
 ---
 interface Props {
-  active: "dashboard" | "clientes" | "ordenes" | "repuestos" | "vehiculos" | "facturacion";
+  active: "dashboard" | "clientes" | "ordenes" | "repuestos" | "vehiculos" | "facturacion" | "mecanicos";
 }
 
 const { active } = Astro.props;
@@ -35,6 +35,11 @@ const { active } = Astro.props;
        class:list={["admin-nav-link", { active: active === "clientes" }]}>
       <i class="bi bi-people"></i>
       Clientes
+    </a>
+    <a href="/admin/mecanicos"
+       class:list={["admin-nav-link", { active: active === "mecanicos" }]}>
+      <i class="bi bi-person-workspace"></i>
+      Mecánicos
     </a>
     <a href="/admin/vehiculos"
        class:list={["admin-nav-link", { active: active === "vehiculos" }]}>

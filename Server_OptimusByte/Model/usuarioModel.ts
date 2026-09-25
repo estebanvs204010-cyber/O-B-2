@@ -20,6 +20,12 @@ interface DatosMecanico {
     contrasena: string;
 }
 
+interface DatosEdicionMecanico {
+    nombre_completo: string;
+    correo: string;
+    telefono: string;
+    contrasena?: string;
+}
 export class Usuario {
     private _correo: string | null;
     private _contrasena: string | null;
@@ -115,4 +121,147 @@ export class Usuario {
         );
         return filas;
     }
+
+public async ObtenerMecanicoPorId(idUsuario: number) {
+    const [mecanico] = await conexion.query(
+        `SELECT
+            u.id_usuario,
+            u.nombre_completo,
+            u.correo,
+            u.telefono,
+            u.activo,
+            u.fecha_creacion
+         FROM usuarios u
+         INNER JOIN roles r ON r.id_rol = u.id_rol
+         WHERE u.id_usuario = ?
+           AND r.nombre = 'Mecanico'`,
+        [idUsuario],
+    );
+
+    return mecanico ?? null;
+}
+
+public async EditarMecanico(
+    idUsuario: number,
+    datos: DatosEdicionMecanico,
+): Promise<{ success: boolean; message: string }> {
+    const mecanico = await this.ObtenerMecanicoPorId(idUsuario);
+
+    if (!mecanico) {
+        return { success: false, message: "El mecanico no existe" };
+    }
+
+    const [correoDuplicado] = await conexion.query(
+        `SELECT id_usuario
+         FROM usuarios
+         WHERE correo = ?
+           AND id_usuario != ?`,
+        [datos.correo, idUsuario],
+    );
+
+    if (correoDuplicado) {
+        return {
+            success: false,
+            message: "Ese correo ya pertenece a otro usuario",
+        };
+    }
+
+    try {
+        if (datos.contrasena) {
+            const contrasenaHasheada = await hash(datos.contrasena);
+
+            await conexion.execute(
+                `UPDATE usuarios
+                 SET nombre_completo = ?,
+                     correo = ?,
+                     telefono = ?,
+                     contrasena_hash = ?
+                 WHERE id_usuario = ?`,
+                [
+                    datos.nombre_completo,
+                    datos.correo,
+                    datos.telefono,
+                    contrasenaHasheada,
+                    idUsuario,
+                ],
+            );
+        } else {
+            await conexion.execute(
+                `UPDATE usuarios
+                 SET nombre_completo = ?,
+                     correo = ?,
+                     telefono = ?
+                 WHERE id_usuario = ?`,
+                [
+                    datos.nombre_completo,
+                    datos.correo,
+                    datos.telefono,
+                    idUsuario,
+                ],
+            );
+        }
+
+        return {
+            success: true,
+            message: "Mecanico actualizado correctamente",
+        };
+    } catch (error) {
+        console.error(error);
+
+        return {
+            success: false,
+            message: "No se pudo actualizar el mecanico",
+        };
+    }
+}
+
+    public async DesactivarMecanico(
+        idUsuario: number,
+    ): Promise<{ success: boolean; message: string }> {
+        const mecanico = await this.ObtenerMecanicoPorId(idUsuario);
+
+        if (!mecanico) {
+            return { success: false, message: "El mecanico no existe" };
+        }
+
+        await conexion.execute(
+            `UPDATE usuarios
+            SET activo = 0
+            WHERE id_usuario = ?`,
+            [idUsuario],
+        );
+
+        return {
+            success: true,
+            message: "Mecanico desactivado correctamente",
+        };
+    }
+
+    public async CambiarEstadoMecanico(
+        idUsuario: number,
+        activo: boolean,
+        ): Promise<{ success: boolean; message: string }> {
+        const mecanico = await this.ObtenerMecanicoPorId(idUsuario);
+
+        if (!mecanico) {
+            return {
+                success: false,
+                message: "El mecanico no existe",
+            };
+        }
+
+        await conexion.execute(
+            `UPDATE usuarios
+            SET activo = ?
+            WHERE id_usuario = ?`,
+            [activo ? 1 : 0, idUsuario],
+        );
+
+        return {
+            success: true,
+            message: activo
+                ? "Mecanico activado correctamente"
+                : "Mecanico desactivado correctamente",
+        };
+   }
 }
