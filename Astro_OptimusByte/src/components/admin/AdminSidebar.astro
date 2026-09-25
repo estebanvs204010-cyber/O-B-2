@@ -1,59 +1,68 @@
 ---
 interface Props {
-  active: "dashboard" | "clientes";
+  active: "dashboard" | "clientes" | "ordenes" | "repuestos" | "vehiculos" | "facturacion";
 }
 
 const { active } = Astro.props;
 ---
 
 <aside class="admin-sidebar">
+
+  <!-- Logo -->
   <a class="admin-brand" href="/admin">
-    <span class="brand-icon">&#9881;</span>
+    <span class="brand-icon">
+      <i class="bi bi-wrench-adjustable-circle-fill"></i>
+    </span>
     <span>Optimus<span class="brand-accent">Byte</span></span>
   </a>
 
   <nav class="admin-nav">
-    <p class="admin-nav-title">Principal</p>
 
-    <a
-      href="/admin"
-      class:list={["admin-nav-link", { active: active === "dashboard" }]}
-    >
-      <span>&#9638;</span>
+    <p class="admin-nav-title">Principal</p>
+    <a href="/admin"
+       class:list={["admin-nav-link", { active: active === "dashboard" }]}>
+      <i class="bi bi-speedometer2"></i>
       Dashboard
     </a>
 
-    <p class="admin-nav-title">Gestion</p>
-
-    <a class="admin-nav-link" href="/admin#ordenes">
-      <span>&#9776;</span>
-      Ordenes
+    <p class="admin-nav-title">Gestión</p>
+    <a href="/admin/ordenes"
+       class:list={["admin-nav-link", { active: active === "ordenes" }]}>
+      <i class="bi bi-clipboard2-check"></i>
+      Órdenes
     </a>
-
-    <a class="admin-nav-link" href="/admin#repuestos">
-      <span>&#9881;</span>
+    <a href="/admin/clientes"
+       class:list={["admin-nav-link", { active: active === "clientes" }]}>
+      <i class="bi bi-people"></i>
+      Clientes
+    </a>
+    <a href="/admin/vehiculos"
+       class:list={["admin-nav-link", { active: active === "vehiculos" }]}>
+      <i class="bi bi-car-front"></i>
+      Vehículos
+    </a>
+    <a href="/admin/repuestos"
+       class:list={["admin-nav-link", { active: active === "repuestos" }]}>
+      <i class="bi bi-box-seam"></i>
       Repuestos
     </a>
-
-    <a
-     href="/admin/clientes"
-       class:list={["admin-nav-link", { active: active === "clientes" }]}
-    >
-    <span>&#9787;</span>
-        Clientes
+    <a href="/admin/facturacion"
+       class:list={["admin-nav-link", { active: active === "facturacion" }]}>
+      <i class="bi bi-receipt"></i>
+      Facturación
     </a>
+
   </nav>
 
   <div class="admin-user">
     <div class="admin-avatar">A</div>
-
     <div>
       <strong>Administrador</strong>
       <span>Admin</span>
     </div>
-
-    <button id="ob-logout" type="button" title="Cerrar sesion">
-      &#10005;
+    <button id="ob-logout" type="button" title="Cerrar sesión">
+      <i class="bi bi-box-arrow-right"></i>
     </button>
   </div>
+
 </aside>
