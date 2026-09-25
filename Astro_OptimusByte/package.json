@@ -12,6 +12,8 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/node": "^11.1.6",
+    "ag-grid-community": "^36.2.0",
     "astro": "^7.3.3"
   },
   "allowScripts": {

@@ -25,7 +25,7 @@ import AuthLayout from "../layouts/AuthLayout.astro";
   </p>
 
   <script>
-    import { apiFetch, guardarSesion, rutaSegunRol } from "../lib/api";
+    import { apiFetch, rutaSegunRol } from "../lib/api";
 
     const form = document.getElementById("ob-login-form") as HTMLFormElement;
     const alertBox = document.getElementById("ob-alert") as HTMLDivElement;
@@ -51,12 +51,11 @@ import AuthLayout from "../layouts/AuthLayout.astro";
           body: JSON.stringify({ correo, contrasena }),
         });
 
-        if (!resultado.success || !resultado.token || !resultado.usuario) {
+                if (!resultado.success || !resultado.usuario) {
           mostrarError(resultado.message ?? "No se pudo iniciar sesión");
           return;
         }
 
-        guardarSesion(resultado.token, resultado.usuario);
         window.location.href = rutaSegunRol(resultado.usuario.rol);
       } catch (error) {
         mostrarError(error instanceof Error ? error.message : "Correo o contraseña incorrectos");

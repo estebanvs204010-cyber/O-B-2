@@ -1,56 +1,12 @@
 // src/lib/api.ts
-// Helper central para hablar con el backend Deno/Oak y manejar la sesión (JWT) en el navegador.
-
-export const API_BASE_URL = import.meta.env.PUBLIC_API_URL ?? "http://localhost:8002";
+// Helper central para hablar con el backend. La sesión vive en una cookie
+// httpOnly (el navegador la manda solo, no hay nada que guardar/leer aquí).
 
 export interface Usuario {
   id_usuario: number;
   nombre_completo: string;
   correo: string;
   rol: "Admin" | "Mecanico" | "Cliente";
-}
-
-const TOKEN_KEY = "ob_token";
-const USUARIO_KEY = "ob_usuario";
-
-// ---------- Sesión (localStorage) ----------
-export function guardarSesion(token: string, usuario: Usuario) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USUARIO_KEY, JSON.stringify(usuario));
-}
-
-export function obtenerToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function obtenerUsuario(): Usuario | null {
-  const raw = localStorage.getItem(USUARIO_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as Usuario;
-  } catch {
-    return null;
-  }
-}
-
-export function cerrarSesion() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USUARIO_KEY);
-}
-
-// Redirige a /login si no hay sesión o el rol no está permitido.
-// Devuelve el usuario si todo está OK (para usarlo en la página).
-export function exigirRol(rolesPermitidos: Array<Usuario["rol"]>): Usuario | null {
-  const usuario = obtenerUsuario();
-  const token = obtenerToken();
-
-  if (!token || !usuario || !rolesPermitidos.includes(usuario.rol)) {
-    cerrarSesion();
-    window.location.href = "/login";
-    return null;
-  }
-
-  return usuario;
 }
 
 // A dónde mandar a cada rol después de iniciar sesión.
@@ -60,32 +16,28 @@ export function rutaSegunRol(rol: Usuario["rol"]): string {
   return "/portal";
 }
 
-// ---------- fetch autenticado ----------
 interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
   data?: T;
-  token?: string;
   usuario?: Usuario;
 }
 
+// ---------- fetch autenticado ----------
+// Ya NO recibe ni maneja el token: la cookie httpOnly viaja sola en cada
+// petición porque es del mismo origen (misma URL) que la página.
 export async function apiFetch<T = any>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const token = obtenerToken();
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> | undefined),
   };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(path, { ...options, headers });
 
-  // Token vencido o inválido -> a login.
   if (res.status === 401) {
-    cerrarSesion();
     window.location.href = "/login";
     throw new Error("Sesión expirada");
   }

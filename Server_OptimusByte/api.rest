@@ -43,12 +43,12 @@ POST http://localhost:8002/api/auth/registro-cliente
 Content-Type: application/json
 
 {
-  "nombre_completo": "Juan Pérez",
+  "nombre_completo": "Juan Pére",
   "tipo_documento": "CC",
-  "num_documento": "1122334455",
+  "num_documento": "1152334455",
   "telefono": "3001234567",
-  "correo": "juan.perez@example.com",
-  "contrasena": "ClaveSegura123"
+  "correo": "juan.perAz@example.com",
+  "contrasena": "ClaveSegura183"
 }
 
 ### Cliente creado por Admin (usa el token del login de arriba)
@@ -71,9 +71,9 @@ Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 {
-  "nombre_completo": "andres pro",
-  "correo": "2130milu@gmail.com",
-  "telefono": "3185094430",
+  "nombre_completo": "andres pr9",
+  "correo": "2139milu@gmail.com",
+  "telefono": "3185094530",
   "contrasena": "2130luna"
 }
 

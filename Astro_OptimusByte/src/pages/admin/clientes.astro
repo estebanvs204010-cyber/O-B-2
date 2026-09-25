@@ -1,0 +1,437 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Clientes" active="clientes">
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Gestion de clientes</p>
+      <h2>Clientes</h2>
+      <span>Registra, edita y desactiva clientes del taller.</span>
+    </div>
+
+    <div class="clientes-actions">
+      <button id="btnRecargar" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+
+      <button id="btnCrear" class="btn btn-primary" type="button">
+        + Nuevo cliente
+      </button>
+    </div>
+  </section>
+
+  <section class="admin-panel clientes-grid-panel">
+    <div class="clientes-toolbar">
+      <input
+        id="quickSearch"
+        class="clientes-search"
+        type="search"
+        placeholder="Buscar por nombre, documento, telefono o correo"
+      />
+    </div>
+
+    <div id="myGrid" class="clientes-grid"></div>
+  </section>
+
+  <dialog id="modalCliente" class="cliente-dialog">
+    <form id="formCliente" class="cliente-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Informacion del cliente</p>
+          <h2 id="modalTitulo">Nuevo cliente</h2>
+        </div>
+
+        <button id="btnCerrarModal" class="modal-close" type="button">
+          &#10005;
+        </button>
+      </div>
+
+      <input id="editIdCliente" type="hidden" />
+      <input id="formModo" type="hidden" value="crear" />
+
+      <div class="field">
+        <label for="editNombre">Nombre completo</label>
+        <input id="editNombre" required />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editTipoDocumento">Tipo de documento</label>
+          <select id="editTipoDocumento" required>
+            <option value="CC">CC</option>
+            <option value="CE">CE</option>
+            <option value="NIT">NIT</option>
+            <option value="Pasaporte">Pasaporte</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="editDocumento">Numero de documento</label>
+          <input id="editDocumento" required />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editTelefono">Telefono</label>
+          <input id="editTelefono" type="tel" required />
+        </div>
+
+        <div class="field">
+          <label for="editCorreo">Correo</label>
+          <input id="editCorreo" type="email" required />
+        </div>
+      </div>
+
+      <div class="field" id="grupoContrasena">
+        <label for="editContrasena">Contraseña temporal</label>
+        <input
+        id="editContrasena"
+       type="password"
+       minlength="8"
+       required
+       />
+      </div>
+
+      <div class="field">
+        <label for="editDireccion">Direccion</label>
+        <input id="editDireccion" />
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnCancelarModal" class="btn btn-outline" type="button">
+          Cancelar
+        </button>
+
+        <button id="btnGuardar" class="btn btn-primary" type="submit">
+          Guardar cliente
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import {
+      createGrid,
+      ModuleRegistry,
+      AllCommunityModule,
+      themeQuartz,
+    } from "ag-grid-community";
+
+    import type {
+      GridApi,
+      GridOptions,
+      ICellRendererParams,
+    } from "ag-grid-community";
+
+    import { apiFetch } from "../../lib/api";
+
+    ModuleRegistry.registerModules([AllCommunityModule]);
+
+    interface ClienteRow {
+      id_cliente: number;
+      nombre_completo: string;
+      tipo_documento: string;
+      num_documento: string;
+      telefono: string;
+      correo: string;
+      direccion?: string;
+    }
+
+    const temaOptimus = themeQuartz.withParams({
+      accentColor: "#1e6dff",
+      backgroundColor: "#ffffff",
+      foregroundColor: "#102a50",
+      borderColor: "#e2e8f0",
+      borderRadius: 8,
+      wrapperBorderRadius: 8,
+      headerFontWeight: 700,
+    });
+
+    let gridApi: GridApi<ClienteRow>;
+    const modal = document.getElementById("modalCliente") as HTMLDialogElement;
+    const formulario = document.getElementById("formCliente") as HTMLFormElement;
+
+    function accionesCellRenderer(params: ICellRendererParams<ClienteRow>) {
+      const contenedor = document.createElement("div");
+      contenedor.className = "grid-actions";
+
+      const editar = document.createElement("button");
+      editar.className = "grid-action-button edit";
+      editar.type = "button";
+      editar.textContent = "Editar";
+      editar.title = "Editar cliente";
+      editar.addEventListener("click", () => abrirModalEditar(params.data!));
+
+      const desactivar = document.createElement("button");
+      desactivar.className = "grid-action-button delete";
+      desactivar.type = "button";
+      desactivar.textContent = "Desactivar";
+      desactivar.title = "Desactivar cliente";
+      desactivar.addEventListener("click", () => desactivarCliente(params.data!));
+
+      contenedor.append(editar, desactivar);
+      return contenedor;
+    }
+
+    const gridOptions: GridOptions<ClienteRow> = {
+      theme: temaOptimus,
+
+      columnDefs: [
+        {
+          field: "nombre_completo",
+          headerName: "Cliente",
+          flex: 2,
+          filter: true,
+          floatingFilter: true,
+        },
+        {
+          headerName: "Documento",
+          flex: 1.3,
+          valueGetter: (params) =>
+            `${params.data?.tipo_documento ?? ""} ${params.data?.num_documento ?? ""}`,
+          filter: true,
+        },
+        {
+          field: "telefono",
+          headerName: "Telefono",
+          flex: 1.1,
+          filter: true,
+        },
+        {
+          field: "correo",
+          headerName: "Correo",
+          flex: 2,
+          filter: true,
+        },
+        {
+          headerName: "Acciones",
+          width: 180,
+          cellRenderer: accionesCellRenderer,
+          sortable: false,
+          filter: false,
+        },
+      ],
+
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+      },
+
+      rowData: [],
+      pagination: true,
+      paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50],
+
+      onGridReady: (params) => {
+        gridApi = params.api;
+        cargarClientes();
+      },
+    };
+
+    const gridDiv = document.querySelector<HTMLElement>("#myGrid");
+
+    if (gridDiv) {
+      createGrid(gridDiv, gridOptions);
+    }
+
+    async function cargarClientes() {
+      try {
+        const respuesta = await apiFetch<ClienteRow[]>("/api/clientes");
+
+        gridApi?.setGridOption("rowData", respuesta.data ?? []);
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los clientes.",
+        );
+      }
+    }
+
+    function abrirModalCrear() {
+      formulario.reset();
+
+      (document.getElementById("formModo") as HTMLInputElement).value = "crear";
+      (document.getElementById("editIdCliente") as HTMLInputElement).value = "";
+      (document.getElementById("modalTitulo") as HTMLElement).textContent =
+        "Nuevo cliente";
+      (document.getElementById("btnGuardar") as HTMLButtonElement).textContent =
+        "Crear cliente";
+      (document.getElementById("grupoContrasena") as HTMLElement).style.display = "none";
+      const inputContrasena = document.getElementById(
+  "editContrasena",
+      ) as HTMLInputElement;
+      inputContrasena.required = false;
+      inputContrasena.value = "";
+
+      modal.showModal();
+    }
+
+    async function abrirModalEditar(cliente: ClienteRow) {
+      try {
+        const respuesta = await apiFetch<ClienteRow>(
+          `/api/clientes/${cliente.id_cliente}`,
+        );
+
+        const detalle = respuesta.data;
+
+        if (!detalle) {
+          throw new Error("Cliente no encontrado");
+        }
+
+        (document.getElementById("formModo") as HTMLInputElement).value = "editar";
+        (document.getElementById("editIdCliente") as HTMLInputElement).value =
+          String(detalle.id_cliente);
+        (document.getElementById("modalTitulo") as HTMLElement).textContent =
+          "Editar cliente";
+        (document.getElementById("btnGuardar") as HTMLButtonElement).textContent =
+          "Guardar cambios";
+
+        (document.getElementById("editNombre") as HTMLInputElement).value =
+          detalle.nombre_completo;
+        (document.getElementById("editTipoDocumento") as HTMLSelectElement).value =
+          detalle.tipo_documento;
+        (document.getElementById("editDocumento") as HTMLInputElement).value =
+          detalle.num_documento;
+        (document.getElementById("editTelefono") as HTMLInputElement).value =
+          detalle.telefono;
+        (document.getElementById("editCorreo") as HTMLInputElement).value =
+          detalle.correo;
+        (document.getElementById("editDireccion") as HTMLInputElement).value =
+          detalle.direccion ?? "";
+        (document.getElementById("grupoContrasena") as HTMLElement).style.display = "block";
+        const inputContrasena = document.getElementById(
+  "editContrasena",
+        ) as HTMLInputElement;
+        inputContrasena.required = true;
+        inputContrasena.value = "";
+
+        modal.showModal();
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "No se pudo consultar el cliente.",
+        );
+      }
+    }
+
+    async function desactivarCliente(cliente: ClienteRow) {
+      const confirmado = window.confirm(
+        `Deseas desactivar a "${cliente.nombre_completo}"?`,
+      );
+
+      if (!confirmado) return;
+
+      try {
+        const respuesta = await apiFetch(`/api/clientes/${cliente.id_cliente}`, {
+          method: "DELETE",
+        });
+
+        alert(respuesta.message ?? "Cliente desactivado correctamente.");
+        cargarClientes();
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "No se pudo desactivar el cliente.",
+        );
+      }
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+
+      const modo = (document.getElementById("formModo") as HTMLInputElement).value;
+      const id = (document.getElementById("editIdCliente") as HTMLInputElement).value;
+      const botonGuardar = document.getElementById("btnGuardar") as HTMLButtonElement;
+
+      const body: Record<string, string> = {
+  nombre_completo: (
+    document.getElementById("editNombre") as HTMLInputElement
+  ).value.trim(),
+
+  tipo_documento: (
+    document.getElementById("editTipoDocumento") as HTMLSelectElement
+  ).value,
+
+  num_documento: (
+    document.getElementById("editDocumento") as HTMLInputElement
+  ).value.trim(),
+
+  telefono: (
+    document.getElementById("editTelefono") as HTMLInputElement
+  ).value.trim(),
+
+  correo: (
+    document.getElementById("editCorreo") as HTMLInputElement
+  ).value.trim(),
+
+  direccion: (
+    document.getElementById("editDireccion") as HTMLInputElement
+  ).value.trim(),
+};
+
+if (modo === "crear") {
+  body.contrasena = (
+    document.getElementById("editContrasena") as HTMLInputElement
+  ).value;
+}
+
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Guardando...";
+
+      try {
+        const respuesta = await apiFetch(
+          modo === "crear" ? "/api/clientes" : `/api/clientes/${id}`,
+          {
+            method: modo === "crear" ? "POST" : "PUT",
+            body: JSON.stringify(body),
+          },
+        );
+
+        modal.close();
+        alert(respuesta.message ?? "Cliente guardado correctamente.");
+        cargarClientes();
+      } catch (error) {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar el cliente.",
+        );
+      } finally {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent =
+          modo === "crear" ? "Crear cliente" : "Guardar cambios";
+      }
+    });
+
+    (document.getElementById("btnCrear") as HTMLButtonElement).addEventListener(
+      "click",
+      abrirModalCrear,
+    );
+
+    (document.getElementById("btnRecargar") as HTMLButtonElement).addEventListener(
+      "click",
+      cargarClientes,
+    );
+
+    (document.getElementById("btnCerrarModal") as HTMLButtonElement).addEventListener(
+      "click",
+      () => modal.close(),
+    );
+
+    (document.getElementById("btnCancelarModal") as HTMLButtonElement).addEventListener(
+      "click",
+      () => modal.close(),
+    );
+
+    const buscador = document.getElementById("quickSearch") as HTMLInputElement;
+
+    buscador.addEventListener("input", () => {
+      gridApi?.setGridOption("quickFilterText", buscador.value);
+    });
+  </script>
+</AdminLayout>
