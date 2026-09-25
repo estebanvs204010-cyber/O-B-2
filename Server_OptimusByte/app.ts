@@ -3,8 +3,7 @@ import { AuthRouter } from "./Routes/authRoutes.ts";
 import { ClienteRouter } from "./Routes/clienteRoutes.ts";
 import { UsuarioRouter } from "./Routes/usuarioRoutes.ts";
 import { VehiculoRouter } from "./Routes/vehiculoRoutes.ts";
-import { OrdenRouter } from "./Routes/ordenRoutes.ts";
-import { SolicitudRepuestoRouter } from "./Routes/solicitudRepuestoRoutes.ts";
+import { ClientePortalRouter } from "./Routes/clientePortalRoutes.ts";
 
 const app = new Application();
 
@@ -14,7 +13,13 @@ app.use(
   }),
 );
 
-const routes = [AuthRouter , ClienteRouter, UsuarioRouter, VehiculoRouter, OrdenRouter, SolicitudRepuestoRouter];
+const routes = [
+  AuthRouter,
+  ClienteRouter,
+  ClientePortalRouter,
+  UsuarioRouter,
+  VehiculoRouter,
+];
 
 
 routes.forEach((router) => {
