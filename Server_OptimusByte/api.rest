@@ -4,8 +4,8 @@ POST http://localhost:8002/api/auth/login
 Content-Type: application/json
 
 {
-  "correo": "andresffonseca5@gmail.com",
-  "contrasena": "NuevaClave123"
+  "correo": "admin@misena.edu.co",
+  "contrasena": "hola1234"
 }
 
 ### Login (dale nombre con @name)
