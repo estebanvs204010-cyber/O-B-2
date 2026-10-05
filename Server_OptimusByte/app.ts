@@ -5,6 +5,7 @@ import { UsuarioRouter } from "./Routes/usuarioRoutes.ts";
 import { VehiculoRouter } from "./Routes/vehiculoRoutes.ts";
 import { OrdenRouter } from "./Routes/ordenRoutes.ts";
 import { SolicitudRepuestoRouter } from "./Routes/solicitudRepuestoRoutes.ts";
+import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
 
 const app = new Application();
 
@@ -14,8 +15,15 @@ app.use(
   }),
 );
 
-const routes = [AuthRouter , ClienteRouter, UsuarioRouter, VehiculoRouter, OrdenRouter, SolicitudRepuestoRouter];
-
+const routes = [
+  AuthRouter,
+  ClienteRouter,
+  UsuarioRouter,
+  VehiculoRouter,
+  OrdenRouter,
+  SolicitudRepuestoRouter,
+  MecanicoPanelRouter,
+];
 
 routes.forEach((router) => {
   app.use(router.routes());
@@ -24,5 +32,7 @@ routes.forEach((router) => {
 
 const PORT = 8002;
 
-console.log(`Servidor OptimusByte sistema corriendo en http://localhost:${PORT}`);
+console.log(
+  `Servidor OptimusByte sistema corriendo en http://localhost:${PORT}`,
+);
 await app.listen({ port: PORT });

@@ -4,7 +4,7 @@ import { getRolSSR } from "../utils/auth";
 
 interface Props {
   title: string;
-  active: "agenda" | "vehiculos" | "solicitudes";
+  active: "agenda" | "vehiculos" | "solicitudes" | "perfil";
 }
 const { title, active } = Astro.props;
 const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
@@ -24,11 +24,13 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
         <div class="sidebar-brand">🔧 Optimus<span class="accent">Byte</span></div>
 
         <div class="sidebar-section">Mi trabajo</div>
-        <a href="/mecanico" class:list={["sidebar-link", { active: active === "agenda" }]}>📋 Agenda / Órdenes</a>
-        <a href="/mecanico/vehiculos" class:list={["sidebar-link", { active: active === "vehiculos" }]}>🚗 Vehículos</a>
-        <a href="/mecanico/solicitudes" class:list={["sidebar-link", { active: active === "solicitudes" }]}>🔩 Solicitudes de repuesto</a>
+        <a href="/mecanico" class:list={["sidebar-link", { active: active === "agenda" }]}>Inicio / Órdenes</a>
+        <a href="/mecanico/vehiculos" class:list={["sidebar-link", { active: active === "vehiculos" }]}>Vehículos</a>
+        <a href="/mecanico/solicitudes" class:list={["sidebar-link", { active: active === "solicitudes" }]}>Solicitudes de repuesto</a>
+        <div class="sidebar-section">Cuenta</div>
+        <a href="/mecanico/perfil" class:list={["sidebar-link", { active: active === "perfil" }]}>Mi perfil</a>
 
-                <div class="sidebar-user">
+        <div class="sidebar-user">
           <div class="avatar">{rol.slice(0, 1)}</div>
           <div style="flex:1; min-width:0;">
             <div style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -44,7 +46,7 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
       </main>
     </div>
 
-        <script>
+    <script>
       document.getElementById("ob-logout")?.addEventListener("click", async () => {
         try {
           await fetch("/api/auth/logout", { method: "POST" });
