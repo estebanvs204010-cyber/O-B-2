@@ -10,24 +10,44 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   </section>
 
   <section class="admin-summary">
-    <article>
-      <span>Ordenes activas</span>
-      <strong>--</strong>
-    </article>
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#dce8ff;color:#1d4ed8">
+      <i class="bi bi-clipboard2-check"></i>
+    </div>
+    <div>
+      <span>Órdenes activas</span>
+      <strong id="cnt-ordenes">--</strong>
+    </div>
+  </article>
 
-    <article>
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#d9f2e2;color:#14804a">
+      <i class="bi bi-people"></i>
+    </div>
+    <div>
       <span>Clientes registrados</span>
-      <strong>--</strong>
-    </article>
+      <strong id="cnt-clientes">--</strong>
+    </div>
+  </article>
 
-    <article>
-      <span>Vehiculos registrados</span>
-      <strong>--</strong>
-    </article>
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#fdf1d6;color:#92650a">
+      <i class="bi bi-car-front"></i>
+    </div>
+    <div>
+      <span>Vehículos registrados</span>
+      <strong id="cnt-vehiculos">--</strong>
+    </div>
+  </article>
 
-    <article>
-      <span>Solicitudes pendientes</span>
-      <strong>--</strong>
-    </article>
-  </section>
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#fde3d6;color:#b3441c">
+      <i class="bi bi-box-seam"></i>
+    </div>
+    <div>
+      <span>Stock crítico</span>
+      <strong id="cnt-stock">--</strong>
+    </div>
+  </article>
+</section>
 </AdminLayout>
