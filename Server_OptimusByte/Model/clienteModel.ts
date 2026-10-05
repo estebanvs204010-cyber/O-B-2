@@ -17,6 +17,7 @@ interface DatosClienteSinCuenta {
     num_documento: string;
     telefono: string;
     correo: string;
+    contrasena: string;
     direccion?: string;
 }
 
@@ -28,6 +29,8 @@ interface DatosEdicionCliente {
     correo: string;
     direccion?: string;
 }
+
+
 
 export class Cliente {
     // ---------- Vía 1: el cliente se auto-registra (crea usuario + cliente juntos) ----------
@@ -94,30 +97,103 @@ export class Cliente {
 
     // ---------- Vía 2: el Admin registra al cliente, sin crearle una cuenta ----------
     public async RegistrarSinCuenta(datos: DatosClienteSinCuenta) {
-        const [documentoExistente] = await conexion.query(
-            `SELECT id_cliente FROM clientes WHERE num_documento = ?`,
-            [datos.num_documento],
-        );
-        if (documentoExistente) {
-            return { success: false, message: "Ese número de documento ya está registrado" };
-        }
+    const [correoUsuarioExistente] = await conexion.query(
+        `SELECT id_usuario FROM usuarios WHERE correo = ?`,
+        [datos.correo],
+    );
 
-        // Aquí NO hace falta transacción: es una sola tabla, una sola inserción.
-        await conexion.execute(
-            `INSERT INTO clientes (nombre_completo, tipo_documento, num_documento, telefono, correo, direccion)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-                datos.nombre_completo,
-                datos.tipo_documento,
-                datos.num_documento,
-                datos.telefono,
-                datos.correo,
-                datos.direccion ?? null,
-            ],
-        );
-
-        return { success: true, message: "Cliente registrado correctamente" };
+    if (correoUsuarioExistente) {
+        return {
+            success: false,
+            message: "Ese correo ya tiene una cuenta registrada",
+        };
     }
+
+    const [documentoExistente] = await conexion.query(
+        `SELECT id_cliente FROM clientes WHERE num_documento = ?`,
+        [datos.num_documento],
+    );
+
+    if (documentoExistente) {
+        return {
+            success: false,
+            message: "Ese numero de documento ya esta registrado",
+        };
+    }
+
+    const [rolCliente] = await conexion.query(
+        `SELECT id_rol FROM roles WHERE nombre = 'Cliente'`,
+    );
+
+    if (!rolCliente) {
+        return {
+            success: false,
+            message: "No se encontro el rol Cliente",
+        };
+    }
+
+    const contrasenaHasheada = await hash(datos.contrasena);
+
+    try {
+        await conexion.transaction(async (conn) => {
+            const resultadoUsuario = await conn.execute(
+                `INSERT INTO usuarios (
+                    nombre_completo,
+                    correo,
+                    telefono,
+                    contrasena_hash,
+                    id_rol,
+                    activo
+                )
+                VALUES (?, ?, ?, ?, ?, 1)`,
+                [
+                    datos.nombre_completo,
+                    datos.correo,
+                    datos.telefono,
+                    contrasenaHasheada,
+                    rolCliente.id_rol,
+                ],
+            );
+
+            const idUsuario = resultadoUsuario.lastInsertId;
+
+            await conn.execute(
+                `INSERT INTO clientes (
+                    id_usuario,
+                    nombre_completo,
+                    tipo_documento,
+                    num_documento,
+                    telefono,
+                    correo,
+                    direccion,
+                    activo
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+                [
+                    idUsuario,
+                    datos.nombre_completo,
+                    datos.tipo_documento,
+                    datos.num_documento,
+                    datos.telefono,
+                    datos.correo,
+                    datos.direccion ?? null,
+                ],
+            );
+        });
+
+        return {
+            success: true,
+            message: "Cliente y cuenta de acceso creados correctamente",
+        };
+    } catch (error) {
+        console.error(error);
+
+        return {
+            success: false,
+            message: "No se pudo crear el cliente y su cuenta",
+        };
+    }
+}
 
 
 
