@@ -13,6 +13,13 @@ interface UsuarioAutenticado {
     rol: string;
 }
 
+interface DatosMecanico {
+    nombre_completo: string;
+    correo: string;
+    telefono: string;
+    contrasena: string;
+}
+
 export class Usuario {
     private _correo: string | null;
     private _contrasena: string | null;
@@ -61,5 +68,51 @@ export class Usuario {
             console.error(error);
             return { success: false, message: "Error interno del servidor" };
         }
+    }
+
+        // ---------- Solo Admin: crear cuenta de Mecánico ----------
+    public async CrearMecanico(datos: DatosMecanico): Promise<{ success: boolean; message: string }> {
+        try {
+            const [correoExistente] = await conexion.query(
+                `SELECT id_usuario FROM usuarios WHERE correo = ?`,
+                [datos.correo],
+            );
+            if (correoExistente) {
+                return { success: false, message: "Ese correo ya está registrado" };
+            }
+
+            const [rolMecanico] = await conexion.query(
+                `SELECT id_rol FROM roles WHERE nombre = 'Mecanico'`,
+            );
+            if (!rolMecanico) {
+                return { success: false, message: "No se encontró el rol Mecanico. Contacta al administrador" };
+            }
+
+            const contrasenaHasheada = await hash(datos.contrasena);
+
+            await conexion.execute(
+                `INSERT INTO usuarios (nombre_completo, correo, telefono, contrasena_hash, id_rol)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [datos.nombre_completo, datos.correo, datos.telefono, contrasenaHasheada, rolMecanico.id_rol],
+            );
+
+            return { success: true, message: "Mecánico registrado correctamente" };
+        } catch (error) {
+            console.error(error);
+            return { success: false, message: "Error interno del servidor" };
+        }
+    }
+
+
+        // ---------- Solo Admin: listar Mecánicos ----------
+    public async ListarMecanicos() {
+        const filas = await conexion.query(
+            `SELECT u.id_usuario, u.nombre_completo, u.correo, u.telefono, u.activo, u.fecha_creacion
+             FROM usuarios u
+             INNER JOIN roles r ON r.id_rol = u.id_rol
+             WHERE r.nombre = 'Mecanico'
+             ORDER BY u.fecha_creacion DESC`,
+        );
+        return filas;
     }
 }

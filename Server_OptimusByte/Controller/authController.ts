@@ -7,7 +7,7 @@ import { correoRecuperacionPassword } from "../Helpers/templates.ts";
 
 const FRONTEND_URL = Deno.env.get("FRONTEND_URL") ?? "http://localhost:4321";
 
-// POST /api/auth/login
+// POST /api/auth/login ....
 export const PostLogin = async (ctx: Context) => {
     const { request, response } = ctx;
 

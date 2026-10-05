@@ -1,0 +1,27 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  wide?: boolean;
+}
+const { title, wide = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · OptimusByte</title>
+  </head>
+  <body>
+    <div class="auth-shell">
+      <div class:list={["auth-card", { wide }]}>
+        <div class="auth-brand">Optimus<span class="accent">Byte</span></div>
+        <slot />
+      </div>
+    </div>
+  </body>
+</html>

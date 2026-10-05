@@ -1,0 +1,287 @@
+---
+import MecanicoLayout from "../../layouts/MecanicoLayout.astro";
+---
+
+<MecanicoLayout title="Detalle de orden" active="agenda">
+  <div class="topbar">
+    <div>
+      <h1 id="ob-titulo">Orden</h1>
+      <p><a href="/mecanico" class="btn-outline btn btn-sm" style="text-decoration:none;">← Volver a la agenda</a></p>
+    </div>
+  </div>
+
+  <div id="ob-alert" class="alert alert-error" style="display:none;"></div>
+  <div id="ob-body"><p class="loading">Cargando orden…</p></div>
+
+  <script>
+    import {
+      apiFetch,
+      formatearFecha,
+      formatearFechaHora,
+      claseEstado,
+      ESTADOS_ORDEN,
+    } from "../../lib/api";
+
+    interface Repuesto {
+      id_repuesto: number;
+      nombre: string;
+      referencia: string;
+      cantidad: number;
+      precio_usado: number;
+    }
+    interface HistorialItem {
+      id_orden: number;
+      fecha_apertura: string;
+      descripcion_problema: string;
+      estado: string;
+      tecnico: string | null;
+      total_repuestos: number;
+    }
+    interface DetalleOrden {
+      id_orden: number;
+      id_mecanico: number | null;
+      estado: string;
+      tipo_servicio: string;
+      descripcion_problema: string;
+      diagnostico: string | null;
+      observaciones: string | null;
+      km_ingreso: number;
+      fecha_apertura: string;
+      fecha_cierre: string | null;
+      fecha_entrega_estimada: string | null;
+      placa: string;
+      marca: string;
+      modelo: string;
+      anio: number;
+      color: string | null;
+      km_actuales: number;
+      propietario: string;
+      propietario_telefono: string;
+      propietario_correo: string;
+      repuestos: Repuesto[];
+      historial_vehiculo: HistorialItem[];
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const idOrden = params.get("id");
+
+    const tituloEl = document.getElementById("ob-titulo")!;
+    const alertEl = document.getElementById("ob-alert") as HTMLDivElement;
+    const bodyEl = document.getElementById("ob-body")!;
+
+    function mostrarError(msg: string) {
+      alertEl.textContent = msg;
+      alertEl.style.display = "block";
+    }
+
+    if (!idOrden) {
+      mostrarError("No se especificó la orden a mostrar.");
+    } else {
+      cargar(Number(idOrden));
+    }
+
+    async function cargar(id: number) {
+      try {
+        const resultado = await apiFetch<DetalleOrden>(`/api/mecanico/ordenes/${id}`);
+        const o = resultado.data!;
+        tituloEl.textContent = ` ${o.placa}`;
+        pintar(o);
+      } catch (error) {
+        bodyEl.innerHTML = "";
+        mostrarError(error instanceof Error ? error.message : "No se pudo cargar la orden");
+      }
+    }
+
+    function pintar(o: DetalleOrden) {
+      bodyEl.innerHTML = `
+        <div class="grid-2">
+          <div>
+            <div class="card">
+              <h2>Vehículo y propietario</h2>
+              <div class="field-row">
+                <div>
+                  <h3>Vehículo</h3>
+                  <p><strong>${o.placa}</strong> · ${o.marca} ${o.modelo} ${o.anio}</p>
+                  <p class="sub">Color: ${o.color ?? "—"} · Km actuales: ${o.km_actuales}</p>
+                </div>
+                <div>
+                  <h3>Propietario</h3>
+                  <p><strong>${o.propietario}</strong></p>
+                  <p class="sub">${o.propietario_telefono} · ${o.propietario_correo}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2>Servicio</h2>
+              <p><span class="badge ${claseEstado(o.estado)}">${o.estado}</span> &nbsp; <span class="sub">${o.tipo_servicio}</span></p>
+              <p><strong>Problema reportado:</strong> ${o.descripcion_problema}</p>
+              <p><strong>Diagnóstico:</strong> ${o.diagnostico ?? "Aún sin diagnóstico"}</p>
+              <p><strong>Observaciones:</strong> ${o.observaciones ?? "—"}</p>
+              <p class="sub">Km al ingreso: ${o.km_ingreso}</p>
+              <div class="field-row" style="margin-top:10px;">
+                <div><h3>Ingreso</h3><p>${formatearFechaHora(o.fecha_apertura)}</p></div>
+                <div><h3>Entrega estimada</h3><p>${formatearFecha(o.fecha_entrega_estimada)}</p></div>
+              </div>
+              ${o.fecha_cierre ? `<p class="sub">Cerrada el ${formatearFechaHora(o.fecha_cierre)}</p>` : ""}
+            </div>
+
+            <div class="card">
+              <h2>Repuestos usados</h2>
+              ${
+                o.repuestos.length === 0
+                  ? `<p class="empty">Aún no se han registrado repuestos en esta orden.</p>`
+                  : `<table class="list-table">
+                      <thead><tr><th>Repuesto</th><th>Referencia</th><th>Cant.</th><th>Precio</th></tr></thead>
+                      <tbody>
+                        ${o.repuestos
+                          .map(
+                            (r) => `<tr><td>${r.nombre}</td><td>${r.referencia}</td><td>${r.cantidad}</td><td>$${Number(r.precio_usado).toLocaleString("es-CO")}</td></tr>`,
+                          )
+                          .join("")}
+                      </tbody>
+                    </table>`
+              }
+            </div>
+
+            <div class="card">
+              <h2>Historial del vehículo</h2>
+              ${
+                o.historial_vehiculo.length === 0
+                  ? `<p class="empty">Esta es la primera orden registrada para este vehículo.</p>`
+                  : `<table class="list-table">
+                      <thead><tr><th>Fecha</th><th>Problema</th><th>Estado</th><th>Técnico</th></tr></thead>
+                      <tbody>
+                        ${o.historial_vehiculo
+                          .map(
+                            (h) => `<tr><td>${formatearFecha(h.fecha_apertura)}</td><td>${h.descripcion_problema}</td><td><span class="badge ${claseEstado(h.estado)}">${h.estado}</span></td><td>${h.tecnico ?? "—"}</td></tr>`,
+                          )
+                          .join("")}
+                      </tbody>
+                    </table>`
+              }
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <h2>Cambiar estado</h2>
+              <form id="ob-form-estado">
+                <div class="field">
+                  <label for="estado">Nuevo estado</label>
+                  <select id="estado" required>
+                    ${ESTADOS_ORDEN.map((e) => `<option value="${e}" ${e === o.estado ? "selected" : ""}>${e}</option>`).join("")}
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="observacion">Observación (opcional)</label>
+                  <textarea id="observacion" rows="2" placeholder="Detalle del cambio…"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Actualizar estado</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <h2>Tiempo estimado de entrega</h2>
+              <form id="ob-form-tiempo">
+                <div class="field">
+                  <label for="fecha_estimada">Fecha y hora estimada</label>
+                  <input id="fecha_estimada" type="datetime-local" required
+                    value="${o.fecha_entrega_estimada ? new Date(o.fecha_entrega_estimada).toISOString().slice(0, 16) : ""}" />
+                </div>
+                <button type="submit" class="btn btn-outline btn-block">Guardar fecha</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <h2>Solicitar repuesto</h2>
+              <form id="ob-form-repuesto">
+                <div class="field">
+                  <label for="nombre_repuesto">Repuesto</label>
+                  <input id="nombre_repuesto" type="text" required placeholder="Ej: Pastillas de freno" />
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="cantidad">Cantidad</label>
+                    <input id="cantidad" type="number" min="1" value="1" required />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="motivo">Motivo (opcional)</label>
+                  <textarea id="motivo" rows="2" placeholder="¿Para qué se necesita?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-outline btn-block">Enviar solicitud</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      `;
+
+      conectarAcciones(o.id_orden);
+    }
+
+    function conectarAcciones(idOrden: number) {
+      const feedback = (form: HTMLFormElement, msg: string, ok: boolean) => {
+        let box = form.querySelector<HTMLDivElement>(".form-feedback");
+        if (!box) {
+          box = document.createElement("div");
+          box.className = "form-feedback";
+          form.prepend(box);
+        }
+        box.className = `form-feedback alert ${ok ? "alert-ok" : "alert-error"}`;
+        box.textContent = msg;
+        box.style.display = "block";
+      };
+
+      document.getElementById("ob-form-estado")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.currentTarget as HTMLFormElement;
+        const estado = (document.getElementById("estado") as HTMLSelectElement).value;
+        const observacion = (document.getElementById("observacion") as HTMLTextAreaElement).value.trim();
+        try {
+          const r = await apiFetch(`/api/mecanico/ordenes/${idOrden}/estado`, {
+            method: "PUT",
+            body: JSON.stringify({ estado, observacion: observacion || undefined }),
+          });
+          feedback(form, r.message ?? "Estado actualizado", !!r.success);
+          if (r.success) setTimeout(() => cargar(idOrden), 600);
+        } catch (error) {
+          feedback(form, error instanceof Error ? error.message : "No se pudo actualizar", false);
+        }
+      });
+
+      document.getElementById("ob-form-tiempo")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.currentTarget as HTMLFormElement;
+        const fecha = (document.getElementById("fecha_estimada") as HTMLInputElement).value;
+        try {
+          const r = await apiFetch(`/api/mecanico/ordenes/${idOrden}/tiempo-estimado`, {
+            method: "PUT",
+            body: JSON.stringify({ fecha_entrega_estimada: fecha }),
+          });
+          feedback(form, r.message ?? "Fecha actualizada", !!r.success);
+        } catch (error) {
+          feedback(form, error instanceof Error ? error.message : "No se pudo actualizar", false);
+        }
+      });
+
+      document.getElementById("ob-form-repuesto")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const form = e.currentTarget as HTMLFormElement;
+        const nombre_repuesto = (document.getElementById("nombre_repuesto") as HTMLInputElement).value.trim();
+        const cantidad = Number((document.getElementById("cantidad") as HTMLInputElement).value);
+        const motivo = (document.getElementById("motivo") as HTMLTextAreaElement).value.trim();
+        try {
+          const r = await apiFetch(`/api/mecanico/solicitudes-repuesto`, {
+            method: "POST",
+            body: JSON.stringify({ id_orden: idOrden, nombre_repuesto, cantidad, motivo: motivo || undefined }),
+          });
+          feedback(form, r.message ?? "Solicitud enviada", !!r.success);
+          if (r.success) form.reset();
+        } catch (error) {
+          feedback(form, error instanceof Error ? error.message : "No se pudo enviar la solicitud", false);
+        }
+      });
+    }
+  </script>
+</MecanicoLayout>

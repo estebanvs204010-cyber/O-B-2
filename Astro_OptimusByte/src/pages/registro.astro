@@ -1,0 +1,134 @@
+---
+import AuthLayout from "../layouts/AuthLayout.astro";
+---
+
+<AuthLayout title="Crear cuenta" wide>
+  <p class="auth-sub">Crea tu cuenta de cliente para agendar servicios</p>
+
+  <div id="ob-alert" class="alert alert-error" style="display:none;"></div>
+  <div id="ob-ok" class="alert alert-ok" style="display:none;"></div>
+
+  <form id="ob-registro-form">
+    <div class="field">
+      <label for="nombre_completo">Nombre completo</label>
+      <input id="nombre_completo" name="nombre_completo" type="text" required />
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="tipo_documento">Tipo de documento</label>
+        <select id="tipo_documento" name="tipo_documento" required>
+          <option value="CC">Cédula de ciudadanía</option>
+          <option value="CE">Cédula de extranjería</option>
+          <option value="TI">Tarjeta de identidad</option>
+          <option value="PA">Pasaporte</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="num_documento">Número de documento</label>
+        <input id="num_documento" name="num_documento" type="text" required />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="telefono">Teléfono</label>
+        <input id="telefono" name="telefono" type="tel" required />
+      </div>
+      <div class="field">
+        <label for="correo">Correo</label>
+        <input id="correo" name="correo" type="email" required />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="direccion">Dirección (opcional)</label>
+      <input id="direccion" name="direccion" type="text" />
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="contrasena">Contraseña</label>
+        <input id="contrasena" name="contrasena" type="password" minlength="8" required />
+      </div>
+      <div class="field">
+        <label for="confirmar">Confirmar contraseña</label>
+        <input id="confirmar" name="confirmar" type="password" minlength="8" required />
+      </div>
+    </div>
+
+    <button id="ob-submit" type="submit" class="btn btn-primary btn-block">Crear cuenta</button>
+  </form>
+
+  <p class="auth-footer">
+    ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+  </p>
+
+  <script>
+    import { apiFetch } from "../lib/api";
+
+    const form = document.getElementById("ob-registro-form") as HTMLFormElement;
+    const alertBox = document.getElementById("ob-alert") as HTMLDivElement;
+    const okBox = document.getElementById("ob-ok") as HTMLDivElement;
+    const submitBtn = document.getElementById("ob-submit") as HTMLButtonElement;
+
+    function mostrarError(msg: string) {
+      okBox.style.display = "none";
+      alertBox.textContent = msg;
+      alertBox.style.display = "block";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.style.display = "none";
+      okBox.style.display = "none";
+
+      const contrasena = (document.getElementById("contrasena") as HTMLInputElement).value;
+      const confirmar = (document.getElementById("confirmar") as HTMLInputElement).value;
+
+      if (contrasena !== confirmar) {
+        mostrarError("Las contraseñas no coinciden");
+        return;
+      }
+      if (contrasena.length < 8) {
+        mostrarError("La contraseña debe tener al menos 8 caracteres");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creando cuenta…";
+
+      const body = {
+        nombre_completo: (document.getElementById("nombre_completo") as HTMLInputElement).value.trim(),
+        tipo_documento: (document.getElementById("tipo_documento") as HTMLSelectElement).value,
+        num_documento: (document.getElementById("num_documento") as HTMLInputElement).value.trim(),
+        telefono: (document.getElementById("telefono") as HTMLInputElement).value.trim(),
+        correo: (document.getElementById("correo") as HTMLInputElement).value.trim(),
+        direccion: (document.getElementById("direccion") as HTMLInputElement).value.trim() || undefined,
+        contrasena,
+      };
+
+      try {
+        const resultado = await apiFetch("/api/auth/registro-cliente", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+
+        if (!resultado.success) {
+          mostrarError(resultado.message ?? "No se pudo crear la cuenta");
+          return;
+        }
+
+        okBox.textContent = "Cuenta creada correctamente. Redirigiendo al inicio de sesión…";
+        okBox.style.display = "block";
+        form.reset();
+        setTimeout(() => (window.location.href = "/login"), 1500);
+      } catch (error) {
+        mostrarError(error instanceof Error ? error.message : "No se pudo crear la cuenta");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Crear cuenta";
+      }
+    });
+  </script>
+</AuthLayout>
