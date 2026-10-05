@@ -24,3 +24,83 @@ Content-Type: application/json
   "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
   "nuevaContrasena": "NuevaClave123"
 }
+
+### ===== NOTIFICACIONES =====
+
+### Ver mis notificaciones
+GET http://localhost:8002/api/notificaciones
+Authorization: Bearer TU_TOKEN
+
+### Contador para la campana
+GET http://localhost:8002/api/notificaciones/contador
+Authorization: Bearer TU_TOKEN
+
+### Marcar una notificacion como leida
+PATCH http://localhost:8002/api/notificaciones/1/leer
+Authorization: Bearer TU_TOKEN
+
+
+### ===== CITAS =====
+
+### Ver disponibilidad de un dia
+GET http://localhost:8002/api/citas/disponibilidad?fecha=2026-09-28
+Authorization: Bearer TU_TOKEN
+
+### Cliente crea una cita manual
+POST http://localhost:8002/api/citas
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+{
+  "id_vehiculo": 1,
+  "fecha": "2026-09-28",
+  "hora": "08:00",
+  "motivo": "Ruido raro al frenar"
+}
+
+### Cliente elige horario para una cita "Sugerida" (nacida de una alerta de mantenimiento)
+PATCH http://localhost:8002/api/citas/2/elegir-horario
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+{
+  "fecha": "2026-09-29",
+  "hora": "09:00"
+}
+
+### Cliente ve sus propias citas
+GET http://localhost:8002/api/citas/mias
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+### Admin lista todas las citas pendientes
+GET http://localhost:8002/api/citas?estado=Pendiente
+Authorization: Bearer TU_TOKEN_ADMIN
+
+### Admin confirma una cita
+PATCH http://localhost:8002/api/citas/1/confirmar
+Authorization: Bearer TU_TOKEN_ADMIN
+
+### Admin rechaza una cita
+PATCH http://localhost:8002/api/citas/1/rechazar
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_ADMIN
+
+{
+  "motivo": "No tenemos repuesto disponible ese dia"
+}
+
+
+### ===== MANTENIMIENTO =====
+
+### Actualizar km de un vehiculo (dispara la verificacion automatica)
+PATCH http://localhost:8002/api/mantenimiento/vehiculos/1/km
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_ADMIN
+
+{
+  "km_nuevo": 15200
+}
+
+### Ver mantenimientos de un vehiculo
+GET http://localhost:8002/api/mantenimiento/vehiculos/1
+Authorization: Bearer TU_TOKEN_ADMIN
