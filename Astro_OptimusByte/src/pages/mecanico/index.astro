@@ -1,0 +1,119 @@
+---
+import MecanicoLayout from "../../layouts/MecanicoLayout.astro";
+---
+
+<MecanicoLayout title="Agenda" active="agenda">
+  <div class="topbar">
+    <div>
+      <h1>Mis órdenes</h1>
+      <p>Órdenes de trabajo asignadas a ti</p>
+    </div>
+  </div>
+
+  <div class="tabs" id="ob-tabs"></div>
+
+  <div id="ob-content">
+    <p class="loading">Cargando órdenes…</p>
+  </div>
+
+  <script>
+    import { apiFetch, formatearFecha, claseEstado, ESTADOS_ORDEN } from "../../lib/api";
+
+    interface OrdenAgenda {
+      id_orden: number;
+      estado: string;
+      tipo_servicio: string;
+      descripcion_problema: string;
+      fecha_apertura: string;
+      fecha_entrega_estimada: string | null;
+      placa: string;
+      marca: string;
+      modelo: string;
+      anio: number;
+      propietario: string;
+      propietario_telefono: string;
+    }
+
+    const tabsEl = document.getElementById("ob-tabs")!;
+    const contentEl = document.getElementById("ob-content")!;
+
+    let ordenes: OrdenAgenda[] = [];
+    let filtroActivo = "Todas";
+
+    function pintarTabs() {
+      const filtros = ["Todas", ...ESTADOS_ORDEN];
+      tabsEl.innerHTML = filtros
+        .map((f) => {
+          const count = f === "Todas" ? ordenes.length : ordenes.filter((o) => o.estado === f).length;
+          const activeClass = f === filtroActivo ? "active" : "";
+          return `<button class="tab ${activeClass}" data-filtro="${f}">${f} <span class="count">${count}</span></button>`;
+        })
+        .join("");
+
+      tabsEl.querySelectorAll<HTMLButtonElement>(".tab").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          filtroActivo = btn.dataset.filtro!;
+          pintarTabs();
+          pintarLista();
+        });
+      });
+    }
+
+    function pintarLista() {
+      const lista = filtroActivo === "Todas" ? ordenes : ordenes.filter((o) => o.estado === filtroActivo);
+
+      if (lista.length === 0) {
+        contentEl.innerHTML = `<p class="empty">No tienes órdenes en este estado.</p>`;
+        return;
+      }
+
+      contentEl.innerHTML = `
+        <div class="orden-list">
+          ${lista
+            .map(
+              (o) => `
+            <a class="orden-row" href="/mecanico/orden?id=${o.id_orden}">
+              <div>
+                <div class="placa">${o.placa} · ${o.marca} ${o.modelo} ${o.anio}</div>
+                <div class="sub">${o.tipo_servicio}</div>
+              </div>
+              <div>
+                <div>${o.propietario}</div>
+                <div class="sub">${o.propietario_telefono}</div>
+              </div>
+              <div>
+                <div class="sub">Ingreso</div>
+                <div>${formatearFecha(o.fecha_apertura)}</div>
+              </div>
+              <div>
+                <div class="sub">Entrega estimada</div>
+                <div>${formatearFecha(o.fecha_entrega_estimada)}</div>
+              </div>
+              <div style="text-align:right;">
+                <span class="badge ${claseEstado(o.estado)}">${o.estado}</span>
+                <div class="ver">Ver detalle →</div>
+              </div>
+            </a>
+          `,
+            )
+            .join("")}
+        </div>
+      `;
+    }
+
+    async function cargar() {
+      try {
+        const resultado = await apiFetch<OrdenAgenda[]>("/api/mecanico/ordenes");
+        ordenes = resultado.data ?? [];
+        pintarTabs();
+        pintarLista();
+      } catch (error) {
+        contentEl.innerHTML = `<div class="alert alert-error">${
+          error instanceof Error ? error.message : "No se pudieron cargar las órdenes"
+        }</div>`;
+      }
+    }
+
+    cargar();
+  </script>
+</MecanicoLayout>

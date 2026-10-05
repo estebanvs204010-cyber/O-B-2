@@ -42,7 +42,14 @@ export const PostCrearClienteAdmin = async (ctx: Context) => {
     try {
         const body = await request.body.json();
 
-        const camposObligatorios = ["nombre_completo", "tipo_documento", "num_documento", "telefono", "correo"];
+        const camposObligatorios = [
+    "nombre_completo",
+    "tipo_documento",
+    "num_documento",
+    "telefono",
+    "correo",
+    "contrasena",
+];
         for (const campo of camposObligatorios) {
             if (!body[campo]) {
                 response.status = 400;
@@ -50,6 +57,15 @@ export const PostCrearClienteAdmin = async (ctx: Context) => {
                 return;
             }
         }
+
+        if (body.contrasena.length < 8) {
+    response.status = 400;
+    response.body = {
+        success: false,
+        message: "La contrasena debe tener al menos 8 caracteres",
+    };
+    return;
+}
 
         const objCliente = new Cliente();
         const resultado = await objCliente.RegistrarSinCuenta(body);

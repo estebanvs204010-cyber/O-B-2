@@ -1,0 +1,53 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Dashboard" active="dashboard">
+  <section class="admin-welcome">
+    <p>Resumen operativo</p>
+    <h2>Todo bajo control</h2>
+    <span>Consulta el estado actual del taller.</span>
+  </section>
+
+  <section class="admin-summary">
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#dce8ff;color:#1d4ed8">
+      <i class="bi bi-clipboard2-check"></i>
+    </div>
+    <div>
+      <span>Órdenes activas</span>
+      <strong id="cnt-ordenes">--</strong>
+    </div>
+  </article>
+
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#d9f2e2;color:#14804a">
+      <i class="bi bi-people"></i>
+    </div>
+    <div>
+      <span>Clientes registrados</span>
+      <strong id="cnt-clientes">--</strong>
+    </div>
+  </article>
+
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#fdf1d6;color:#92650a">
+      <i class="bi bi-car-front"></i>
+    </div>
+    <div>
+      <span>Vehículos registrados</span>
+      <strong id="cnt-vehiculos">--</strong>
+    </div>
+  </article>
+
+  <article class="summary-card">
+    <div class="summary-icon" style="background:#fde3d6;color:#b3441c">
+      <i class="bi bi-box-seam"></i>
+    </div>
+    <div>
+      <span>Stock crítico</span>
+      <strong id="cnt-stock">--</strong>
+    </div>
+  </article>
+</section>
+</AdminLayout>
