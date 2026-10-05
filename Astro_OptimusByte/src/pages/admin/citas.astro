@@ -1,0 +1,271 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Citas" active="citas">
+  <section class="admin-page-header">
+    <div>
+      <p class="eyebrow">Agenda del taller</p>
+      <h2>Citas</h2>
+      <span>Confirma o rechaza las citas que piden los clientes.</span>
+    </div>
+
+    <div class="admin-page-actions">
+      <button id="btnRecargarCitas" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+    </div>
+  </section>
+
+  <section class="tabs" id="tabsEstado">
+    <span class="tab active" data-estado="">Todas</span>
+    <span class="tab" data-estado="Pendiente">Pendientes</span>
+    <span class="tab" data-estado="Sugerida">Sugeridas</span>
+    <span class="tab" data-estado="Confirmada">Confirmadas</span>
+    <span class="tab" data-estado="Rechazada">Rechazadas</span>
+    <span class="tab" data-estado="Completada">Completadas</span>
+    <span class="tab" data-estado="Cancelada">Canceladas</span>
+  </section>
+
+  <section class="admin-panel citas-grid-panel">
+    <div id="gridCitas" class="mecanicos-grid"></div>
+  </section>
+
+  <dialog id="modalRechazo" class="mecanico-dialog">
+    <form id="formRechazo" class="mecanico-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Responder al cliente</p>
+          <h2>Rechazar cita</h2>
+        </div>
+        <button id="btnCerrarModalRechazo" class="modal-close" type="button">&#10005;</button>
+      </div>
+
+      <input id="rechazoIdCita" type="hidden" />
+
+      <div class="field">
+        <label for="rechazoMotivo">Motivo (el cliente lo verá por correo)</label>
+        <textarea id="rechazoMotivo" rows="3" required></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnCancelarRechazo" class="btn btn-outline" type="button">Cancelar</button>
+        <button id="btnConfirmarRechazo" class="btn btn-primary" type="submit">Rechazar cita</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import {
+      createGrid,
+      ModuleRegistry,
+      AllCommunityModule,
+      themeQuartz,
+    } from "ag-grid-community";
+
+    import type { GridApi, GridOptions, ICellRendererParams } from "ag-grid-community";
+    import { apiFetch, formatearFechaHora } from "../../lib/api";
+
+    ModuleRegistry.registerModules([AllCommunityModule]);
+
+    interface CitaRow {
+      id_cita: number;
+      nombre_completo: string;
+      placa: string;
+      marca: string;
+      modelo: string;
+      fecha_hora: string | null;
+      motivo: string | null;
+      estado: string;
+      origen: string;
+    }
+
+    const CLASE_ESTADO: Record<string, string> = {
+      Sugerida: "badge-espera",
+      Pendiente: "badge-pendiente",
+      Confirmada: "badge-proceso",
+      Rechazada: "badge-cancelado",
+      Cancelada: "badge-cancelado",
+      Completada: "badge-listo",
+    };
+
+    const temaOptimus = themeQuartz.withParams({
+      accentColor: "#1e6dff",
+      backgroundColor: "#ffffff",
+      foregroundColor: "#102a50",
+      borderColor: "#e2e8f0",
+      borderRadius: 8,
+      wrapperBorderRadius: 8,
+      headerFontWeight: 700,
+    });
+
+    let gridApi: GridApi<CitaRow> | undefined;
+    let estadoActivo = "";
+
+    const modalRechazo = document.getElementById("modalRechazo") as HTMLDialogElement;
+    const formRechazo = document.getElementById("formRechazo") as HTMLFormElement;
+
+    function estadoCellRenderer(params: ICellRendererParams<CitaRow>) {
+      const span = document.createElement("span");
+      const estado = params.data?.estado ?? "Pendiente";
+      span.className = `badge ${CLASE_ESTADO[estado] ?? "badge-pendiente"}`;
+      span.textContent = estado;
+      return span;
+    }
+
+    function fechaCellRenderer(params: ICellRendererParams<CitaRow>) {
+      const span = document.createElement("span");
+      span.textContent = params.data?.fecha_hora
+        ? formatearFechaHora(params.data.fecha_hora)
+        : "Sin horario (cliente debe elegir)";
+      return span;
+    }
+
+    function accionesCellRenderer(params: ICellRendererParams<CitaRow>) {
+      const contenedor = document.createElement("div");
+      contenedor.className = "grid-actions";
+      const cita = params.data!;
+
+      if (cita.estado === "Pendiente") {
+        const confirmar = document.createElement("button");
+        confirmar.className = "grid-action-button activate";
+        confirmar.type = "button";
+        confirmar.textContent = "Confirmar";
+        confirmar.addEventListener("click", () => confirmarCita(cita));
+
+        const rechazar = document.createElement("button");
+        rechazar.className = "grid-action-button delete";
+        rechazar.type = "button";
+        rechazar.textContent = "Rechazar";
+        rechazar.addEventListener("click", () => abrirModalRechazo(cita));
+
+        contenedor.append(confirmar, rechazar);
+      } else if (cita.estado === "Confirmada") {
+        const completar = document.createElement("button");
+        completar.className = "grid-action-button edit";
+        completar.type = "button";
+        completar.textContent = "Marcar completada";
+        completar.addEventListener("click", () => completarCita(cita));
+
+        contenedor.append(completar);
+      } else {
+        contenedor.textContent = "—";
+      }
+
+      return contenedor;
+    }
+
+    const gridOptions: GridOptions<CitaRow> = {
+      theme: temaOptimus,
+      columnDefs: [
+        { field: "nombre_completo", headerName: "Cliente", flex: 1.4, filter: true, floatingFilter: true },
+        {
+          headerName: "Vehículo",
+          flex: 1.2,
+          valueGetter: (p) => `${p.data?.placa ?? ""} · ${p.data?.marca ?? ""} ${p.data?.modelo ?? ""}`,
+          filter: true,
+        },
+        { headerName: "Fecha y hora", flex: 1.3, cellRenderer: fechaCellRenderer },
+        { field: "motivo", headerName: "Motivo", flex: 1.6 },
+        { headerName: "Estado", width: 130, cellRenderer: estadoCellRenderer, sortable: false, filter: false },
+        { headerName: "Acciones", width: 220, cellRenderer: accionesCellRenderer, sortable: false, filter: false },
+      ],
+      defaultColDef: { resizable: true, sortable: true },
+      rowData: [],
+      pagination: true,
+      paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50],
+      onGridReady: (params) => {
+        gridApi = params.api;
+        cargarCitas();
+      },
+    };
+
+    const gridDiv = document.querySelector<HTMLElement>("#gridCitas");
+    if (gridDiv) createGrid(gridDiv, gridOptions);
+
+    async function cargarCitas() {
+      try {
+        const query = estadoActivo ? `?estado=${encodeURIComponent(estadoActivo)}` : "";
+        const respuesta = await apiFetch<CitaRow[]>(`/api/citas${query}`);
+        gridApi?.setGridOption("rowData", respuesta.data ?? []);
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "No se pudieron cargar las citas.");
+      }
+    }
+
+    async function confirmarCita(cita: CitaRow) {
+      const confirmado = window.confirm(`¿Confirmar la cita de ${cita.nombre_completo}?`);
+      if (!confirmado) return;
+
+      try {
+        const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/confirmar`, { method: "PATCH" });
+        alert(respuesta.message ?? "Cita confirmada.");
+        cargarCitas();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "No se pudo confirmar la cita.");
+      }
+    }
+
+    async function completarCita(cita: CitaRow) {
+      const confirmado = window.confirm(`¿Marcar como completada la cita de ${cita.nombre_completo}?`);
+      if (!confirmado) return;
+
+      try {
+        const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/completar`, { method: "PATCH" });
+        alert(respuesta.message ?? "Cita marcada como completada.");
+        cargarCitas();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "No se pudo completar la cita.");
+      }
+    }
+
+    function abrirModalRechazo(cita: CitaRow) {
+      (document.getElementById("rechazoIdCita") as HTMLInputElement).value = String(cita.id_cita);
+      (document.getElementById("rechazoMotivo") as HTMLTextAreaElement).value = "";
+      modalRechazo.showModal();
+    }
+
+    formRechazo.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const id = (document.getElementById("rechazoIdCita") as HTMLInputElement).value;
+      const motivo = (document.getElementById("rechazoMotivo") as HTMLTextAreaElement).value.trim();
+      const boton = document.getElementById("btnConfirmarRechazo") as HTMLButtonElement;
+
+      boton.disabled = true;
+      boton.textContent = "Rechazando...";
+
+      try {
+        const respuesta = await apiFetch(`/api/citas/${id}/rechazar`, {
+          method: "PATCH",
+          body: JSON.stringify({ motivo }),
+        });
+        modalRechazo.close();
+        alert(respuesta.message ?? "Cita rechazada.");
+        cargarCitas();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "No se pudo rechazar la cita.");
+      } finally {
+        boton.disabled = false;
+        boton.textContent = "Rechazar cita";
+      }
+    });
+
+    (document.getElementById("btnCerrarModalRechazo") as HTMLButtonElement)
+      .addEventListener("click", () => modalRechazo.close());
+    (document.getElementById("btnCancelarRechazo") as HTMLButtonElement)
+      .addEventListener("click", () => modalRechazo.close());
+
+    (document.getElementById("btnRecargarCitas") as HTMLButtonElement)
+      .addEventListener("click", cargarCitas);
+
+    document.querySelectorAll<HTMLElement>("#tabsEstado .tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll("#tabsEstado .tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        estadoActivo = tab.dataset.estado ?? "";
+        cargarCitas();
+      });
+    });
+  </script>
+</AdminLayout>

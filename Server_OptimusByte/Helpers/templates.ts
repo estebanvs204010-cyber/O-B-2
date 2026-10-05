@@ -21,7 +21,6 @@ export function correoMantenimientoPendiente(nombre: string, nombreParte: string
     <p>Según el kilometraje registrado, tu vehículo está próximo a necesitar:</p>
     <p style="font-size:18px;"><strong>${nombreParte}</strong> (a los ${kmProximo.toLocaleString("es-CO")} km)</p>
     <p>Ya dejamos una cita sugerida en tu cuenta. Solo entra a OptimusByte y elige el día y la hora que más te convenga dentro de nuestro horario de atención (Lunes a Sábado, 7:00 a 12:00 y 1:00 a 6:00 pm).</p>
-    <p>Si no eliges un horario, tu vehículo puede quedar expuesto a fallas evitables — te recomendamos agendar pronto.</p>
   `;
   return { asunto, mensaje, html };
 }

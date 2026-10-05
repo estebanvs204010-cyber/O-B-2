@@ -36,3 +36,270 @@ Content-Type: application/json
   "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
   "nuevaContrasena": "NuevaClave123"
 }
+
+<<<<<<< HEAD
+### ===== NOTIFICACIONES =====
+
+### Ver mis notificaciones
+GET http://localhost:8002/api/notificaciones
+Authorization: Bearer TU_TOKEN
+
+### Contador para la campana
+GET http://localhost:8002/api/notificaciones/contador
+Authorization: Bearer TU_TOKEN
+
+### Marcar una notificacion como leida
+PATCH http://localhost:8002/api/notificaciones/1/leer
+Authorization: Bearer TU_TOKEN
+
+
+### ===== CITAS =====
+
+### Ver disponibilidad de un dia
+GET http://localhost:8002/api/citas/disponibilidad?fecha=2026-09-28
+Authorization: Bearer TU_TOKEN
+
+### Cliente crea una cita manual
+POST http://localhost:8002/api/citas
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+{
+  "id_vehiculo": 1,
+  "fecha": "2026-09-28",
+  "hora": "08:00",
+  "motivo": "Ruido raro al frenar"
+}
+
+### Cliente elige horario para una cita "Sugerida" (nacida de una alerta de mantenimiento)
+PATCH http://localhost:8002/api/citas/2/elegir-horario
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+{
+  "fecha": "2026-09-29",
+  "hora": "09:00"
+}
+
+### Cliente ve sus propias citas
+GET http://localhost:8002/api/citas/mias
+Authorization: Bearer TU_TOKEN_CLIENTE
+
+### Admin lista todas las citas pendientes
+GET http://localhost:8002/api/citas?estado=Pendiente
+Authorization: Bearer TU_TOKEN_ADMIN
+
+### Admin confirma una cita
+PATCH http://localhost:8002/api/citas/1/confirmar
+Authorization: Bearer TU_TOKEN_ADMIN
+
+### Admin rechaza una cita
+PATCH http://localhost:8002/api/citas/1/rechazar
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_ADMIN
+
+{
+  "motivo": "No tenemos repuesto disponible ese dia"
+}
+
+
+### ===== MANTENIMIENTO =====
+
+### Actualizar km de un vehiculo (dispara la verificacion automatica)
+PATCH http://localhost:8002/api/mantenimiento/vehiculos/1/km
+Content-Type: application/json
+Authorization: Bearer TU_TOKEN_ADMIN
+
+{
+  "km_nuevo": 15200
+}
+
+### Ver mantenimientos de un vehiculo
+GET http://localhost:8002/api/mantenimiento/vehiculos/1
+Authorization: Bearer TU_TOKEN_ADMIN
+=======
+
+### Auto-registro de cliente
+POST http://localhost:8002/api/auth/registro-cliente
+Content-Type: application/json
+
+{
+  "nombre_completo": "Juan Pére",
+  "tipo_documento": "CC",
+  "num_documento": "1152334455",
+  "telefono": "3001234567",
+  "correo": "juan.perAz@example.com",
+  "contrasena": "ClaveSegura183"
+}
+
+### Cliente creado por Admin (usa el token del login de arriba)
+POST http://localhost:8002/api/clientes
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "María Gómez",
+  "tipo_documento": "CC",
+  "num_documento": "9988776655",
+  "telefono": "3109876543",
+  "correo": "maria.gomez@example.com"
+}
+
+
+### Crear Mecánico
+POST http://localhost:8002/api/usuarios/mecanico
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "andres pr9",
+  "correo": "2139milu@gmail.com",
+  "telefono": "3185094530",
+  "contrasena": "2130luna"
+}
+
+
+### Listar mecánicos
+GET http://localhost:8002/api/usuarios/mecanico
+Authorization: Bearer {{login.response.body.token}}
+
+
+
+
+### Obtener un cliente
+GET http://localhost:8002/api/clientes/1
+Authorization: Bearer {{login.response.body.token}}
+
+### Editar un cliente
+PUT http://localhost:8002/api/clientes/1
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "nombre_completo": "Juan Pérez Actualizado",
+  "tipo_documento": "CC",
+  "num_documento": "1122334455",
+  "telefono": "3009998888",
+  "correo": "juan.perez@example.com",
+  "direccion": "Calle 10 # 20-30"
+}
+
+### Desactivar un cliente
+DELETE http://localhost:8002/api/clientes/1
+Authorization: Bearer {{login.response.body.token}}
+
+
+### Crear vehículo (usa un id_cliente real de tu tabla clientes)
+POST http://localhost:8002/api/vehiculos
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "id_cliente": 1,
+  "placa": "ABC123",
+  "marca": "Mazda",
+  "modelo": "3",
+  "anio": 2020,
+  "color": "Rojo",
+  "km_actuales": 45000
+}
+
+### Listar todos los vehículos
+GET http://localhost:8002/api/vehiculos
+Authorization: Bearer {{login.response.body.token}}
+
+### Listar solo los de un cliente
+GET http://localhost:8002/api/vehiculos?id_cliente=1
+Authorization: Bearer {{login.response.body.token}}
+
+
+### Prueba que rechace bajar el kilometraje
+PUT http://localhost:8002/api/vehiculos/1
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "placa": "ABC123",
+  "marca": "Mazda",
+  "modelo": "3",
+  "anio": 2020,
+  "km_actuales": 100
+}
+
+### Desactivar
+DELETE http://localhost:8002/api/vehiculos/1
+Authorization: Bearer {{login.response.body.token}}
+
+### ============================================================
+### MÓDULO MECÁNICO: agenda de órdenes, vehículos y solicitudes de repuesto
+### ============================================================
+
+### Login como mecánico (ajusta correo/contraseña a uno con rol Mecanico)
+# @name loginMecanico
+POST http://localhost:8002/api/auth/login
+Content-Type: application/json
+
+{
+  "correo": "2130milu@gmail.com",
+  "contrasena": "2130luna"
+}
+
+### Agenda: todas mis órdenes asignadas
+GET http://localhost:8002/api/mecanico/ordenes
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Agenda: solo las pendientes
+GET http://localhost:8002/api/mecanico/ordenes?estado=Pendiente
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Carros en los que he trabajado, con su dueño
+GET http://localhost:8002/api/mecanico/vehiculos
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Detalle de una orden (vista tipo "OT-9" de la imagen)
+GET http://localhost:8002/api/mecanico/ordenes/1
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Cambiar el estado de una orden
+PUT http://localhost:8002/api/mecanico/ordenes/1/estado
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "estado": "En Proceso",
+  "observacion": "Se inicia el diagnóstico"
+}
+
+### Definir la fecha estimada de entrega
+PUT http://localhost:8002/api/mecanico/ordenes/1/tiempo-estimado
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "fecha_entrega_estimada": "2026-09-25 17:00:00"
+}
+
+### Pedir un repuesto para una orden
+POST http://localhost:8002/api/mecanico/solicitudes-repuesto
+Content-Type: application/json
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+{
+  "id_orden": 1,
+  "nombre_repuesto": "Batería 12V",
+  "cantidad": 1,
+  "motivo": "La batería actual no retiene carga"
+}
+
+### Mis solicitudes de repuesto
+GET http://localhost:8002/api/mecanico/solicitudes-repuesto
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Detalle de una solicitud (vista "pedido de la pieza")
+GET http://localhost:8002/api/mecanico/solicitudes-repuesto/1
+Authorization: Bearer {{loginMecanico.response.body.token}}
+
+### Marcar una solicitud como atendida (Admin)
+PUT http://localhost:8002/api/mecanico/solicitudes-repuesto/1/atender
+Authorization: Bearer {{login.response.body.token}}
+>>>>>>> 253e0bc7fba49ca8b6aafd1a1edd390ccd00b5b9

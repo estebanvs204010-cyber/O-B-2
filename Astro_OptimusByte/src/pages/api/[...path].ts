@@ -42,4 +42,5 @@ async function reenviar({ params, request, cookies }: { params: { path?: string 
 export const GET: APIRoute = (context) => reenviar(context as any);
 export const POST: APIRoute = (context) => reenviar(context as any);
 export const PUT: APIRoute = (context) => reenviar(context as any);
+export const PATCH: APIRoute = (context) => reenviar(context as any);
 export const DELETE: APIRoute = (context) => reenviar(context as any);

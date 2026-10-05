@@ -1,6 +1,6 @@
 import { conexion } from "./conexion.ts";
-import { VehiculoModel } from "./vehiculoModel.ts";
-import { ClienteModel } from "./clienteModel.ts";
+import { Vehiculo } from "./vehiculoModel.ts";
+import { Cliente } from "./clienteModel.ts";
 import { CitaModel } from "./citaModel.ts";
 import { enviarYRegistrarCorreo } from "../Helpers/correoLogger.ts";
 import { crearNotificacionParaRol } from "../Helpers/notificacionesService.ts";
@@ -9,8 +9,8 @@ import { correoMantenimientoPendiente } from "../Helpers/templates.ts";
 // Cuántos km antes del vencimiento avisamos (para no avisar justo en el límite)
 const UMBRAL_AVISO_KM = 500;
 
-const vehiculoModel = new VehiculoModel();
-const clienteModel = new ClienteModel();
+const vehiculoModel = new Vehiculo();
+const clienteModel = new Cliente();
 const citaModel = new CitaModel();
 
 export class MantenimientoModel {
@@ -34,14 +34,8 @@ export class MantenimientoModel {
   // (por ejemplo, al abrir una orden de trabajo). Actualiza el km y
   // revisa si algún mantenimiento ya está por vencer.
   public async ActualizarKmYVerificar(id_vehiculo: number, km_nuevo: number) {
-    const vehiculo = await vehiculoModel.ObtenerPorId(id_vehiculo);
-    if (!vehiculo) return { success: false, message: "Vehículo no encontrado" };
-
-    if (km_nuevo < vehiculo.km_actuales) {
-      return { success: false, message: "El kilometraje nuevo no puede ser menor al actual" };
-    }
-
-    await vehiculoModel.ActualizarKm(id_vehiculo, km_nuevo);
+    const resultado = await vehiculoModel.ActualizarKm(id_vehiculo, km_nuevo);
+    if (!resultado.success) return resultado;
 
     const notificados = await this.VerificarYNotificar(id_vehiculo, km_nuevo);
 
@@ -69,12 +63,7 @@ export class MantenimientoModel {
       const motivo = `Mantenimiento sugerido: ${item.nombre_parte} (próximo a los ${item.km_proximo} km)`;
 
       // 1) Crear la cita sugerida (sin horario, el cliente la completa después)
-      const id_cita = await citaModel.CrearSugerida(
-        item.id_cliente,
-        id_vehiculo,
-        item.id_mantenimiento,
-        motivo,
-      );
+      await citaModel.CrearSugerida(item.id_cliente, id_vehiculo, item.id_mantenimiento, motivo);
 
       // 2) Marcar como notificado para no repetir el aviso
       await conexion.execute(
@@ -83,9 +72,7 @@ export class MantenimientoModel {
       );
 
       // 3) Enviar el correo y notificar por la campana al equipo del taller.
-      //    enviarYRegistrarCorreo ya deja el rastro en correosenviados,
-      //    sin importar si el SMTP falla o no.
-      const cliente = await clienteModel.ObtenerContactoPorId(item.id_cliente);
+      const cliente = await clienteModel.ObtenerPorId(item.id_cliente);
       if (cliente) {
         const { asunto, mensaje, html } = correoMantenimientoPendiente(
           cliente.nombre_completo,
@@ -110,7 +97,6 @@ export class MantenimientoModel {
         titulo: "Mantenimiento próximo detectado",
         mensaje: `${item.nombre_parte} del vehículo #${id_vehiculo} está por vencer. Se le creó una cita sugerida al cliente.`,
         entidad_tipo: "cita",
-        entidad_id: id_cita,
       });
 
       notificados.push(item.nombre_parte);
