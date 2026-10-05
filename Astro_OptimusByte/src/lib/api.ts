@@ -69,6 +69,8 @@ export function formatearFecha(fecha?: string | null): string {
   });
 }
 
+
+
 export function formatearFechaHora(fecha?: string | null): string {
   if (!fecha) return "—";
 

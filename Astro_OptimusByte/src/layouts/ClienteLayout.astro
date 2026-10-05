@@ -80,15 +80,18 @@ const navItems = [
       </main>
     </div>
 
-    <script>
-      import { cerrarSesion } from "../lib/api";
-
-      document
-        .getElementById("logoutButton")
-        ?.addEventListener("click", () => {
-          cerrarSesion();
-          window.location.href = "/login";
+<script>
+  document
+    .getElementById("logoutButton")
+    ?.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
         });
-    </script>
+      } finally {
+        window.location.href = "/login";
+      }
+    });
+</script>
   </body>
 </html>

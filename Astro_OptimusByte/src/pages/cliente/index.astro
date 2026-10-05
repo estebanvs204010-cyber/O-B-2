@@ -207,9 +207,9 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 </ClienteLayout>
 
 <script>
-  import { apiFetch, exigirRol } from "../../lib/api";
+  import { apiFetch} from "../../lib/api";
 
-  exigirRol(["Cliente"]);
+
 
   type Cliente = {
     nombre_completo?: string;
