@@ -289,3 +289,117 @@
   .clientes-grid,
   .mecanicos-grid { height: 500px; }
 }
+
+
+/* Iconos Lucide */
+.brand-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.4;
+}
+
+.admin-nav-link svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.admin-user button svg,
+.topbar-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.summary-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.2;
+}
+
+
+.cliente-status {
+  display: inline-flex;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cliente-status.active {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.cliente-status.inactive {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+
+
+/* Menú contextual de Floating UI */
+.grid-action-button.menu {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.grid-action-button.menu:hover {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.ob-actions-menu {
+  position: fixed;
+  z-index: 2000;
+  display: flex;
+  min-width: 170px;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(15, 37, 71, 0.18);
+}
+
+.ob-actions-menu-item {
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.ob-actions-menu-item:hover {
+  background: var(--bg);
+}
+
+.ob-actions-menu-item.danger {
+  color: var(--danger);
+}
+
+.ob-actions-menu-item.danger:hover {
+  background: var(--danger-soft);
+}
+
+.ob-actions-menu-item.success {
+  color: var(--ok);
+}
+
+.ob-actions-menu-item.success:hover {
+  background: var(--ok-soft);
+}

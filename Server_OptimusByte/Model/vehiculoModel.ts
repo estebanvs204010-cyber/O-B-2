@@ -7,7 +7,7 @@ interface DatosVehiculo {
     modelo: string;
     anio: number;
     color?: string;
-    vin?: string;
+    vin: string;
     km_actuales?: number;
 }
 interface DatosEdicionVehiculo {
@@ -49,7 +49,7 @@ export class Vehiculo {
                 datos.modelo,
                 datos.anio,
                 datos.color ?? null,
-                datos.vin ?? null,
+                datos.vin.trim().toUpperCase(),
                 datos.km_actuales ?? 0,
             ],
         );
@@ -58,13 +58,13 @@ export class Vehiculo {
     }
 
     // ---------- Listar todos (con el nombre del cliente dueño) ----------
-        public async Listar() {
+    public async Listar(incluirInactivos = false) {
         return await conexion.query(
-            `SELECT v.id_vehiculo, v.placa, v.marca, v.modelo, v.anio, v.color, v.km_actuales, v.activo,
+            `SELECT v.id_vehiculo, v.placa, v.marca, v.modelo, v.anio, v.color, v.vin, v.km_actuales, v.activo,
                     c.id_cliente, c.nombre_completo AS cliente
              FROM vehiculos v
              INNER JOIN clientes c ON c.id_cliente = v.id_cliente
-             WHERE v.activo = 1
+             ${incluirInactivos ? "" : "WHERE v.activo = 1"}
              ORDER BY v.fecha_registro DESC`,
         );
     }
@@ -128,7 +128,9 @@ export class Vehiculo {
                 datos.modelo,
                 datos.anio,
                 datos.color ?? null,
-                datos.vin ?? null,
+                datos.vin?.trim()
+                    ? datos.vin.trim().toUpperCase()
+                    : vehiculoActual.vin ?? null,
                 datos.km_actuales,
                 id_vehiculo,
             ],
@@ -150,5 +152,22 @@ export class Vehiculo {
         );
 
         return { success: true, message: "Vehículo desactivado correctamente" };
+    }
+
+    public async CambiarEstado(id_vehiculo: number, activo: boolean) {
+        const vehiculoActual = await this.ObtenerPorId(id_vehiculo);
+        if (!vehiculoActual) {
+            return { success: false, message: "El vehículo no existe" };
+        }
+
+        await conexion.execute(
+            `UPDATE vehiculos SET activo = ? WHERE id_vehiculo = ?`,
+            [activo ? 1 : 0, id_vehiculo],
+        );
+
+        return {
+            success: true,
+            message: `Vehículo ${activo ? "activado" : "desactivado"} correctamente`,
+        };
     }
 }
