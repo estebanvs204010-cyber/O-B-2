@@ -197,29 +197,49 @@ export class Cliente {
 
 
 
-        // ---------- Listar / buscar clientes activos ----------
-    // Si "busqueda" viene vacío, trae todos. Si viene, filtra por nombre, documento o correo.
-    public async Listar(busqueda?: string) {
-        if (busqueda) {
-            const termino = `%${busqueda}%`;
-            return await conexion.query(
-                `SELECT id_cliente, id_usuario, nombre_completo, tipo_documento, num_documento, telefono, correo, activo
-                 FROM clientes
-                 WHERE activo = 1
-                   AND (nombre_completo LIKE ? OR num_documento LIKE ? OR correo LIKE ?)
-                 ORDER BY nombre_completo`,
-                [termino, termino, termino],
-            );
-        }
+        // ---------- Listar ----------
+    public async Listar(
+  busqueda?: string,
+  incluirInactivos = false,
+) {
+  const condiciones: string[] = [];
+  const parametros: string[] = [];
 
-        return await conexion.query(
-            `SELECT id_cliente, id_usuario, nombre_completo, tipo_documento, num_documento, telefono, correo, activo
-             FROM clientes
-             WHERE activo = 1
-             ORDER BY nombre_completo`,
-        );
-    }
+  if (!incluirInactivos) {
+    condiciones.push("activo = 1");
+  }
 
+  if (busqueda) {
+    const termino = `%${busqueda}%`;
+
+    condiciones.push(
+      "(nombre_completo LIKE ? OR num_documento LIKE ? OR correo LIKE ?)",
+    );
+
+    parametros.push(termino, termino, termino);
+  }
+
+  const where =
+    condiciones.length > 0
+      ? `WHERE ${condiciones.join(" AND ")}`
+      : "";
+
+  return await conexion.query(
+    `SELECT
+      id_cliente,
+      id_usuario,
+      nombre_completo,
+      tipo_documento,
+      num_documento,
+      telefono,
+      correo,
+      activo
+     FROM clientes
+     ${where}
+     ORDER BY nombre_completo`,
+    parametros,
+  );
+}
 
         // ---------- Obtener uno solo, por id ----------
     public async ObtenerPorId(id_cliente: number) {
@@ -313,4 +333,53 @@ export class Cliente {
 
         return { success: true, message: "Cliente desactivado correctamente" };
     }
+
+
+
+
+
+    public async CambiarEstado(id_cliente: number, activo: boolean) {
+  const clienteActual = await this.ObtenerPorId(id_cliente);
+
+  if (!clienteActual) {
+    return {
+      success: false,
+      message: "El cliente no existe",
+    };
+  }
+
+  try {
+    await conexion.transaction(async (conn) => {
+      await conn.execute(
+        `UPDATE clientes
+         SET activo = ?
+         WHERE id_cliente = ?`,
+        [activo ? 1 : 0, id_cliente],
+      );
+
+      if (clienteActual.id_usuario) {
+        await conn.execute(
+          `UPDATE usuarios
+           SET activo = ?
+           WHERE id_usuario = ?`,
+          [activo ? 1 : 0, clienteActual.id_usuario],
+        );
+      }
+    });
+
+    return {
+      success: true,
+      message: activo
+        ? "Cliente activado correctamente"
+        : "Cliente desactivado correctamente",
+    };
+  } catch (error) {
+    console.error(error);
+
+    return {
+      success: false,
+      message: "No se pudo cambiar el estado del cliente",
+    };
+  }
+}
 }

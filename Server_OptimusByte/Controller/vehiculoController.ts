@@ -11,9 +11,20 @@ export const PostCrearVehiculo = async (ctx: Context) => {
     try {
         const body = await request.body.json();
 
-        const camposObligatorios = ["id_cliente", "placa", "marca", "modelo", "anio"];
+        const camposObligatorios = [
+            "id_cliente",
+            "placa",
+            "marca",
+            "modelo",
+            "anio",
+            "vin",
+        ];
         for (const campo of camposObligatorios) {
-            if (!body[campo]) {
+            if (
+                body[campo] === undefined ||
+                body[campo] === null ||
+                String(body[campo]).trim() === ""
+            ) {
                 response.status = 400;
                 response.body = { success: false, message: `El campo ${campo} es obligatorio` };
                 return;
@@ -39,11 +50,13 @@ export const GetVehiculos = async (ctx: Context) => {
 
     try {
         const idClienteParam = request.url.searchParams.get("id_cliente");
+        const incluirInactivos =
+            request.url.searchParams.get("incluir_inactivos") === "true";
         const objVehiculo = new Vehiculo();
 
         const vehiculos = idClienteParam
             ? await objVehiculo.ListarPorCliente(Number(idClienteParam))
-            : await objVehiculo.Listar();
+            : await objVehiculo.Listar(incluirInactivos);
 
         response.status = 200;
         response.body = { success: true, data: vehiculos };
@@ -87,9 +100,19 @@ export const PutEditarVehiculo = async (ctx: RouterContext<"/api/vehiculos/:id">
         const id = Number(params.id);
         const body = await request.body.json();
 
-        const camposObligatorios = ["placa", "marca", "modelo", "anio", "km_actuales"];
+        const camposObligatorios = [
+            "placa",
+            "marca",
+            "modelo",
+            "anio",
+            "km_actuales",
+        ];
         for (const campo of camposObligatorios) {
-            if (body[campo] === undefined || body[campo] === null || body[campo] === "") {
+            if (
+                body[campo] === undefined ||
+                body[campo] === null ||
+                String(body[campo]).trim() === ""
+            ) {
                 response.status = 400;
                 response.body = { success: false, message: `El campo ${campo} es obligatorio` };
                 return;
@@ -123,5 +146,41 @@ export const DeleteVehiculo = async (ctx: RouterContext<"/api/vehiculos/:id">) =
         console.error(error);
         response.status = 500;
         response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
+
+// PUT /api/vehiculos/:id/estado (solo Admin)
+export const PutEstadoVehiculo = async (
+    ctx: RouterContext<"/api/vehiculos/:id/estado">,
+) => {
+    const { params, request, response } = ctx;
+
+    try {
+        const body = await request.body.json();
+
+        if (typeof body.activo !== "boolean") {
+            response.status = 400;
+            response.body = {
+                success: false,
+                message: "El campo activo debe ser booleano",
+            };
+            return;
+        }
+
+        const objVehiculo = new Vehiculo();
+        const resultado = await objVehiculo.CambiarEstado(
+            Number(params.id),
+            body.activo,
+        );
+
+        response.status = resultado.success ? 200 : 400;
+        response.body = resultado;
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = {
+            success: false,
+            message: "Error interno del servidor",
+        };
     }
 };

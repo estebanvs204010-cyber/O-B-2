@@ -6,6 +6,7 @@ import {
     GetClientePorId,
     PutEditarCliente,
     DeleteCliente,
+    PutEstadoCliente,
 } from "../Controller/clienteController.ts";
 import {
     authMiddleware,
@@ -59,6 +60,14 @@ ClienteRouter.delete(
     authMiddleware,
     permitirRoles("Admin"),
     DeleteCliente,
+);
+
+// Cambiar estado de cliente: solo Admin.
+ClienteRouter.put(
+    "/api/clientes/:id/estado",
+    authMiddleware,
+    permitirRoles("Admin"),
+    PutEstadoCliente,
 );
 
 export { ClienteRouter };

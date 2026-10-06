@@ -208,6 +208,7 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 
 <script>
   import { apiFetch} from "../../lib/api";
+  import { autoAnimate } from "@formkit/auto-animate";
 
 
 
@@ -233,6 +234,12 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
   const vehiculosEstado = document.getElementById("vehiculosEstado");
   const vehiculosLista = document.getElementById("vehiculosLista");
   const vehiculosCount = document.getElementById("vehiculosCount");
+  if (vehiculosLista) {
+  autoAnimate(vehiculosLista, {
+    duration: 180,
+    easing: "ease-out",
+  });
+}
   const btnEditarPerfil = document.getElementById("btnEditarPerfil");
   const btnCancelarPerfil = document.getElementById("btnCancelarPerfil");
   const formPerfil = document.getElementById("formPerfil") as HTMLFormElement | null;

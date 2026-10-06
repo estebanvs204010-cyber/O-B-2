@@ -110,6 +110,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     } from "ag-grid-community";
 
     import { apiFetch } from "../../lib/api";
+    import { notificarError, notificarExito } from "../../lib/toast";
+    import { confirmarCambioEstado } from "../../lib/confirmar";
 
     ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -155,42 +157,128 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       return estado;
     }
 
-    function accionesCellRenderer(params: ICellRendererParams<MecanicoRow>) {
-  const contenedor = document.createElement("div");
-  contenedor.className = "grid-actions";
+    type OpcionMenuAccion = {
+      etiqueta: string;
+      variante?: "default" | "danger" | "success";
+      alSeleccionar?: () => void;
+    };
 
-  const mecanico = params.data!;
-  const estaActivo = Number(mecanico.activo) === 1;
+    function abrirMenuAcciones(
+      boton: HTMLElement,
+      opciones: OpcionMenuAccion[],
+    ) {
+      const menuExistente = document.querySelector(
+        ".action-menu-popover",
+      ) as HTMLDivElement | null;
 
-  const editar = document.createElement("button");
-  editar.className = "grid-action-button edit";
-  editar.type = "button";
-  editar.textContent = "Editar";
-  editar.title = "Editar mecánico";
+      menuExistente?.remove();
 
-  editar.addEventListener("click", () => {
-    abrirModalEditar(mecanico);
-  });
+      const menu = document.createElement("div");
+      menu.className = "action-menu-popover";
+      menu.setAttribute("role", "menu");
+      menu.style.position = "fixed";
+      menu.style.zIndex = "10000";
+      menu.style.display = "flex";
+      menu.style.flexDirection = "column";
+      menu.style.minWidth = "180px";
+      menu.style.padding = "8px";
+      menu.style.gap = "6px";
+      menu.style.background = "#ffffff";
+      menu.style.border = "1px solid #dfe7f3";
+      menu.style.borderRadius = "10px";
+      menu.style.boxShadow = "0 10px 30px rgba(15, 23, 42, 0.16)";
 
-  const cambiarEstado = document.createElement("button");
-  cambiarEstado.className = estaActivo
-    ? "grid-action-button delete"
-    : "grid-action-button activate";
+      const rect = boton.getBoundingClientRect();
+      menu.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 120)}px`;
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 220)}px`;
 
-  cambiarEstado.type = "button";
-  cambiarEstado.textContent = estaActivo ? "Desactivar" : "Activar";
-  cambiarEstado.title = estaActivo
-    ? "Desactivar mecánico"
-    : "Activar mecánico";
+      opciones.forEach(({ etiqueta, variante = "default", alSeleccionar }) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "action-menu-item";
+        item.textContent = etiqueta;
+        item.setAttribute("role", "menuitem");
+        item.style.border = "none";
+        item.style.borderRadius = "8px";
+        item.style.padding = "10px 12px";
+        item.style.textAlign = "left";
+        item.style.cursor = "pointer";
+        item.style.background =
+          variante === "danger"
+            ? "#fff1f2"
+            : variante === "success"
+              ? "#ecfdf5"
+              : "#f8fafc";
+        item.style.color =
+          variante === "danger"
+            ? "#b42318"
+            : variante === "success"
+              ? "#047857"
+              : "#0f172a";
+        item.style.fontWeight = "600";
 
-  cambiarEstado.addEventListener("click", () => {
-    cambiarEstadoMecanico(mecanico, !estaActivo);
-  });
+        item.addEventListener("click", () => {
+          alSeleccionar?.();
+          menu.remove();
+        });
 
-  contenedor.append(editar, cambiarEstado);
+        menu.appendChild(item);
+      });
 
-  return contenedor;
-}
+      document.body.appendChild(menu);
+
+      const cerrarMenu = (event: MouseEvent) => {
+        const target = event.target as Node | null;
+        if (!target || (!menu.contains(target) && target !== boton)) {
+          menu.remove();
+          document.removeEventListener("click", cerrarMenu);
+        }
+      };
+
+      document.addEventListener("click", cerrarMenu);
+    }
+
+    function accionesCellRenderer(
+      params: ICellRendererParams<MecanicoRow>,
+    ) {
+      const mecanico = params.data;
+
+      if (!mecanico) {
+        return document.createElement("div");
+      }
+
+      const contenedor = document.createElement("div");
+      contenedor.className = "grid-actions";
+
+      const menu = document.createElement("button");
+      menu.className = "grid-action-button menu";
+      menu.type = "button";
+      menu.textContent = "⋮";
+      menu.title = "Acciones del mecánico";
+      menu.setAttribute("aria-label", "Acciones del mecánico");
+
+      const activo = Number(mecanico.activo) === 1;
+
+      menu.addEventListener("click", () => {
+        abrirMenuAcciones(menu, [
+          {
+            etiqueta: "Editar mecánico",
+            alSeleccionar: () => abrirModalEditar(mecanico),
+          },
+          {
+            etiqueta: activo ? "Desactivar mecánico" : "Activar mecánico",
+            variante: activo ? "danger" : "success",
+            alSeleccionar: () => {
+              void cambiarEstadoMecanico(mecanico, !activo);
+            },
+          },
+        ]);
+      });
+
+      contenedor.appendChild(menu);
+
+      return contenedor;
+    }
 
     const gridOptions: GridOptions<MecanicoRow> = {
       theme: temaOptimus,
@@ -261,7 +349,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
         gridApi?.setGridOption("rowData", respuesta.data ?? []);
       } catch (error) {
-        alert(
+        notificarError(
           error instanceof Error
             ? error.message
             : "No se pudieron cargar los mecánicos.",
@@ -354,8 +442,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 ) {
   const accion = activar ? "activar" : "desactivar";
 
-  const confirmado = window.confirm(
-    `Deseas ${accion} a "${mecanico.nombre_completo}"?`,
+  const confirmado = await confirmarCambioEstado(
+    mecanico.nombre_completo,
+    activar,
   );
 
   if (!confirmado) return;
@@ -369,14 +458,14 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       },
     );
 
-    alert(
+    notificarExito(
       respuesta.message ??
         `Mecánico ${activar ? "activado" : "desactivado"} correctamente.`,
     );
 
     cargarMecanicos();
   } catch (error) {
-    alert(
+    notificarError(
       error instanceof Error
         ? error.message
         : `No se pudo ${accion} el mecánico.`,
@@ -444,7 +533,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
         modal.close();
 
-        alert(
+        notificarExito(
           respuesta.message ??
             (modo === "crear"
               ? "Mecánico creado correctamente."
@@ -453,7 +542,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
         cargarMecanicos();
       } catch (error) {
-        alert(
+        notificarError(
           error instanceof Error
             ? error.message
             : "No se pudo guardar el mecánico.",

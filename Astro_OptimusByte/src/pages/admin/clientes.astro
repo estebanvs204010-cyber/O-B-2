@@ -126,6 +126,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     } from "ag-grid-community";
 
     import { apiFetch } from "../../lib/api";
+    import { notificarError, notificarExito } from "../../lib/toast";
+    import { confirmarCambioEstado } from "../../lib/confirmar";
+    import { abrirMenuAcciones } from "../../lib/menuAcciones";
 
     ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -137,6 +140,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       telefono: string;
       correo: string;
       direccion?: string;
+      activo: number;
     }
 
     const temaOptimus = themeQuartz.withParams({
@@ -153,28 +157,47 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     const modal = document.getElementById("modalCliente") as HTMLDialogElement;
     const formulario = document.getElementById("formCliente") as HTMLFormElement;
 
-    function accionesCellRenderer(params: ICellRendererParams<ClienteRow>) {
-      const contenedor = document.createElement("div");
-      contenedor.className = "grid-actions";
+function accionesCellRenderer(
+  params: ICellRendererParams<ClienteRow>,
+) {
+  const cliente = params.data;
 
-      const editar = document.createElement("button");
-      editar.className = "grid-action-button edit";
-      editar.type = "button";
-      editar.textContent = "Editar";
-      editar.title = "Editar cliente";
-      editar.addEventListener("click", () => abrirModalEditar(params.data!));
+  if (!cliente) {
+    return document.createElement("div");
+  }
 
-      const desactivar = document.createElement("button");
-      desactivar.className = "grid-action-button delete";
-      desactivar.type = "button";
-      desactivar.textContent = "Desactivar";
-      desactivar.title = "Desactivar cliente";
-      desactivar.addEventListener("click", () => desactivarCliente(params.data!));
+  const contenedor = document.createElement("div");
+  contenedor.className = "grid-actions";
 
-      contenedor.append(editar, desactivar);
-      return contenedor;
-    }
+  const menu = document.createElement("button");
+  menu.className = "grid-action-button menu";
+  menu.type = "button";
+  menu.textContent = "⋮";
+  menu.title = "Acciones del cliente";
+  menu.setAttribute("aria-label", "Acciones del cliente");
 
+  const activo = Number(cliente.activo) === 1;
+
+  menu.addEventListener("click", () => {
+    abrirMenuAcciones(menu, [
+      {
+        etiqueta: "Editar cliente",
+        alSeleccionar: () => abrirModalEditar(cliente),
+      },
+      {
+        etiqueta: activo ? "Desactivar cliente" : "Activar cliente",
+        variante: activo ? "danger" : "success",
+        alSeleccionar: () => {
+          void cambiarEstadoCliente(cliente, !activo);
+        },
+      },
+    ]);
+  });
+
+  contenedor.appendChild(menu);
+
+  return contenedor;
+}
     const gridOptions: GridOptions<ClienteRow> = {
       theme: temaOptimus,
 
@@ -205,6 +228,24 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
           flex: 2,
           filter: true,
         },
+        {
+        headerName: "Estado",
+        width: 125,
+        cellRenderer: (params: ICellRendererParams<ClienteRow>) => {
+          const estado = document.createElement("span");
+          const activo = Number(params.data?.activo) === 1;
+
+          estado.className = activo
+            ? "cliente-status active"
+            : "cliente-status inactive";
+
+          estado.textContent = activo ? "Activo" : "Inactivo";
+
+          return estado;
+        },
+        sortable: true,
+        filter: true,
+      },
         {
           headerName: "Acciones",
           width: 180,
@@ -238,15 +279,17 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
     async function cargarClientes() {
       try {
-        const respuesta = await apiFetch<ClienteRow[]>("/api/clientes");
+        const respuesta = await apiFetch<ClienteRow[]>(
+  "/api/clientes?incluir_inactivos=true",
+);
 
         gridApi?.setGridOption("rowData", respuesta.data ?? []);
       } catch (error) {
-        alert(
-          error instanceof Error
-            ? error.message
-            : "No se pudieron cargar los clientes.",
-        );
+        notificarError(
+         error instanceof Error
+          ? error.message
+             : "No se pudieron cargar los clientes.",
+      );
       }
     }
 
@@ -310,7 +353,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
         modal.showModal();
       } catch (error) {
-        alert(
+        notificarError(
           error instanceof Error
             ? error.message
             : "No se pudo consultar el cliente.",
@@ -318,28 +361,40 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       }
     }
 
-    async function desactivarCliente(cliente: ClienteRow) {
-      const confirmado = window.confirm(
-        `Deseas desactivar a "${cliente.nombre_completo}"?`,
-      );
+    async function cambiarEstadoCliente(
+  cliente: ClienteRow,
+  activar: boolean,
+) {
+  const confirmado = await confirmarCambioEstado(
+    cliente.nombre_completo,
+    activar,
+  );
 
-      if (!confirmado) return;
+  if (!confirmado) return;
 
-      try {
-        const respuesta = await apiFetch(`/api/clientes/${cliente.id_cliente}`, {
-          method: "DELETE",
-        });
+  try {
+    const respuesta = await apiFetch(
+      `/api/clientes/${cliente.id_cliente}/estado`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ activo: activar }),
+      },
+    );
 
-        alert(respuesta.message ?? "Cliente desactivado correctamente.");
-        cargarClientes();
-      } catch (error) {
-        alert(
-          error instanceof Error
-            ? error.message
-            : "No se pudo desactivar el cliente.",
-        );
-      }
-    }
+    notificarExito(
+      respuesta.message ??
+        `Cliente ${activar ? "activado" : "desactivado"} correctamente.`,
+    );
+
+    cargarClientes();
+  } catch (error) {
+    notificarError(
+      error instanceof Error
+        ? error.message
+        : `No se pudo ${activar ? "activar" : "desactivar"} el cliente.`,
+    );
+  }
+}
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
@@ -393,13 +448,13 @@ if (modo === "crear") {
         );
 
         modal.close();
-        alert(respuesta.message ?? "Cliente guardado correctamente.");
+        notificarExito(respuesta.message ?? "Cliente guardado correctamente.",);
         cargarClientes();
       } catch (error) {
-        alert(
-          error instanceof Error
-            ? error.message
-            : "No se pudo guardar el cliente.",
+        notificarError(
+        error instanceof Error
+                ? error.message
+            : "No se pudieron cargar los clientes.",
         );
       } finally {
         botonGuardar.disabled = false;

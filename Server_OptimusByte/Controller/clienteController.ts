@@ -85,9 +85,10 @@ export const GetClientes = async (ctx: Context) => {
 
     try {
         const busqueda = request.url.searchParams.get("q") ?? undefined;
-
+        const incluirInactivos =
+        request.url.searchParams.get("incluir_inactivos") === "true";
         const objCliente = new Cliente();
-        const clientes = await objCliente.Listar(busqueda);
+        const clientes = await objCliente.Listar(busqueda, incluirInactivos);
 
         response.status = 200;
         response.body = { success: true, data: clientes };
@@ -167,4 +168,38 @@ export const DeleteCliente = async (ctx: RouterContext<"/api/clientes/:id">) => 
         response.status = 500;
         response.body = { success: false, message: "Error interno del servidor" };
     }
+};
+
+
+export const PutEstadoCliente = async (
+  ctx: RouterContext<"/api/clientes/:id/estado">,
+) => {
+  const { params, request, response } = ctx;
+
+  try {
+    const id = Number(params.id);
+    const body = await request.body.json();
+
+    if (typeof body.activo !== "boolean") {
+      response.status = 400;
+      response.body = {
+        success: false,
+        message: "El campo activo debe ser booleano",
+      };
+      return;
+    }
+
+    const objCliente = new Cliente();
+    const resultado = await objCliente.CambiarEstado(id, body.activo);
+
+    response.status = resultado.success ? 200 : 400;
+    response.body = resultado;
+  } catch (error) {
+    console.error(error);
+    response.status = 500;
+    response.body = {
+      success: false,
+      message: "Error interno del servidor",
+    };
+  }
 };
