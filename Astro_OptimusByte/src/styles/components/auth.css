@@ -1,0 +1,44 @@
+/* src/styles/components/auth.css */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy);
+  padding: 24px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px 30px;
+  box-shadow: 0 20px 50px rgba(15,37,71,0.28);
+}
+.auth-card.wide { max-width: 520px; }
+.auth-brand {
+  text-align: center;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.auth-brand .accent { color: var(--blue); }
+.auth-sub {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 22px;
+}
+.auth-footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.auth-footer a { color: var(--blue); font-weight: 600; }
+.auth-shell .btn-primary {
+  background: var(--navy);
+  color: white;
+}
+.auth-shell .btn-primary:hover { background: var(--navy-light); }

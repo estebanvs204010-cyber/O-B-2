@@ -1,5 +1,11 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
+import {
+  ClipboardList,
+  Users,
+  CarFront,
+  Package,
+} from "lucide-astro";
 ---
 
 <AdminLayout title="Dashboard" active="dashboard">
@@ -10,24 +16,60 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   </section>
 
   <section class="admin-summary">
-    <article>
-      <span>Ordenes activas</span>
-      <strong>--</strong>
+    <article class="summary-card">
+      <div
+        class="summary-icon"
+        style="background: var(--blue-soft); color: var(--blue-600);"
+      >
+        <ClipboardList aria-hidden="true" />
+      </div>
+
+      <div>
+        <span>Órdenes activas</span>
+        <strong id="cnt-ordenes">--</strong>
+      </div>
     </article>
 
-    <article>
-      <span>Clientes registrados</span>
-      <strong>--</strong>
+    <article class="summary-card">
+      <div
+        class="summary-icon"
+        style="background: var(--ok-soft); color: var(--ok);"
+      >
+        <Users aria-hidden="true" />
+      </div>
+
+      <div>
+        <span>Clientes registrados</span>
+        <strong id="cnt-clientes">--</strong>
+      </div>
     </article>
 
-    <article>
-      <span>Vehiculos registrados</span>
-      <strong>--</strong>
+    <article class="summary-card">
+      <div
+        class="summary-icon"
+        style="background: var(--warn-soft); color: var(--warn);"
+      >
+        <CarFront aria-hidden="true" />
+      </div>
+
+      <div>
+        <span>Vehículos registrados</span>
+        <strong id="cnt-vehiculos">--</strong>
+      </div>
     </article>
 
-    <article>
-      <span>Solicitudes pendientes</span>
-      <strong>--</strong>
+    <article class="summary-card">
+      <div
+        class="summary-icon"
+        style="background: var(--danger-soft); color: var(--danger);"
+      >
+        <Package aria-hidden="true" />
+      </div>
+
+      <div>
+        <span>Stock crítico</span>
+        <strong id="cnt-stock">--</strong>
+      </div>
     </article>
   </section>
 </AdminLayout>

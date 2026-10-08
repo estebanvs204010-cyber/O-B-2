@@ -1,10 +1,12 @@
 ---
-import "../styles/global.css";
+import "../styles/base.css";
+import "../styles/components/admin.css";
+import "../styles/components/mecanico.css";
 import { getRolSSR } from "../utils/auth";
 
 interface Props {
   title: string;
-  active: "agenda" | "vehiculos" | "solicitudes";
+  active: "agenda" | "vehiculos" | "solicitudes" | "perfil";
 }
 const { title, active } = Astro.props;
 const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
@@ -17,34 +19,54 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} · OptimusByte</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="sidebar-brand">🔧 Optimus<span class="accent">Byte</span></div>
+    <div class="admin-shell mecanico-shell">
+      <aside class="admin-sidebar">
+        <a class="admin-brand" href="/mecanico">
+          <span class="brand-icon"><i class="bi bi-wrench-adjustable-circle-fill"></i></span>
+          <span>Optimus<span class="brand-accent">Byte</span></span>
+        </a>
 
-        <div class="sidebar-section">Mi trabajo</div>
-        <a href="/mecanico" class:list={["sidebar-link", { active: active === "agenda" }]}>📋 Agenda / Órdenes</a>
-        <a href="/mecanico/vehiculos" class:list={["sidebar-link", { active: active === "vehiculos" }]}>🚗 Vehículos</a>
-        <a href="/mecanico/solicitudes" class:list={["sidebar-link", { active: active === "solicitudes" }]}>🔩 Solicitudes de repuesto</a>
+        <nav class="admin-nav">
+          <p class="admin-nav-title">Mi trabajo</p>
+          <a href="/mecanico" class:list={["admin-nav-link mecanico-nav-link", { active: active === "agenda" }]}>
+            <i class="bi bi-speedometer2"></i><span>Inicio / Órdenes</span>
+          </a>
+          <a href="/mecanico/vehiculos" class:list={["admin-nav-link mecanico-nav-link", { active: active === "vehiculos" }]}>
+            <i class="bi bi-car-front"></i><span>Vehículos</span>
+          </a>
+          <a href="/mecanico/solicitudes" class:list={["admin-nav-link mecanico-nav-link", { active: active === "solicitudes" }]}>
+            <i class="bi bi-box-seam"></i><span>Solicitudes de repuesto</span>
+          </a>
+          <p class="admin-nav-title">Cuenta</p>
+          <a href="/mecanico/perfil" class:list={["admin-nav-link mecanico-nav-link", { active: active === "perfil" }]}>
+            <i class="bi bi-person-circle"></i><span>Mi perfil</span>
+          </a>
+        </nav>
 
-                <div class="sidebar-user">
-          <div class="avatar">{rol.slice(0, 1)}</div>
-          <div style="flex:1; min-width:0;">
-            <div style="font-size:13px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              {rol}
-            </div>
-            <button id="ob-logout">Cerrar sesión</button>
-          </div>
+        <div class="admin-user">
+          <div class="admin-avatar">{rol.slice(0, 1).toUpperCase()}</div>
+          <div><strong>{rol}</strong><span>Mecánico</span></div>
+          <button id="ob-logout" type="button" title="Cerrar sesión" aria-label="Cerrar sesión">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
         </div>
       </aside>
 
-      <main class="main">
-        <slot />
-      </main>
+      <div class="admin-content">
+        <header class="admin-topbar mecanico-topbar">
+          <h1>{title}</h1>
+          <div class="topbar-actions">
+            <span class="topbar-username">{rol}</span>
+          </div>
+        </header>
+        <main class="admin-main mecanico-main"><slot /></main>
+      </div>
     </div>
 
-        <script>
+    <script>
       document.getElementById("ob-logout")?.addEventListener("click", async () => {
         try {
           await fetch("/api/auth/logout", { method: "POST" });

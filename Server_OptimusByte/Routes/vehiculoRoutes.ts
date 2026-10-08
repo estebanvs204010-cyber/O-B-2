@@ -5,6 +5,7 @@ import {
     GetVehiculoPorId,
     PutEditarVehiculo,
     DeleteVehiculo,
+    PutEstadoVehiculo,
 } from "../Controller/vehiculoController.ts";
 import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
 
@@ -15,5 +16,6 @@ VehiculoRouter.get("/api/vehiculos", authMiddleware, permitirRoles("Admin", "Mec
 VehiculoRouter.get("/api/vehiculos/:id", authMiddleware, permitirRoles("Admin", "Mecanico"), GetVehiculoPorId);
 VehiculoRouter.put("/api/vehiculos/:id", authMiddleware, permitirRoles("Admin", "Mecanico"), PutEditarVehiculo);
 VehiculoRouter.delete("/api/vehiculos/:id", authMiddleware, permitirRoles("Admin"), DeleteVehiculo);
+VehiculoRouter.put("/api/vehiculos/:id/estado", authMiddleware, permitirRoles("Admin"), PutEstadoVehiculo);
 
 export { VehiculoRouter };
