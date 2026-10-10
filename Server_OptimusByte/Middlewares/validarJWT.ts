@@ -1,21 +1,26 @@
 import { VerificarTokenAcceso } from "../Helpers/Jwt.ts";
+import { obtenerTokenCookie } from "../Helpers/cookies.ts";
 import { Context, Next } from "../Dependencies/dependencias.ts";
 
-// Middleware para proteger rutas: exige un token válido
 export async function authMiddleware(ctx: Context, next: Next) {
   const authHeader = ctx.request.headers.get("Authorization");
 
-  if (!authHeader) {
-    ctx.response.status = 401;
-    ctx.response.body = { success: false, message: "No tiene autenticación" };
-    return;
+  let token: string | null = obtenerTokenCookie(ctx.request);
+
+  if (authHeader) {
+    const [scheme, bearerToken] = authHeader.trim().split(/\s+/);
+
+    if (scheme === "Bearer" && bearerToken) {
+      token = bearerToken;
+    }
   }
 
-  const [scheme, token] = authHeader.trim().split(/\s+/);
-
-  if (scheme !== "Bearer" || !token) {
+  if (!token) {
     ctx.response.status = 401;
-    ctx.response.body = { success: false, message: "Formato de autenticación inválido" };
+    ctx.response.body = {
+      success: false,
+      message: "No tiene autenticación",
+    };
     return;
   }
 
@@ -23,7 +28,10 @@ export async function authMiddleware(ctx: Context, next: Next) {
 
   if (!usuario) {
     ctx.response.status = 401;
-    ctx.response.body = { success: false, message: "Token inválido o expirado" };
+    ctx.response.body = {
+      success: false,
+      message: "Token inválido o expirado",
+    };
     return;
   }
 
@@ -31,16 +39,22 @@ export async function authMiddleware(ctx: Context, next: Next) {
   await next();
 }
 
-// Middleware para proteger rutas por rol.
-// Uso: permitirRoles("Admin") o permitirRoles("Admin", "Mecanico")
-// Se usa DESPUÉS de authMiddleware, porque necesita ctx.state.user ya definido.
 export function permitirRoles(...rolesPermitidos: string[]) {
   return async (ctx: Context, next: Next) => {
     const usuario = ctx.state.user as { rol?: string } | undefined;
 
-    if (!usuario || !rolesPermitidos.includes(usuario.rol ?? "")) {
+    const rolUsuario = usuario?.rol?.trim().toLowerCase() ?? "";
+
+    const tienePermiso = rolesPermitidos.some(
+      (rol) => rol.trim().toLowerCase() === rolUsuario,
+    );
+
+    if (!usuario || !tienePermiso) {
       ctx.response.status = 403;
-      ctx.response.body = { success: false, message: "No tiene permisos para esta acción" };
+      ctx.response.body = {
+        success: false,
+        message: "No tiene permisos para esta acción",
+      };
       return;
     }
 

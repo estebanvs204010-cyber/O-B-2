@@ -219,8 +219,8 @@
 
 .password-section {
   margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
+  padding-top: 0;
+  border-top: none;
 }
 
 .password-section h3 {
@@ -288,4 +288,80 @@
   .orden-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Alineación de tarjetas del resumen */
+
+.summary-section {
+  width: 100%;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.summary-section .summary-link {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 220px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.summary-section .summary-link > span:first-child {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.summary-section .summary-link strong {
+  margin: 16px 0;
+  color: var(--navy-900);
+  font-size: 2rem;
+}
+
+.summary-section .summary-link p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.summary-section .summary-action {
+  margin-top: auto;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.client-section,
+.panel {
+  min-width: 0;
+  background: #fff;
+}
+
+/* Vista para pantallas pequeñas */
+
+@media (max-width: 800px) {
+  .summary-grid,
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+#vehiculos {
+  margin-top: 28px;
 }

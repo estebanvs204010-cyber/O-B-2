@@ -9,7 +9,8 @@ const app = new Application();
 
 app.use(
   oakCors({
-    origin: "*",
+    origin: "http://localhost:4321",
+    credentials: true,
   }),
 );
 
