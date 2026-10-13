@@ -10,6 +10,58 @@ const ESTADOS_VALIDOS = [
     "Cancelado",
 ];
 
+// GET /api/admin/ordenes -> bandeja administrativa de todas las órdenes
+export const GetOrdenesAdmin = async (ctx: Context) => {
+    const { response } = ctx;
+
+    try {
+        const ordenes = await new Orden().ListarTodas();
+        response.status = 200;
+        response.body = { success: true, data: ordenes };
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
+
+// PUT /api/admin/ordenes/:id/asignar  body: { id_mecanico }
+export const PutAsignarMecanico = async (
+    ctx: RouterContext<"/api/admin/ordenes/:id/asignar">,
+) => {
+    const { params, request, response } = ctx;
+
+    try {
+        const usuario = ctx.state.user as { sub: string };
+        const idOrden = Number(params.id);
+        const body = await request.body.json();
+        const idMecanico = Number(body.id_mecanico);
+
+        if (!Number.isInteger(idOrden) || idOrden < 1) {
+            response.status = 400;
+            response.body = { success: false, message: "El identificador de la orden no es válido" };
+            return;
+        }
+        if (!Number.isInteger(idMecanico) || idMecanico < 1) {
+            response.status = 400;
+            response.body = { success: false, message: "Selecciona un mecánico válido" };
+            return;
+        }
+
+        const resultado = await new Orden().AsignarMecanico(
+            idOrden,
+            idMecanico,
+            Number(usuario.sub),
+        );
+        response.status = resultado.success ? 200 : 400;
+        response.body = resultado;
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
+
 // GET /api/mecanico/ordenes              -> las del mecánico logueado (agenda/citas)
 // GET /api/mecanico/ordenes?estado=Pendiente
 // El Admin puede consultar las de cualquiera con ?id_mecanico=5
