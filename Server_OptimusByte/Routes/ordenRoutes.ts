@@ -1,5 +1,7 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import {
+    GetOrdenesAdmin,
+    PutAsignarMecanico,
     GetOrdenesMecanico,
     GetVehiculosMecanico,
     GetDetalleOrden,
@@ -10,6 +12,13 @@ import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
 
 const OrdenRouter = new Router();
 
+OrdenRouter.get("/api/admin/ordenes", authMiddleware, permitirRoles("Admin"), GetOrdenesAdmin);
+OrdenRouter.put(
+    "/api/admin/ordenes/:id/asignar",
+    authMiddleware,
+    permitirRoles("Admin"),
+    PutAsignarMecanico,
+);
 OrdenRouter.get("/api/mecanico/ordenes", authMiddleware, permitirRoles("Admin", "Mecanico"), GetOrdenesMecanico);
 OrdenRouter.get("/api/mecanico/vehiculos", authMiddleware, permitirRoles("Admin", "Mecanico"), GetVehiculosMecanico);
 OrdenRouter.get("/api/mecanico/ordenes/:id", authMiddleware, permitirRoles("Admin", "Mecanico"), GetDetalleOrden);

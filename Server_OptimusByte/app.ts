@@ -4,6 +4,7 @@ import { ClienteRouter } from "./Routes/clienteRoutes.ts";
 import { UsuarioRouter } from "./Routes/usuarioRoutes.ts";
 import { VehiculoRouter } from "./Routes/vehiculoRoutes.ts";
 import { ClientePortalRouter } from "./Routes/clientePortalRoutes.ts";
+import { OrdenRouter } from "./Routes/ordenRoutes.ts";
 
 const app = new Application();
 
@@ -19,6 +20,7 @@ const routes = [
   ClientePortalRouter,
   UsuarioRouter,
   VehiculoRouter,
+  OrdenRouter,
 ];
 
 
