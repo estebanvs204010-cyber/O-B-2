@@ -15,8 +15,8 @@ const {
 
 const navItems = [
   { id: "inicio", label: "Inicio", href: "/cliente" },
-  { id: "vehiculos", label: "Vehiculos", href: "/cliente#vehiculos" },
-  { id: "ordenes", label: "Ordenes", href: "/cliente#ordenes" },
+  { id: "vehiculos", label: "Vehículos", href: "/cliente#vehiculos" },
+  { id: "ordenes", label: "Órdenes", href: "/cliente#ordenes" },
   { id: "citas", label: "Citas", href: "/cliente#citas" },
   { id: "pagos", label: "Pagos", href: "/cliente#pagos" },
   { id: "perfil", label: "Perfil", href: "/cliente#perfil" },
@@ -41,11 +41,12 @@ const navItems = [
 
         <div class="sidebar-section">Portal Cliente</div>
 
-        <nav aria-label="Navegacion del cliente">
+        <nav class="sidebar-nav" aria-label="Navegación del cliente">
           {
             navItems.map((item) => (
               <a
                 class:list={["sidebar-link", active === item.id && "active"]}
+                data-section={item.id}
                 href={item.href}
               >
                 {item.label}
@@ -57,10 +58,11 @@ const navItems = [
         <div class="sidebar-user">
           <div class="avatar">C</div>
 
-          <div>
+          <div class="sidebar-user-info">
             <strong>Cliente</strong>
+
             <button id="logoutButton" type="button">
-              Cerrar sesion
+              Cerrar sesión
             </button>
           </div>
         </div>
@@ -70,7 +72,7 @@ const navItems = [
         <header class="topbar">
           <div>
             <h1>{title}</h1>
-            <p>Gestiona la informacion de tus vehiculos y servicios.</p>
+            <p>Gestiona la información de tus vehículos y servicios.</p>
           </div>
 
           <a class="btn btn-outline btn-sm" href="/">
@@ -78,22 +80,63 @@ const navItems = [
           </a>
         </header>
 
-        <slot />
+        <div class="client-content">
+          <slot />
+        </div>
       </main>
     </div>
 
-<script>
-  document
-    .getElementById("logoutButton")
-    ?.addEventListener("click", async () => {
-      try {
-        await fetch("/api/auth/logout", {
-          method: "POST",
-        });
-      } finally {
+    <script>
+      import { cerrarSesion } from "../lib/api";
+
+      const logoutButton = document.getElementById("logoutButton");
+
+      logoutButton?.addEventListener("click", async () => {
+        logoutButton.setAttribute("disabled", "true");
+        logoutButton.textContent = "Cerrando sesión...";
+
+        await cerrarSesion();
+
         window.location.href = "/login";
+      });
+
+      const links = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>("[data-section]"),
+      );
+
+      function marcarSeccion(id: string) {
+        links.forEach((link) => {
+          const activo = link.dataset.section === id;
+
+          link.classList.toggle("active", activo);
+
+          if (activo) {
+            link.setAttribute("aria-current", "page");
+          } else {
+            link.removeAttribute("aria-current");
+          }
+        });
       }
-    });
-</script>
+
+      function actualizarSeccionDesdeHash() {
+        const hash = window.location.hash.replace("#", "");
+
+        marcarSeccion(hash || "inicio");
+      }
+
+      links.forEach((link) => {
+        link.addEventListener("click", () => {
+          const section = link.dataset.section;
+
+          if (section) {
+            marcarSeccion(section);
+          }
+        });
+      });
+
+      window.addEventListener("hashchange", actualizarSeccionDesdeHash);
+
+      actualizarSeccionDesdeHash();
+    </script>
   </body>
 </html>

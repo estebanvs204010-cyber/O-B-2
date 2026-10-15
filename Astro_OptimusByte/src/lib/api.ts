@@ -1,5 +1,5 @@
-// Helper central para hablar con el backend.
-// La sesión vive en una cookie HttpOnly.
+export const API_BASE_URL =
+  import.meta.env.PUBLIC_API_URL ?? "http://localhost:8002";
 
 export interface Usuario {
   id_usuario: number;
@@ -8,103 +8,56 @@ export interface Usuario {
   rol: "Admin" | "Mecanico" | "Cliente";
 }
 
-// Ruta inicial para cada rol después de iniciar sesión.
-export function rutaSegunRol(rol: Usuario["rol"]): string {
-  if (rol === "Mecanico") return "/mecanico";
-  if (rol === "Admin") return "/admin";
-  if (rol === "Cliente") return "/cliente";
-
-  return "/login";
-}
-
-interface ApiResponse<T = unknown> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
   usuario?: Usuario;
 }
 
-// Fetch autenticado: Astro obtiene el JWT desde la cookie HttpOnly.
+export async function cerrarSesion(): Promise<void> {
+  await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string> | undefined),
-  };
+  const headers = new Headers(options.headers);
 
-  const res = await fetch(path, {
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
+    credentials: "include",
   });
 
-  // Durante el login, necesitamos mostrar el mensaje del backend.
-  // Para las demás rutas, 401 significa sesión expirada.
-  if (res.status === 401 && path !== "/api/auth/login") {
+  if (response.status === 401) {
     window.location.href = "/login";
     throw new Error("Sesión expirada");
   }
 
-  const data = (await res.json().catch(() => ({}))) as ApiResponse<T>;
+  const data = (await response.json().catch(() => ({}))) as ApiResponse<T>;
 
-  if (!res.ok) {
-    throw new Error(data.message ?? `Error ${res.status}`);
+  if (!response.ok) {
+    throw new Error(data.message ?? `Error ${response.status}`);
   }
 
   return data;
 }
 
-export function formatearFecha(fecha?: string | null): string {
-  if (!fecha) return "—";
+export function rutaSegunRol(rol: Usuario["rol"]): string {
+  const rolNormalizado = rol.trim().toLowerCase();
 
-  const d = new Date(fecha);
+  if (rolNormalizado === "admin") return "/admin";
+  if (rolNormalizado === "mecanico") return "/mecanico";
+  if (rolNormalizado === "cliente") return "/cliente";
 
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-
-
-export function formatearFechaHora(fecha?: string | null): string {
-  if (!fecha) return "—";
-
-  const d = new Date(fecha);
-
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleString("es-CO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-export const ESTADOS_ORDEN = [
-  "Pendiente",
-  "En Proceso",
-  "Esperando Repuestos",
-  "Finalizado",
-  "Entregado",
-  "Cancelado",
-] as const;
-
-export function claseEstado(estado: string): string {
-  const mapa: Record<string, string> = {
-    Pendiente: "badge-pendiente",
-    "En Proceso": "badge-proceso",
-    "Esperando Repuestos": "badge-espera",
-    Finalizado: "badge-listo",
-    Entregado: "badge-listo",
-    Cancelado: "badge-cancelado",
-  };
-
-  return mapa[estado] ?? "badge-pendiente";
+  return "/portal";
 }
