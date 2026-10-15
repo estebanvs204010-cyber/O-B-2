@@ -75,8 +75,24 @@ export function getRolSSR(
 
     const payload = JSON.parse(payloadJson);
 
-    return typeof payload.rol === "string" ? payload.rol : null;
+    return normalizarRol(payload.rol ?? payload.role) ?? null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Unifica el nombre del rol (acentos, mayúsculas, "Administrador", etc.)
+ * a los valores que usa la interfaz: "Admin" | "Mecanico" | "Cliente".
+ */
+export function normalizarRol(rol: unknown): "Admin" | "Mecanico" | "Cliente" | undefined {
+  if (typeof rol !== "string") return undefined;
+
+  const r = rol.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
+  if (r.startsWith("admin")) return "Admin";
+  if (r.startsWith("mec") || r.startsWith("tecn")) return "Mecanico";
+  if (r.startsWith("cli")) return "Cliente";
+
+  return undefined;
 }
