@@ -1,3 +1,194 @@
 ---
-return Astro.redirect("/login");
+import PublicLayout from '../layouts/PublicLayout.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import Icon from '../components/Icon.astro';
+import { TALLER, servicios, pasos, repuestos, promos, articulos } from '../data/taller';
+
+const serviciosHome = servicios.slice(0, 4);
+const articulosHome = articulos.slice(0, 3);
+const fechaLarga = (iso: string) =>
+  new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
+<PublicLayout>
+  <!-- ═════════ HERO ═════════ -->
+  <section class="hm-hero">
+    <div class="hm-wrap hm-hero-grid">
+      <div>
+        <p class="hm-eyebrow">Servicio automotriz especializado</p>
+        <h1>Taller<br />mecánico<br /><span>OptimusByte</span></h1>
+        <p class="hm-hero-lead">
+          Mantenimiento, diagnóstico y reparación con seguimiento en línea de cada orden. Tu vehículo en manos expertas.
+        </p>
+        <div class="hm-hero-actions">
+          <a href="/reservas" class="hm-btn">Reserva tu servicio</a>
+          <a href="/login?next=/cliente/index" class="hm-btn hm-btn--ghost">Mi área de cliente</a>
+        </div>
+        <a href="/cliente" id="btnCliente" class="hm-hero-link">¿Ya eres cliente? Consulta el estado de tu orden →</a>
+      </div>
+      <div class="hm-hero-art">
+        <img src="./img/carro.png" alt="Vehículo con vista interna del motor y la suspensión" width="760" height="400" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ CIFRAS ═════════ -->
+  <section class="hm-strip" aria-label="Datos del taller">
+    <div class="hm-wrap hm-strip-grid">
+      <div class="hm-strip-item"><strong>+<em>{TALLER.anosExperiencia}</em></strong><span>Años de experiencia</span></div>
+      <div class="hm-strip-item"><strong>+<em>500</em></strong><span>Vehículos atendidos</span></div>
+      <div class="hm-strip-item"><strong><em>100</em>%</strong><span>Seguimiento en línea</span></div>
+      <div class="hm-strip-item"><strong><em>24</em>/7</strong><span>Consulta tu orden</span></div>
+    </div>
+  </section>
+
+  <!-- ═════════ NOSOTROS ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap hm-about-grid">
+      <div class="hm-about-text" data-reveal>
+        <div class="hm-section-head" style="margin-bottom:24px;">
+          <p class="hm-eyebrow">Nosotros</p>
+          <h2>Mecánica y colisión en un solo lugar</h2>
+        </div>
+        <p>
+          En OptimusByte combinamos la experiencia de un taller tradicional con tecnología: cada vehículo
+          tiene su historial, cada orden de trabajo su seguimiento y cada cliente la tranquilidad de saber
+          en qué etapa va su servicio.
+        </p>
+        <p>
+          Atendemos mecánica general, diagnóstico electrónico, latonería y pintura, y te ayudamos a conseguir
+          los repuestos correctos para tu vehículo.
+        </p>
+        <a href="/nosotros" class="hm-btn hm-btn--ghost">Conócenos</a>
+      </div>
+      <div class="hm-about-card" data-reveal>
+        <h3>¿Por qué elegirnos?</h3>
+        <p>Transparencia desde la cotización hasta la entrega.</p>
+        <ul>
+          <li>Cotización clara antes de empezar</li>
+          <li>Historial completo de tu vehículo</li>
+          <li>Estado de tu orden en tiempo real</li>
+          <li>Técnicos con experiencia certificada</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ SERVICIOS ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Nuestros servicios</p>
+        <h2>Todo para tu vehículo</h2>
+        <p>Desde un cambio de aceite hasta una reparación completa de colisión.</p>
+      </div>
+      <div class="hm-cards">
+        {serviciosHome.map((s, i) => (
+          <article class="hm-card" data-reveal style={`transition-delay:${i * 0.07}s`}>
+            <div class="hm-card-icon"><Icon name={s.icono} /></div>
+            <h3>{s.titulo}</h3>
+            <p>{s.texto}</p>
+            <a href={`/servicios#${s.slug}`} class="hm-card-link">Ver más →</a>
+          </article>
+        ))}
+      </div>
+      <div class="hm-center-action" data-reveal>
+        <a href="/servicios" class="hm-btn hm-btn--ghost">Ver todos los servicios</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ PROCESO ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Así trabajamos</p>
+        <h2>Tres pasos y listo</h2>
+      </div>
+      <div class="hm-steps">
+        {pasos.map((p, i) => (
+          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ REPUESTOS ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Repuestos</p>
+        <h2>Encuentra lo que necesitas</h2>
+        <p>Repuestos y accesorios para mantener tu vehículo en óptimas condiciones.</p>
+      </div>
+      <div class="hm-parts">
+        {repuestos.map((r, i) => (
+          <a href="/repuestos" class="hm-part" data-reveal style={`transition-delay:${i * 0.05}s`}>
+            <Icon name={r.icono} />
+            {r.nombre}
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ COTIZACIÓN ═════════ -->
+  <QuoteForm id="cotizar" />
+
+  <!-- ═════════ PROMOCIONES ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Promociones</p>
+        <h2>Revisiones que te ahorran sustos</h2>
+      </div>
+      <div class="hm-promos">
+        {promos.map((p, i) => (
+          <article class="hm-promo" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <span class="hm-promo-tag">{p.etiqueta}</span>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+            <div class="hm-promo-price"><small>Desde</small>{p.precio}</div>
+            <a href="/reservas" class="hm-btn hm-btn--sm">Reservar</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ BLOG ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Blog</p>
+        <h2>Consejos para tu vehículo</h2>
+      </div>
+      <div class="hm-posts">
+        {articulosHome.map((a, i) => (
+          <a href={`/blog#${a.slug}`} class="hm-post" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <div class="hm-post-cover"><Icon name={a.icono} /></div>
+            <div class="hm-post-body">
+              <span class="hm-post-meta">{a.categoria} · {fechaLarga(a.fecha)}</span>
+              <h3>{a.titulo}</h3>
+              <p>{a.resumen}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+      <div class="hm-center-action" data-reveal>
+        <a href="/blog" class="hm-btn hm-btn--ghost">Ver todos los artículos</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ CTA FINAL ═════════ -->
+  <section class="hm-cta">
+    <div class="hm-wrap" data-reveal>
+      <h2>¿Listo para cuidar tu vehículo?</h2>
+      <p>Crea tu cuenta, registra tu vehículo y sigue cada servicio en línea.</p>
+      <a href="/registro" class="hm-btn hm-btn--light" id="btnCtaRegistro">Crear cuenta gratis</a>
+    </div>
+  </section>
+</PublicLayout>

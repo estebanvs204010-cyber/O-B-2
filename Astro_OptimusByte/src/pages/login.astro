@@ -51,7 +51,7 @@ import AuthLayout from "../layouts/AuthLayout.astro";
           body: JSON.stringify({ correo, contrasena }),
         });
 
-                if (!resultado.success || !resultado.usuario) {
+        if (!resultado.success || !resultado.usuario) {
           mostrarError(resultado.message ?? "No se pudo iniciar sesión");
           return;
         }

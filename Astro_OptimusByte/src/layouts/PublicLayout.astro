@@ -1,0 +1,151 @@
+---
+import '../styles/components/home.css';
+import { TALLER, NAV, iconoWhatsApp } from '../data/taller';
+import Icon from '../components/Icon.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Taller Mecánico OptimusByte',
+  description = 'OptimusByte: taller mecánico con mecánica general, diagnóstico electrónico, latonería y repuestos. Reserva tu servicio en línea.',
+} = Astro.props;
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const esActivo = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="hm">
+
+      <!-- ═════════ HEADER ═════════ -->
+      <header class="hm-header" id="hmHeader">
+        <div class="hm-wrap hm-header-grid">
+          <a href="/" class="hm-logo" aria-label="OptimusByte — inicio">
+            <span class="hm-logo-mark"><Icon name="wrench" /></span>
+            <span class="hm-logo-text">
+              <small>TALLER</small>
+              <strong>Optimus<span>Byte</span></strong>
+            </span>
+          </a>
+
+          <div class="hm-topbar">
+            <a href={`https://wa.me/${TALLER.whatsapp}`} target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d={iconoWhatsApp} /></svg>
+              {TALLER.telefono}
+            </a>
+            <a href="/reservas">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
+              Reserva en línea
+            </a>
+            <a href="/contacto">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+              {TALLER.direccion}
+            </a>
+          </div>
+
+          <button class="hm-burger" id="hmBurger" aria-label="Abrir menú" aria-expanded="false"><span></span></button>
+
+          <nav class="hm-nav" id="hmNav" aria-label="Principal">
+            {NAV.map((n) => (
+              <a href={n.href} class={esActivo(n.href) ? 'is-active' : ''} aria-current={esActivo(n.href) ? 'page' : undefined}>{n.label}</a>
+            ))}
+            <div class="hm-nav-cta">
+              <a href="/login" class="hm-btn hm-btn--ghost hm-btn--sm" id="btnLoginNav">Iniciar sesión</a>
+              <a href="/registro" class="hm-btn hm-btn--blue hm-btn--sm" id="btnRegistroNav">Registrarse</a>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      <main>
+        <slot />
+      </main>
+
+      <!-- ═════════ FOOTER ═════════ -->
+      <footer class="hm-footer">
+        <div class="hm-wrap hm-footer-grid">
+          <div>
+            <h4>Comunícate</h4>
+            <ul>
+              <li><a href={`https://wa.me/${TALLER.whatsapp}`} target="_blank" rel="noopener">WhatsApp {TALLER.telefono}</a></li>
+              <li><a href={`mailto:${TALLER.correo}`}>{TALLER.correo}</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Horario</h4>
+            <ul>
+              {TALLER.horario.map(([dia, hora]) => <li>{dia}<br /><strong style="color:#fff;">{hora}</strong></li>)}
+            </ul>
+          </div>
+          <div>
+            <h4>Síguenos</h4>
+            <div class="hm-social">
+              {TALLER.redes.map((r) => <a href={r.url} aria-label={r.nombre}>{r.sigla}</a>)}
+            </div>
+          </div>
+          <div>
+            <h4>Información</h4>
+            <ul>
+              <li><a href="/contacto">{TALLER.direccion}</a></li>
+              <li>{TALLER.ciudad}</li>
+              <li><a href="/login">Iniciar sesión</a></li>
+              <li><a href="/registro">Registrarse</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="hm-wrap hm-footer-bottom">
+          <span>© 2026 {TALLER.nombre}. Todos los derechos reservados.</span>
+          <span>Taller mecánico · Colombia</span>
+        </div>
+      </footer>
+
+      <a class="hm-wa" href={`https://wa.me/${TALLER.whatsapp}`} target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d={iconoWhatsApp} /></svg>
+      </a>
+    </div>
+
+    <script>
+      // Menú móvil
+      const header = document.getElementById('hmHeader');
+      const burger = document.getElementById('hmBurger');
+      burger?.addEventListener('click', () => {
+        const abierto = header!.classList.toggle('is-open');
+        burger.setAttribute('aria-expanded', String(abierto));
+      });
+
+      // Animación de entrada al hacer scroll
+      const items = document.querySelectorAll('[data-reveal]');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-in');
+                io.unobserve(e.target);
+              }
+            });
+          },
+          { threshold: 0.12 },
+        );
+        items.forEach((el) => io.observe(el));
+      } else {
+        items.forEach((el) => el.classList.add('is-in'));
+      }
+    </script>
+  </body>
+</html>

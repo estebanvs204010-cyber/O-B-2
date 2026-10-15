@@ -1,0 +1,53 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import Icon from '../components/Icon.astro';
+import { articulos } from '../data/taller';
+
+const fechaLarga = (iso: string) =>
+  new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const [destacado, ...resto] = articulos;
+---
+<PublicLayout title="Blog | Taller Mecánico OptimusByte" description="Consejos de mantenimiento, seguridad y cuidado de tu vehículo por el equipo de OptimusByte.">
+  <PageBanner
+    eyebrow="Consejos y novedades"
+    titulo="Blog"
+    texto="Guías prácticas para cuidar tu vehículo y evitar reparaciones costosas."
+  />
+
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <!-- Artículo destacado -->
+      <article class="hm-featured" id={destacado.slug} data-reveal>
+        <div class="hm-post-cover hm-post-cover--lg"><Icon name={destacado.icono} /></div>
+        <div class="hm-featured-body">
+          <span class="hm-post-meta">Destacado · {destacado.categoria} · {fechaLarga(destacado.fecha)}</span>
+          <h2>{destacado.titulo}</h2>
+          <p>{destacado.resumen}</p>
+        </div>
+      </article>
+
+      <div class="hm-posts" style="margin-top:32px;">
+        {resto.map((a, i) => (
+          <article class="hm-post" id={a.slug} data-reveal style={`transition-delay:${i * 0.06}s`}>
+            <div class="hm-post-cover"><Icon name={a.icono} /></div>
+            <div class="hm-post-body">
+              <span class="hm-post-meta">{a.categoria} · {fechaLarga(a.fecha)}</span>
+              <h3>{a.titulo}</h3>
+              <p>{a.resumen}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="hm-cta">
+    <div class="hm-wrap" data-reveal>
+      <h2>¿Tienes una duda sobre tu vehículo?</h2>
+      <p>Cuéntanos y te orientamos sin compromiso.</p>
+      <a href="/contacto" class="hm-btn hm-btn--light">Escríbenos</a>
+    </div>
+  </section>
+</PublicLayout>

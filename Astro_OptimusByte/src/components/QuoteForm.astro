@@ -1,0 +1,82 @@
+---
+import { TALLER, servicios } from '../data/taller';
+
+interface Props {
+  id?: string;
+  titulo?: string;
+  texto?: string;
+}
+const {
+  id = 'cotizar',
+  titulo = 'Solicita tu <span>cotización</span>',
+  texto = 'Déjanos los datos de tu vehículo y lo que necesitas. Te contactamos por WhatsApp para confirmar tu cita.',
+} = Astro.props;
+---
+<section class="hm-section hm-quote" id={id}>
+  <div class="hm-wrap hm-quote-grid">
+    <div data-reveal>
+      <p class="hm-eyebrow" style="color:#9fbcff;">Reservas</p>
+      <h2 set:html={titulo} />
+      <p>{texto}</p>
+    </div>
+    <form class="hm-form" data-wa-form data-wa={TALLER.whatsapp} data-reveal>
+      <div>
+        <label>Nombre</label>
+        <input name="nombre" type="text" placeholder="Tu nombre" required />
+      </div>
+      <div>
+        <label>Teléfono</label>
+        <input name="telefono" type="tel" placeholder="300 000 0000" required />
+      </div>
+      <div>
+        <label>Vehículo</label>
+        <input name="vehiculo" type="text" placeholder="Marca, modelo y año" required />
+      </div>
+      <div>
+        <label>Servicio</label>
+        <select name="servicio">
+          {servicios.map((s) => <option>{s.titulo}</option>)}
+          <option>Repuestos</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div>
+        <label>Fecha deseada</label>
+        <input name="fecha" type="date" />
+      </div>
+      <div>
+        <label>Hora</label>
+        <input name="hora" type="time" />
+      </div>
+      <div class="full">
+        <label>Cuéntanos qué necesita</label>
+        <textarea name="mensaje" placeholder="Describe el problema o el servicio que buscas"></textarea>
+      </div>
+      <div class="full">
+        <button type="submit" class="hm-btn hm-btn--blue" style="width:100%;">Enviar por WhatsApp</button>
+      </div>
+      <small class="full">Al enviar se abrirá WhatsApp con tu solicitud ya escrita.</small>
+    </form>
+  </div>
+</section>
+
+<script>
+  // Formulario → abre WhatsApp con el mensaje armado
+  document.querySelectorAll<HTMLFormElement>('form[data-wa-form]').forEach((form) => {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const f = new FormData(form);
+      const lineas = [
+        'Hola, quiero solicitar una cotización:',
+        `• Nombre: ${f.get('nombre')}`,
+        `• Teléfono: ${f.get('telefono')}`,
+        `• Vehículo: ${f.get('vehiculo')}`,
+        `• Servicio: ${f.get('servicio')}`,
+        f.get('fecha') ? `• Fecha deseada: ${f.get('fecha')} ${f.get('hora') || ''}`.trim() : '',
+        f.get('mensaje') ? `• Detalle: ${f.get('mensaje')}` : '',
+      ].filter(Boolean);
+      const wa = form.dataset.wa;
+      window.open(`https://wa.me/${wa}?text=${encodeURIComponent(lineas.join('\n'))}`, '_blank', 'noopener');
+    });
+  });
+</script>
