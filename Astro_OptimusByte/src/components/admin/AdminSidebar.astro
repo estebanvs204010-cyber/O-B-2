@@ -3,6 +3,7 @@ import {
   Wrench,
   LayoutDashboard,
   ClipboardList,
+  CalendarCheck,
   Users,
   HardHat,
   CarFront,
@@ -12,11 +13,11 @@ import {
 } from "lucide-astro";
 
 interface Props {
-  active: "dashboard" | "clientes" | "ordenes" | "repuestos" | "vehiculos" | "facturacion" | "mecanicos" | "citas";
   active:
     | "dashboard"
     | "clientes"
     | "ordenes"
+    | "citas"
     | "repuestos"
     | "vehiculos"
     | "facturacion"
@@ -27,12 +28,7 @@ const { active } = Astro.props;
 ---
 
 <aside class="admin-sidebar">
-
-  <!-- Logo -->
   <a class="admin-brand" href="/admin">
-    <span class="brand-icon">
-      <i class="bi bi-wrench-adjustable-circle-fill"></i>
-    </span>
     <span class="brand-icon">
       <Wrench aria-hidden="true" />
     </span>
@@ -40,13 +36,8 @@ const { active } = Astro.props;
     <span>Optimus<span class="brand-accent">Byte</span></span>
   </a>
 
-  <nav class="admin-nav">
-
   <nav class="admin-nav" aria-label="Navegacion administrativa">
     <p class="admin-nav-title">Principal</p>
-    <a href="/admin"
-       class:list={["admin-nav-link", { active: active === "dashboard" }]}>
-      <i class="bi bi-speedometer2"></i>
 
     <a
       href="/admin"
@@ -56,35 +47,6 @@ const { active } = Astro.props;
       Dashboard
     </a>
 
-    <p class="admin-nav-title">Gestión</p>
-    <a href="/admin/ordenes"
-       class:list={["admin-nav-link", { active: active === "ordenes" }]}>
-      <i class="bi bi-clipboard2-check"></i>
-      Órdenes
-    </a>
-    <a href="/admin/citas"
-       class:list={["admin-nav-link", { active: active === "citas" }]}>
-      <i class="bi bi-calendar2-check"></i>
-      Citas
-    </a>
-    <a href="/admin/clientes"
-       class:list={["admin-nav-link", { active: active === "clientes" }]}>
-      <i class="bi bi-people"></i>
-      Clientes
-    </a>
-    <a href="/admin/mecanicos"
-       class:list={["admin-nav-link", { active: active === "mecanicos" }]}>
-      <i class="bi bi-person-workspace"></i>
-      Mecánicos
-    </a>
-    <a href="/admin/vehiculos"
-       class:list={["admin-nav-link", { active: active === "vehiculos" }]}>
-      <i class="bi bi-car-front"></i>
-      Vehículos
-    </a>
-    <a href="/admin/repuestos"
-       class:list={["admin-nav-link", { active: active === "repuestos" }]}>
-      <i class="bi bi-box-seam"></i>
     <p class="admin-nav-title">Gestion</p>
 
     <a
@@ -93,6 +55,14 @@ const { active } = Astro.props;
     >
       <ClipboardList aria-hidden="true" />
       Ordenes
+    </a>
+
+    <a
+      href="/admin/citas"
+      class:list={["admin-nav-link", { active: active === "citas" }]}
+    >
+      <CalendarCheck aria-hidden="true" />
+      Citas
     </a>
 
     <a
@@ -126,10 +96,6 @@ const { active } = Astro.props;
       <Package aria-hidden="true" />
       Repuestos
     </a>
-    <a href="/admin/facturacion"
-       class:list={["admin-nav-link", { active: active === "facturacion" }]}>
-      <i class="bi bi-receipt"></i>
-      Facturación
 
     <a
       href="/admin/facturacion"
@@ -138,17 +104,15 @@ const { active } = Astro.props;
       <FileText aria-hidden="true" />
       Facturacion
     </a>
-
   </nav>
 
   <div class="admin-user">
     <div class="admin-avatar">A</div>
+
     <div>
       <strong>Administrador</strong>
       <span>Admin</span>
     </div>
-    <button id="ob-logout" type="button" title="Cerrar sesión">
-      <i class="bi bi-box-arrow-right"></i>
 
     <button
       id="ob-logout"
@@ -159,5 +123,4 @@ const { active } = Astro.props;
       <LogOut aria-hidden="true" />
     </button>
   </div>
-
 </aside>

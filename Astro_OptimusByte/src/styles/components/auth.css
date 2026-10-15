@@ -37,6 +37,10 @@
   margin-top: 16px;
 }
 .auth-footer a { color: var(--blue); font-weight: 600; }
+.google-login { display: flex; min-height: 44px; justify-content: center; margin: 0 0 18px; }
+.google-config-hint { margin: 8px 0; color: #a33a32; font-size: 12px; text-align: center; }
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; color: var(--muted); font-size: 12px; }
+.login-divider::before, .login-divider::after { height: 1px; flex: 1; background: var(--border); content: ""; }
 .auth-shell .btn-primary {
   background: var(--navy);
   color: white;

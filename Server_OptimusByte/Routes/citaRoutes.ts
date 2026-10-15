@@ -15,11 +15,11 @@ import {
 const CitaRouter = new Router();
 
 // --- Cliente ---
-CitaRouter.get("/api/citas/disponibilidad", authMiddleware, GetDisponibilidad);
-CitaRouter.get("/api/citas/mias", authMiddleware, GetMisCitas);
-CitaRouter.post("/api/citas", authMiddleware, PostCrearCita);
-CitaRouter.patch("/api/citas/:id/elegir-horario", authMiddleware, PatchElegirHorario);
-CitaRouter.patch("/api/citas/:id/cancelar", authMiddleware, PatchCancelarCita);
+CitaRouter.get("/api/citas/disponibilidad", authMiddleware, permitirRoles("Cliente", "Admin", "Mecanico"), GetDisponibilidad);
+CitaRouter.get("/api/citas/mias", authMiddleware, permitirRoles("Cliente"), GetMisCitas);
+CitaRouter.post("/api/citas", authMiddleware, permitirRoles("Cliente"), PostCrearCita);
+CitaRouter.patch("/api/citas/:id/elegir-horario", authMiddleware, permitirRoles("Cliente"), PatchElegirHorario);
+CitaRouter.patch("/api/citas/:id/cancelar", authMiddleware, permitirRoles("Cliente", "Admin"), PatchCancelarCita);
 
 // --- Admin / Mecanico ---
 CitaRouter.get("/api/citas", authMiddleware, permitirRoles("Admin", "Mecanico"), GetListarCitas);

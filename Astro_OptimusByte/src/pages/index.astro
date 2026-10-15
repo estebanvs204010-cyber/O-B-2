@@ -37,6 +37,12 @@ import '../styles/global.css';
           <a href="/cliente" id="btnCliente" class="ob-hero-link">¿Eres cliente? Ingresa a tu área aquí →</a>
         </section>
 
+        <section class="ob-cta" id="agenda-cliente">
+          <h2 class="ob-cta-title">¿Necesitas atención para tu vehículo?</h2>
+          <p class="ob-cta-text">Agenda una cita en el taller. Inicia sesión para elegir tu vehículo, fecha y horario disponible.</p>
+          <button id="btnAgendarCita" class="ob-btn ob-btn-primary" type="button">Agendar cita</button>
+        </section>
+
         <section class="ob-stats">
           <div class="ob-stat">
             <div class="ob-stat-number">0</div>
@@ -130,6 +136,10 @@ import '../styles/global.css';
       });
       document.getElementById('btnCtaRegistro')?.addEventListener('click', () => {
         window.location.href = '/registro';
+      });
+      document.getElementById('btnAgendarCita')?.addEventListener('click', () => {
+        const destino = encodeURIComponent('/cliente/citas');
+        window.location.href = `/login?next=${destino}&motivo=agendar-cita`;
       });
       // El link "btnCliente" ya redirige por su href a /cliente,
       // y esa página se encarga de pedir credenciales si no hay sesión.

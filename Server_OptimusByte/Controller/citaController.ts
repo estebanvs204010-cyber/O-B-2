@@ -251,7 +251,10 @@ export const PatchCompletarCita = async (ctx: RouterContext<"/api/citas/:id/comp
 // PATCH /api/citas/:id/cancelar   (Cliente o Admin)
 export const PatchCancelarCita = async (ctx: RouterContext<"/api/citas/:id/cancelar">) => {
   const { response, params } = ctx;
-  const resultado = await citaModel.Cancelar(Number(params.id));
+  const user = ctx.state.user as { sub?: string; rol?: string } | undefined;
+  const id_cliente = user?.rol === "Cliente" ? await resolverIdCliente(ctx) : undefined;
+  if (user?.rol === "Cliente" && !id_cliente) return;
+  const resultado = await citaModel.Cancelar(Number(params.id), id_cliente ?? undefined);
   response.status = resultado.success ? 200 : 400;
   response.body = resultado;
 };

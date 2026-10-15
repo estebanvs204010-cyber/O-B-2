@@ -3,70 +3,47 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 ---
 
 <AdminLayout title="Citas" active="citas">
-  <section class="admin-page-header">
+  <section class="page-intro">
     <div>
       <p class="eyebrow">Agenda del taller</p>
-      <h2>Citas</h2>
-      <span>Confirma o rechaza las citas que piden los clientes.</span>
+      <h1>Solicitudes y citas</h1>
+      <p class="intro-copy">Revisa las solicitudes de tus clientes y organiza las visitas al taller.</p>
     </div>
-
-    <div class="admin-page-actions">
-      <button id="btnRecargarCitas" class="btn btn-outline" type="button">
-        Recargar
-      </button>
-    </div>
+    <button id="btnRecargarCitas" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Actualizar</button>
   </section>
 
-  <section class="tabs" id="tabsEstado">
-    <span class="tab active" data-estado="">Todas</span>
-    <span class="tab" data-estado="Pendiente">Pendientes</span>
-    <span class="tab" data-estado="Sugerida">Sugeridas</span>
-    <span class="tab" data-estado="Confirmada">Confirmadas</span>
-    <span class="tab" data-estado="Rechazada">Rechazadas</span>
-    <span class="tab" data-estado="Completada">Completadas</span>
-    <span class="tab" data-estado="Cancelada">Canceladas</span>
+  <section class="filters-panel" aria-label="Filtros de citas">
+    <div id="tabsEstado" class="status-filters">
+      <button class="filter-button active" type="button" data-estado="">Todas</button>
+      <button class="filter-button" type="button" data-estado="Pendiente">Pendientes</button>
+      <button class="filter-button" type="button" data-estado="Sugerida">Sugeridas</button>
+      <button class="filter-button" type="button" data-estado="Confirmada">Confirmadas</button>
+      <button class="filter-button" type="button" data-estado="Rechazada">Rechazadas</button>
+      <button class="filter-button" type="button" data-estado="Completada">Completadas</button>
+      <button class="filter-button" type="button" data-estado="Cancelada">Canceladas</button>
+    </div>
+    <label class="search-box"><span aria-hidden="true">⌕</span><input id="buscarCita" type="search" placeholder="Buscar cliente, placa o motivo…" /></label>
   </section>
 
-  <section class="admin-panel citas-grid-panel">
-    <div id="gridCitas" class="mecanicos-grid"></div>
+  <section class="results-section" aria-live="polite">
+    <div class="results-heading"><h2 id="tituloResultados">Todas las citas</h2><span id="contadorCitas" class="results-count">Cargando…</span></div>
+    <div id="estadoCarga" class="state-message">Cargando citas…</div>
+    <div id="errorCitas" class="state-message state-error" hidden></div>
+    <div id="sinCitas" class="empty-state" hidden><div class="empty-icon">✓</div><h3>No hay citas en esta vista</h3><p>Cuando haya solicitudes que coincidan, aparecerán aquí.</p></div>
+    <div id="listaCitas" class="appointments-list"></div>
   </section>
 
   <dialog id="modalRechazo" class="mecanico-dialog">
     <form id="formRechazo" class="mecanico-form">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">Responder al cliente</p>
-          <h2>Rechazar cita</h2>
-        </div>
-        <button id="btnCerrarModalRechazo" class="modal-close" type="button">&#10005;</button>
-      </div>
-
+      <div class="modal-header"><div><p class="eyebrow">Responder al cliente</p><h2>Rechazar cita</h2></div><button id="btnCerrarModalRechazo" class="modal-close" type="button" aria-label="Cerrar">×</button></div>
       <input id="rechazoIdCita" type="hidden" />
-
-      <div class="field">
-        <label for="rechazoMotivo">Motivo (el cliente lo verá por correo)</label>
-        <textarea id="rechazoMotivo" rows="3" required></textarea>
-      </div>
-
-      <div class="modal-actions">
-        <button id="btnCancelarRechazo" class="btn btn-outline" type="button">Cancelar</button>
-        <button id="btnConfirmarRechazo" class="btn btn-primary" type="submit">Rechazar cita</button>
-      </div>
+      <div class="field"><label for="rechazoMotivo">Motivo (el cliente lo verá por correo)</label><textarea id="rechazoMotivo" rows="3" required></textarea></div>
+      <div class="modal-actions"><button id="btnCancelarRechazo" class="btn btn-outline" type="button">Cancelar</button><button id="btnConfirmarRechazo" class="btn btn-primary" type="submit">Rechazar cita</button></div>
     </form>
   </dialog>
 
   <script>
-    import {
-      createGrid,
-      ModuleRegistry,
-      AllCommunityModule,
-      themeQuartz,
-    } from "ag-grid-community";
-
-    import type { GridApi, GridOptions, ICellRendererParams } from "ag-grid-community";
     import { apiFetch, formatearFechaHora } from "../../lib/api";
-
-    ModuleRegistry.registerModules([AllCommunityModule]);
 
     interface CitaRow {
       id_cita: number;
@@ -80,192 +57,252 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       origen: string;
     }
 
-    const CLASE_ESTADO: Record<string, string> = {
-      Sugerida: "badge-espera",
-      Pendiente: "badge-pendiente",
-      Confirmada: "badge-proceso",
-      Rechazada: "badge-cancelado",
-      Cancelada: "badge-cancelado",
-      Completada: "badge-listo",
+    const ESTADOS: Record<string, string> = {
+      Sugerida: "status-suggested",
+      Pendiente: "status-pending",
+      Confirmada: "status-confirmed",
+      Rechazada: "status-rejected",
+      Cancelada: "status-rejected",
+      Completada: "status-completed",
+    };
+    const LABELS: Record<string, string> = {
+      "": "Todas las citas", Pendiente: "Citas pendientes", Sugerida: "Mantenimientos sugeridos",
+      Confirmada: "Citas confirmadas", Rechazada: "Citas rechazadas", Completada: "Citas completadas", Cancelada: "Citas canceladas",
     };
 
-    const temaOptimus = themeQuartz.withParams({
-      accentColor: "#1e6dff",
-      backgroundColor: "#ffffff",
-      foregroundColor: "#102a50",
-      borderColor: "#e2e8f0",
-      borderRadius: 8,
-      wrapperBorderRadius: 8,
-      headerFontWeight: 700,
-    });
-
-    let gridApi: GridApi<CitaRow> | undefined;
+    let citas: CitaRow[] = [];
     let estadoActivo = "";
+    let textoBusqueda = "";
 
-    const modalRechazo = document.getElementById("modalRechazo") as HTMLDialogElement;
-    const formRechazo = document.getElementById("formRechazo") as HTMLFormElement;
+    const lista = document.querySelector<HTMLElement>("#listaCitas")!;
+    const estadoCarga = document.querySelector<HTMLElement>("#estadoCarga")!;
+    const errorCitas = document.querySelector<HTMLElement>("#errorCitas")!;
+    const sinCitas = document.querySelector<HTMLElement>("#sinCitas")!;
+    const contador = document.querySelector<HTMLElement>("#contadorCitas")!;
+    const titulo = document.querySelector<HTMLElement>("#tituloResultados")!;
+    const modalRechazo = document.querySelector<HTMLDialogElement>("#modalRechazo")!;
+    const formRechazo = document.querySelector<HTMLFormElement>("#formRechazo")!;
 
-    function estadoCellRenderer(params: ICellRendererParams<CitaRow>) {
-      const span = document.createElement("span");
-      const estado = params.data?.estado ?? "Pendiente";
-      span.className = `badge ${CLASE_ESTADO[estado] ?? "badge-pendiente"}`;
-      span.textContent = estado;
-      return span;
+    function infoItem(label: string, value: string, className = "") {
+      const wrapper = document.createElement("div");
+      wrapper.className = `appointment-info ${className}`;
+      const caption = document.createElement("span");
+      caption.className = "info-label";
+      caption.textContent = label;
+      const content = document.createElement("strong");
+      content.className = "info-value";
+      content.textContent = value;
+      wrapper.append(caption, content);
+      return wrapper;
     }
 
-    function fechaCellRenderer(params: ICellRendererParams<CitaRow>) {
-      const span = document.createElement("span");
-      span.textContent = params.data?.fecha_hora
-        ? formatearFechaHora(params.data.fecha_hora)
-        : "Sin horario (cliente debe elegir)";
-      return span;
+    function crearAccion(texto: string, clase: string, accion: () => void) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `appointment-action ${clase}`;
+      button.textContent = texto;
+      button.addEventListener("click", accion);
+      return button;
     }
 
-    function accionesCellRenderer(params: ICellRendererParams<CitaRow>) {
-      const contenedor = document.createElement("div");
-      contenedor.className = "grid-actions";
-      const cita = params.data!;
+    function crearTarjeta(cita: CitaRow) {
+      const card = document.createElement("article");
+      card.className = "appointment-card";
 
+      const top = document.createElement("div");
+      top.className = "appointment-top";
+      const customer = document.createElement("div");
+      customer.className = "customer-block";
+      const avatar = document.createElement("span");
+      avatar.className = "customer-avatar";
+      avatar.textContent = (cita.nombre_completo || "C").trim().slice(0, 1).toUpperCase();
+      const nameBox = document.createElement("div");
+      const name = document.createElement("strong");
+      name.className = "customer-name";
+      name.textContent = cita.nombre_completo || "Cliente";
+      const number = document.createElement("span");
+      number.className = "request-number";
+      number.textContent = `Solicitud #${cita.id_cita}`;
+      nameBox.append(name, number);
+      customer.append(avatar, nameBox);
+
+      const badge = document.createElement("span");
+      badge.className = `status-badge ${ESTADOS[cita.estado] ?? "status-pending"}`;
+      badge.textContent = cita.estado;
+      top.append(customer, badge);
+
+      const details = document.createElement("div");
+      details.className = "appointment-details";
+      details.append(
+        infoItem("Vehículo", `${cita.placa || "Sin placa"} · ${cita.marca || ""} ${cita.modelo || ""}`.trim(), "vehicle-info"),
+        infoItem("Fecha y hora", cita.fecha_hora ? formatearFechaHora(cita.fecha_hora) : "Horario por elegir", "date-info"),
+        infoItem("Motivo", cita.motivo?.trim() || "No especificado", "reason-info"),
+      );
+
+      const footer = document.createElement("div");
+      footer.className = "appointment-footer";
+      const note = document.createElement("span");
+      note.className = "footer-note";
+      note.textContent = cita.estado === "Pendiente" ? "Requiere respuesta del taller" : cita.estado === "Confirmada" ? "Cita confirmada con el cliente" : "Solicitud de cita";
+      const actions = document.createElement("div");
+      actions.className = "appointment-actions";
       if (cita.estado === "Pendiente") {
-        const confirmar = document.createElement("button");
-        confirmar.className = "grid-action-button activate";
-        confirmar.type = "button";
-        confirmar.textContent = "Confirmar";
-        confirmar.addEventListener("click", () => confirmarCita(cita));
-
-        const rechazar = document.createElement("button");
-        rechazar.className = "grid-action-button delete";
-        rechazar.type = "button";
-        rechazar.textContent = "Rechazar";
-        rechazar.addEventListener("click", () => abrirModalRechazo(cita));
-
-        contenedor.append(confirmar, rechazar);
+        actions.append(
+          crearAccion("Confirmar cita", "action-confirm", () => void confirmarCita(cita)),
+          crearAccion("Rechazar", "action-reject", () => abrirModalRechazo(cita)),
+        );
       } else if (cita.estado === "Confirmada") {
-        const completar = document.createElement("button");
-        completar.className = "grid-action-button edit";
-        completar.type = "button";
-        completar.textContent = "Marcar completada";
-        completar.addEventListener("click", () => completarCita(cita));
-
-        contenedor.append(completar);
-      } else {
-        contenedor.textContent = "—";
+        actions.append(crearAccion("Marcar completada", "action-complete", () => void completarCita(cita)));
       }
-
-      return contenedor;
+      footer.append(note, actions);
+      card.append(top, details, footer);
+      return card;
     }
 
-    const gridOptions: GridOptions<CitaRow> = {
-      theme: temaOptimus,
-      columnDefs: [
-        { field: "nombre_completo", headerName: "Cliente", flex: 1.4, filter: true, floatingFilter: true },
-        {
-          headerName: "Vehículo",
-          flex: 1.2,
-          valueGetter: (p) => `${p.data?.placa ?? ""} · ${p.data?.marca ?? ""} ${p.data?.modelo ?? ""}`,
-          filter: true,
-        },
-        { headerName: "Fecha y hora", flex: 1.3, cellRenderer: fechaCellRenderer },
-        { field: "motivo", headerName: "Motivo", flex: 1.6 },
-        { headerName: "Estado", width: 130, cellRenderer: estadoCellRenderer, sortable: false, filter: false },
-        { headerName: "Acciones", width: 220, cellRenderer: accionesCellRenderer, sortable: false, filter: false },
-      ],
-      defaultColDef: { resizable: true, sortable: true },
-      rowData: [],
-      pagination: true,
-      paginationPageSize: 10,
-      paginationPageSizeSelector: [10, 20, 50],
-      onGridReady: (params) => {
-        gridApi = params.api;
-        cargarCitas();
-      },
-    };
-
-    const gridDiv = document.querySelector<HTMLElement>("#gridCitas");
-    if (gridDiv) createGrid(gridDiv, gridOptions);
+    function pintarCitas() {
+      const consulta = textoBusqueda.toLocaleLowerCase("es");
+      const visibles = citas.filter((cita) =>
+        `${cita.nombre_completo} ${cita.placa} ${cita.marca} ${cita.modelo} ${cita.motivo ?? ""}`.toLocaleLowerCase("es").includes(consulta)
+      );
+      lista.replaceChildren(...visibles.map(crearTarjeta));
+      contador.textContent = `${visibles.length} ${visibles.length === 1 ? "cita" : "citas"}`;
+      sinCitas.hidden = visibles.length > 0;
+      estadoCarga.hidden = true;
+    }
 
     async function cargarCitas() {
+      estadoCarga.hidden = false;
+      estadoCarga.textContent = "Cargando citas…";
+      errorCitas.hidden = true;
+      sinCitas.hidden = true;
       try {
         const query = estadoActivo ? `?estado=${encodeURIComponent(estadoActivo)}` : "";
         const respuesta = await apiFetch<CitaRow[]>(`/api/citas${query}`);
-        gridApi?.setGridOption("rowData", respuesta.data ?? []);
+        citas = respuesta.data ?? [];
+        pintarCitas();
       } catch (error) {
-        alert(error instanceof Error ? error.message : "No se pudieron cargar las citas.");
+        estadoCarga.hidden = true;
+        lista.replaceChildren();
+        errorCitas.textContent = error instanceof Error ? error.message : "No se pudieron cargar las citas.";
+        errorCitas.hidden = false;
+        contador.textContent = "";
       }
     }
 
     async function confirmarCita(cita: CitaRow) {
-      const confirmado = window.confirm(`¿Confirmar la cita de ${cita.nombre_completo}?`);
-      if (!confirmado) return;
-
+      if (!window.confirm(`¿Confirmar la cita de ${cita.nombre_completo}?`)) return;
       try {
         const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/confirmar`, { method: "PATCH" });
-        alert(respuesta.message ?? "Cita confirmada.");
-        cargarCitas();
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "No se pudo confirmar la cita.");
-      }
+        window.alert(respuesta.message ?? "Cita confirmada.");
+        await cargarCitas();
+      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo confirmar la cita."); }
     }
 
     async function completarCita(cita: CitaRow) {
-      const confirmado = window.confirm(`¿Marcar como completada la cita de ${cita.nombre_completo}?`);
-      if (!confirmado) return;
-
+      if (!window.confirm(`¿Marcar como completada la cita de ${cita.nombre_completo}?`)) return;
       try {
         const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/completar`, { method: "PATCH" });
-        alert(respuesta.message ?? "Cita marcada como completada.");
-        cargarCitas();
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "No se pudo completar la cita.");
-      }
+        window.alert(respuesta.message ?? "Cita marcada como completada.");
+        await cargarCitas();
+      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo completar la cita."); }
     }
 
     function abrirModalRechazo(cita: CitaRow) {
-      (document.getElementById("rechazoIdCita") as HTMLInputElement).value = String(cita.id_cita);
-      (document.getElementById("rechazoMotivo") as HTMLTextAreaElement).value = "";
+      (document.querySelector<HTMLInputElement>("#rechazoIdCita")!).value = String(cita.id_cita);
+      document.querySelector<HTMLTextAreaElement>("#rechazoMotivo")!.value = "";
       modalRechazo.showModal();
     }
 
-    formRechazo.addEventListener("submit", async (evento) => {
-      evento.preventDefault();
-      const id = (document.getElementById("rechazoIdCita") as HTMLInputElement).value;
-      const motivo = (document.getElementById("rechazoMotivo") as HTMLTextAreaElement).value.trim();
-      const boton = document.getElementById("btnConfirmarRechazo") as HTMLButtonElement;
-
-      boton.disabled = true;
-      boton.textContent = "Rechazando...";
-
-      try {
-        const respuesta = await apiFetch(`/api/citas/${id}/rechazar`, {
-          method: "PATCH",
-          body: JSON.stringify({ motivo }),
-        });
-        modalRechazo.close();
-        alert(respuesta.message ?? "Cita rechazada.");
-        cargarCitas();
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "No se pudo rechazar la cita.");
-      } finally {
-        boton.disabled = false;
-        boton.textContent = "Rechazar cita";
-      }
-    });
-
-    (document.getElementById("btnCerrarModalRechazo") as HTMLButtonElement)
-      .addEventListener("click", () => modalRechazo.close());
-    (document.getElementById("btnCancelarRechazo") as HTMLButtonElement)
-      .addEventListener("click", () => modalRechazo.close());
-
-    (document.getElementById("btnRecargarCitas") as HTMLButtonElement)
-      .addEventListener("click", cargarCitas);
-
-    document.querySelectorAll<HTMLElement>("#tabsEstado .tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        document.querySelectorAll("#tabsEstado .tab").forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        estadoActivo = tab.dataset.estado ?? "";
-        cargarCitas();
+    document.querySelectorAll<HTMLButtonElement>("#tabsEstado .filter-button").forEach((boton) => {
+      boton.addEventListener("click", () => {
+        document.querySelectorAll("#tabsEstado .filter-button").forEach((elemento) => elemento.classList.remove("active"));
+        boton.classList.add("active");
+        estadoActivo = boton.dataset.estado ?? "";
+        titulo.textContent = LABELS[estadoActivo] ?? "Citas";
+        void cargarCitas();
       });
     });
+    document.querySelector<HTMLInputElement>("#buscarCita")!.addEventListener("input", (event) => {
+      textoBusqueda = (event.currentTarget as HTMLInputElement).value.trim();
+      pintarCitas();
+    });
+    document.querySelector<HTMLButtonElement>("#btnRecargarCitas")!.addEventListener("click", () => void cargarCitas());
+    document.querySelector<HTMLButtonElement>("#btnCerrarModalRechazo")!.addEventListener("click", () => modalRechazo.close());
+    document.querySelector<HTMLButtonElement>("#btnCancelarRechazo")!.addEventListener("click", () => modalRechazo.close());
+
+    formRechazo.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const id = document.querySelector<HTMLInputElement>("#rechazoIdCita")!.value;
+      const motivo = document.querySelector<HTMLTextAreaElement>("#rechazoMotivo")!.value.trim();
+      const boton = document.querySelector<HTMLButtonElement>("#btnConfirmarRechazo")!;
+      boton.disabled = true;
+      boton.textContent = "Rechazando…";
+      try {
+        const respuesta = await apiFetch(`/api/citas/${id}/rechazar`, { method: "PATCH", body: JSON.stringify({ motivo }) });
+        modalRechazo.close();
+        window.alert(respuesta.message ?? "Cita rechazada.");
+        await cargarCitas();
+      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo rechazar la cita."); }
+      finally { boton.disabled = false; boton.textContent = "Rechazar cita"; }
+    });
+
+    void cargarCitas();
   </script>
 </AdminLayout>
+
+<style is:global>
+  .page-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 4px 0 22px; padding: 25px 28px; border: 1px solid #dce7f5; border-radius: 18px; background: linear-gradient(115deg, #fff 0%, #f2f7ff 100%); }
+  .eyebrow { margin: 0 0 7px; color: #2168e8; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+  .page-intro h1 { margin: 0; color: #102b50; font-size: clamp(24px, 3vw, 31px); }
+  .intro-copy { margin: 7px 0 0; color: #71839c; font-size: 14px; }
+  .refresh-button { display: inline-flex; align-items: center; gap: 8px; padding: 11px 15px; border: 1px solid #d8e3f1; border-radius: 10px; background: #fff; color: #17365e; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .refresh-button:hover { border-color: #a9c6f7; background: #f8faff; }
+  .refresh-button span { color: #2168e8; font-size: 19px; line-height: 1; }
+  .filters-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 23px; padding: 12px; border: 1px solid #e2e9f2; border-radius: 15px; background: #fff; box-shadow: 0 5px 18px #102b5008; }
+  .status-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter-button { padding: 9px 12px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #526983; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: .15s ease; }
+  .filter-button:hover { background: #f1f5fc; color: #17447b; }
+  .filter-button.active { background: #2168e8; color: #fff; box-shadow: 0 4px 10px #2168e833; }
+  .search-box { display: flex; flex: 0 0 260px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #dce5f0; border-radius: 9px; background: #fff; color: #8494a9; }
+  .search-box span { font-size: 22px; line-height: 1; }
+  .search-box input { width: 100%; min-width: 0; padding: 10px 0; border: 0; outline: 0; color: #17365e; font: inherit; font-size: 12px; }
+  .search-box:focus-within { border-color: #2168e8; box-shadow: 0 0 0 3px #2168e81a; }
+  .results-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 2px 13px; }
+  .results-heading h2 { margin: 0; color: #17365e; font-size: 17px; }
+  .results-count { color: #8795a9; font-size: 12px; }
+  .appointments-list { display: grid; gap: 13px; }
+  .appointment-card { overflow: hidden; padding: 18px 20px 0; border: 1px solid #e0e8f2; border-radius: 15px; background: #fff; box-shadow: 0 6px 20px #102b5008; transition: border-color .15s ease, box-shadow .15s ease; }
+  .appointment-card:hover { border-color: #c7d8f0; box-shadow: 0 9px 25px #102b5012; }
+  .appointment-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #edf1f6; }
+  .customer-block { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .customer-avatar { display: grid; flex: 0 0 40px; height: 40px; place-items: center; border-radius: 12px; background: #eaf1ff; color: #2168e8; font-size: 16px; font-weight: 800; }
+  .customer-name { display: block; overflow: hidden; color: #17365e; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+  .request-number { display: block; margin-top: 3px; color: #8795a9; font-size: 11px; }
+  .status-badge { flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 750; }
+  .status-pending { background: #fff4df; color: #a9690b; }
+  .status-suggested { background: #edf1ff; color: #5750b8; }
+  .status-confirmed { background: #e9f7ef; color: #278052; }
+  .status-completed { background: #eaf1ff; color: #2168e8; }
+  .status-rejected { background: #fff0ef; color: #b3443f; }
+  .appointment-details { display: grid; grid-template-columns: 1.1fr 1.15fr 1.4fr; gap: 18px; padding: 17px 0; }
+  .appointment-info { min-width: 0; }
+  .info-label { display: block; margin-bottom: 6px; color: #8795a9; font-size: 10px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+  .info-value { display: block; overflow-wrap: anywhere; color: #253e5f; font-size: 13px; font-weight: 600; line-height: 1.45; }
+  .appointment-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 -20px; padding: 12px 20px; border-top: 1px solid #edf1f6; background: #fafbfd; }
+  .footer-note { color: #71839c; font-size: 11px; }
+  .appointment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .appointment-action { padding: 8px 11px; border: 1px solid #dce5f0; border-radius: 8px; background: #fff; color: #405875; font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+  .appointment-action:hover { background: #f3f7fd; }
+  a.appointment-action { display: inline-flex; align-items: center; text-decoration: none; }
+  .appointment-action.action-confirm { border-color: #c9e9d5; background: #eff9f2; color: #23784a; }
+  .appointment-action.action-reject { border-color: #f0d2d0; background: #fff5f4; color: #ae423d; }
+  .appointment-action.action-complete { border-color: #cbdcfb; background: #f2f6ff; color: #2168e8; }
+  .state-message, .empty-state { padding: 38px 20px; border: 1px dashed #d7e1ef; border-radius: 15px; background: #fff; color: #71839c; text-align: center; }
+  .state-error { border-color: #f0cac8; background: #fff7f6; color: #a9443e; }
+  .empty-state h3 { margin: 12px 0 5px; color: #17365e; font-size: 16px; }
+  .empty-state p { margin: 0; font-size: 13px; }
+  .empty-icon { display: grid; width: 42px; height: 42px; margin: auto; place-items: center; border-radius: 50%; background: #e9f7ef; color: #278052; font-size: 20px; font-weight: 800; }
+  @media (max-width: 1050px) { .filters-panel { align-items: stretch; flex-direction: column; } .search-box { flex-basis: auto; } }
+  @media (max-width: 700px) { .page-intro { align-items: flex-start; flex-direction: column; padding: 20px; } .appointment-details { grid-template-columns: 1fr 1fr; gap: 14px; } .reason-info { grid-column: 1 / -1; } .appointment-footer { align-items: flex-start; flex-direction: column; } }
+  @media (max-width: 460px) { .appointment-card { padding: 15px 14px 0; } .appointment-footer { margin-right: -14px; margin-left: -14px; padding: 12px 14px; } .appointment-details { grid-template-columns: 1fr; } .reason-info { grid-column: auto; } .appointment-actions { width: 100%; } .appointment-action { flex: 1; } }
+</style>

@@ -76,6 +76,41 @@ export class Usuario {
         }
     }
 
+    // Login with a Google-verified email that already belongs to a workshop account.
+    public async IniciarSesionGoogle(correo: string): Promise<{ success: boolean; message: string; data?: UsuarioAutenticado }> {
+        try {
+            const [fila] = await conexion.query(
+                `SELECT u.id_usuario, u.nombre_completo, u.correo, u.activo, r.nombre AS rol
+                 FROM usuarios u
+                 INNER JOIN roles r ON r.id_rol = u.id_rol
+                 WHERE LOWER(u.correo) = LOWER(?)
+                 LIMIT 1`,
+                [correo.trim()],
+            );
+
+            if (!fila) {
+                return { success: false, message: "No hay una cuenta del taller con ese correo. Regístrate primero." };
+            }
+            if (Number(fila.activo) === 0) {
+                return { success: false, message: "Esta cuenta está desactivada" };
+            }
+
+            return {
+                success: true,
+                message: "Inicio de sesión con Google exitoso",
+                data: {
+                    id_usuario: Number(fila.id_usuario),
+                    nombre_completo: fila.nombre_completo,
+                    correo: fila.correo,
+                    rol: fila.rol,
+                },
+            };
+        } catch (error) {
+            console.error("Error buscando usuario para Google:", error);
+            return { success: false, message: "No se pudo iniciar sesión con Google" };
+        }
+    }
+
         // ---------- Solo Admin: crear cuenta de Mecánico ----------
     public async CrearMecanico(datos: DatosMecanico): Promise<{ success: boolean; message: string }> {
         try {

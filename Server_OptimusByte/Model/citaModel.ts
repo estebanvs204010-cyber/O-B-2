@@ -208,7 +208,14 @@ export class CitaModel {
   }
 
   // El cliente o el admin cancelan (no se puede cancelar algo ya completado/rechazado)
-  public async Cancelar(id_cita: number) {
+  public async Cancelar(id_cita: number, id_cliente?: number) {
+    if (id_cliente !== undefined) {
+      const [citaPropia] = await conexion.query(
+        `SELECT id_cita FROM citas WHERE id_cita = ? AND id_cliente = ?`,
+        [id_cita, id_cliente],
+      );
+      if (!citaPropia) return { success: false, message: "Cita no encontrada" };
+    }
     return await this.CambiarEstadoGestionado(id_cita, "Cancelada", null, null, [
       "Sugerida",
       "Pendiente",

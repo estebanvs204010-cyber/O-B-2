@@ -3,6 +3,7 @@ import {
     GetMiPerfilCliente,
     PutActualizarMiPerfil,
     GetMisVehiculos,
+    GetMisOrdenes,
     PostRegistrarMiVehiculo,
 } from "../Controller/clientePortalController.ts";
 import {
@@ -38,6 +39,13 @@ ClientePortalRouter.get(
     authMiddleware,
     permitirRoles("Cliente"),
     GetMisVehiculos,
+);
+
+ClientePortalRouter.get(
+    "/api/cliente/mis-ordenes",
+    authMiddleware,
+    permitirRoles("Cliente"),
+    GetMisOrdenes,
 );
 
 export { ClientePortalRouter };

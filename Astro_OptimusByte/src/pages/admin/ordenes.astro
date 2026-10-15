@@ -1,0 +1,212 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Órdenes" active="ordenes">
+  <section class="admin-page-header">
+    <div>
+      <p class="eyebrow">Operación del taller</p>
+      <h2>Órdenes de servicio</h2>
+      <span>Crea una orden para un vehículo y asígnala a un mecánico.</span>
+    </div>
+    <button id="btnRecargarOrdenes" class="btn btn-outline" type="button">Actualizar</button>
+  </section>
+
+  <section class="admin-panel" style="margin-bottom: 22px;">
+    <h2>Nueva orden</h2>
+    <form id="formOrden" class="mecanico-form">
+      <div class="field-row">
+        <div class="field">
+          <label for="ordenVehiculo">Vehículo</label>
+          <select id="ordenVehiculo" required><option value="">Cargando vehículos...</option></select>
+        </div>
+        <div class="field">
+          <label for="ordenMecanico">Mecánico asignado</label>
+          <select id="ordenMecanico"><option value="">Sin asignar por ahora</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="ordenTipo">Tipo de servicio</label>
+          <select id="ordenTipo" required>
+            <option value="Correctivo">Correctivo</option>
+            <option value="Preventivo">Preventivo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ordenDescripcion">Descripción del problema o servicio</label>
+          <textarea id="ordenDescripcion" rows="3" maxlength="5000" required></textarea>
+        </div>
+      </div>
+      <div id="ordenMensaje" class="alert" hidden></div>
+      <button id="btnCrearOrden" class="btn btn-primary" type="submit">Crear orden</button>
+    </form>
+  </section>
+
+  <section class="admin-panel">
+    <div id="ordenesEstado" class="loading">Cargando órdenes...</div>
+    <div id="ordenesAdminLista" class="orden-list"></div>
+  </section>
+</AdminLayout>
+
+<script>
+  import { apiFetch } from "../../lib/api";
+
+  type VehiculoOption = { id_vehiculo: number; placa: string; marca: string; modelo: string; cliente: string };
+  type MecanicoOption = { id_usuario: number; nombre_completo: string; activo?: number };
+  type OrdenRow = {
+    id_orden: number; estado: string; tipo_servicio: string; descripcion_problema: string;
+    fecha_apertura: string; fecha_entrega_estimada: string | null; placa: string;
+    marca: string; modelo: string; cliente: string; id_mecanico: number | null; mecanico: string | null;
+  };
+
+  const selectVehiculo = document.getElementById("ordenVehiculo") as HTMLSelectElement;
+  const selectMecanico = document.getElementById("ordenMecanico") as HTMLSelectElement;
+  const form = document.getElementById("formOrden") as HTMLFormElement;
+  const lista = document.getElementById("ordenesAdminLista")!;
+  const estado = document.getElementById("ordenesEstado")!;
+  const mensaje = document.getElementById("ordenMensaje")!;
+
+  function fecha(valor: string | null) {
+    if (!valor) return "Sin fecha definida";
+    const parsed = new Date(valor.replace(" ", "T"));
+    return Number.isNaN(parsed.getTime()) ? valor : parsed.toLocaleString("es-CO");
+  }
+
+  function mostrarMensaje(texto: string, ok = false) {
+    mensaje.textContent = texto;
+    mensaje.className = ok ? "alert alert-ok" : "alert alert-error";
+    mensaje.removeAttribute("hidden");
+  }
+
+  async function cargarCatalogos() {
+    const [vehiculosRes, mecanicosRes] = await Promise.all([
+      apiFetch<VehiculoOption[]>("/api/vehiculos"),
+      apiFetch<MecanicoOption[]>("/api/usuarios/mecanico"),
+    ]);
+    selectVehiculo.replaceChildren();
+    const elegir = document.createElement("option");
+    elegir.value = "";
+    elegir.textContent = "Selecciona un vehículo";
+    selectVehiculo.appendChild(elegir);
+    (vehiculosRes.data ?? []).forEach((vehiculo) => {
+      const opcion = document.createElement("option");
+      opcion.value = String(vehiculo.id_vehiculo);
+      opcion.textContent = `${vehiculo.placa} · ${vehiculo.marca} ${vehiculo.modelo} · ${vehiculo.cliente}`;
+      selectVehiculo.appendChild(opcion);
+    });
+    selectMecanico.replaceChildren();
+    const sinAsignar = document.createElement("option");
+    sinAsignar.value = "";
+    sinAsignar.textContent = "Sin asignar por ahora";
+    selectMecanico.appendChild(sinAsignar);
+    (mecanicosRes.data ?? []).filter((m) => Number(m.activo ?? 1) === 1).forEach((mecanico) => {
+      const opcion = document.createElement("option");
+      opcion.value = String(mecanico.id_usuario);
+      opcion.textContent = mecanico.nombre_completo;
+      selectMecanico.appendChild(opcion);
+    });
+  }
+
+  async function cargarOrdenes() {
+    estado.textContent = "Cargando órdenes...";
+    estado.className = "loading";
+    try {
+      const respuesta = await apiFetch<OrdenRow[]>("/api/admin/ordenes");
+      const ordenes = respuesta.data ?? [];
+      lista.replaceChildren();
+      if (!ordenes.length) {
+        estado.textContent = "Todavía no hay órdenes. Puedes crear la primera en el formulario.";
+        estado.className = "empty";
+        return;
+      }
+      estado.textContent = `${ordenes.length} orden(es) registradas`;
+      estado.className = "sub";
+      ordenes.forEach((orden) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "orden-row";
+        const detalle = document.createElement("div");
+        const titulo = document.createElement("strong");
+        titulo.textContent = `Orden #${orden.id_orden} · ${orden.estado}`;
+        const vehiculo = document.createElement("div");
+        vehiculo.className = "sub";
+        vehiculo.textContent = `${orden.placa} · ${orden.marca} ${orden.modelo} · Cliente: ${orden.cliente}`;
+        const descripcion = document.createElement("p");
+        descripcion.textContent = `${orden.tipo_servicio}: ${orden.descripcion_problema}`;
+        const fechas = document.createElement("div");
+        fechas.className = "sub";
+        fechas.textContent = `Abierta: ${fecha(orden.fecha_apertura)} · Entrega estimada: ${fecha(orden.fecha_entrega_estimada)}`;
+        detalle.append(titulo, vehiculo, descripcion, fechas);
+
+        const asignacion = document.createElement("div");
+        asignacion.className = "vehicle-actions";
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", `Mecánico para orden ${orden.id_orden}`);
+        const none = document.createElement("option");
+        none.value = "";
+        none.textContent = "Sin asignar";
+        select.appendChild(none);
+        Array.from(selectMecanico.options).slice(1).forEach((original) => {
+          const opcion = document.createElement("option");
+          opcion.value = original.value;
+          opcion.textContent = original.textContent;
+          select.appendChild(opcion);
+        });
+        select.value = orden.id_mecanico ? String(orden.id_mecanico) : "";
+        const guardar = document.createElement("button");
+        guardar.type = "button";
+        guardar.className = "btn btn-outline btn-sm";
+        guardar.textContent = "Guardar asignación";
+        guardar.addEventListener("click", async () => {
+          guardar.disabled = true;
+          try {
+            const resultado = await apiFetch(`/api/admin/ordenes/${orden.id_orden}/asignacion`, {
+              method: "PATCH", body: JSON.stringify({ id_mecanico: select.value || null }),
+            });
+            mostrarMensaje(resultado.message ?? "Asignación actualizada", true);
+            await cargarOrdenes();
+          } catch (error) {
+            mostrarMensaje(error instanceof Error ? error.message : "No se pudo guardar la asignación");
+          } finally { guardar.disabled = false; }
+        });
+        asignacion.append(select, guardar);
+        detalle.appendChild(asignacion);
+        tarjeta.appendChild(detalle);
+        lista.appendChild(tarjeta);
+      });
+    } catch (error) {
+      estado.textContent = error instanceof Error ? error.message : "No se pudieron cargar las órdenes";
+      estado.className = "alert alert-error";
+    }
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const boton = document.getElementById("btnCrearOrden") as HTMLButtonElement;
+    boton.disabled = true;
+    try {
+      const resultado = await apiFetch("/api/admin/ordenes", {
+        method: "POST",
+        body: JSON.stringify({
+          id_vehiculo: Number(selectVehiculo.value),
+          id_mecanico: selectMecanico.value ? Number(selectMecanico.value) : null,
+          tipo_servicio: (document.getElementById("ordenTipo") as HTMLSelectElement).value,
+          descripcion_problema: (document.getElementById("ordenDescripcion") as HTMLTextAreaElement).value.trim(),
+        }),
+      });
+      form.reset();
+      mostrarMensaje(resultado.message ?? "Orden creada", true);
+      await cargarOrdenes();
+    } catch (error) {
+      mostrarMensaje(error instanceof Error ? error.message : "No se pudo crear la orden");
+    } finally { boton.disabled = false; }
+  });
+
+  document.getElementById("btnRecargarOrdenes")?.addEventListener("click", () => void cargarOrdenes());
+  void (async () => {
+    try { await cargarCatalogos(); } catch (error) {
+      mostrarMensaje(error instanceof Error ? error.message : "No se pudieron cargar vehículos y mecánicos");
+    }
+    await cargarOrdenes();
+  })();
+</script>
