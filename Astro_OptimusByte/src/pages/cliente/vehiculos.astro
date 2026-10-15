@@ -1,0 +1,205 @@
+---
+import ClienteLayout from "../../layouts/ClienteLayout.astro";
+---
+
+<ClienteLayout title="Mis vehículos" active="vehiculos">
+  <section class="panel client-section">
+    <div class="panel-heading-row">
+      <div>
+        <h2>Mis vehículos</h2>
+        <p>Consulta y registra los vehículos asociados a tu cuenta.</p>
+      </div>
+
+      <button id="mostrarFormulario" class="btn btn-primary" type="button">
+        Registrar vehículo
+      </button>
+    </div>
+
+    <div id="mensaje" class="alert" hidden></div>
+
+    <div id="listaVehiculos" class="orden-list">
+      <p class="empty-state">Cargando vehículos...</p>
+    </div>
+
+    <form id="vehiculoForm" class="vehicle-form form-grid" hidden>
+      <h3>Registrar vehículo</h3>
+
+      <div class="field">
+        <label for="placa">Placa</label>
+        <input id="placa" required />
+      </div>
+
+      <div class="field">
+        <label for="marca">Marca</label>
+        <input id="marca" required />
+      </div>
+
+      <div class="field">
+        <label for="modelo">Modelo</label>
+        <input id="modelo" required />
+      </div>
+
+      <div class="field">
+        <label for="anio">Año</label>
+        <input id="anio" type="number" min="1900" max="2100" required />
+      </div>
+
+      <div class="field">
+        <label for="kmActuales">Kilómetros actuales</label>
+        <input id="kmActuales" type="number" min="0" value="0" required />
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          Guardar vehículo
+        </button>
+
+        <button id="cancelar" class="btn btn-outline" type="button">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </section>
+</ClienteLayout>
+
+<script>
+  import { apiFetch } from "../../lib/api";
+
+  interface Vehiculo {
+    placa?: string;
+    marca?: string;
+    modelo?: string;
+    anio?: number;
+    km_actuales?: number;
+  }
+
+  const lista = document.getElementById("listaVehiculos") as HTMLDivElement;
+  const mensaje = document.getElementById("mensaje") as HTMLDivElement;
+  const formulario = document.getElementById("vehiculoForm") as HTMLFormElement;
+  const mostrarFormulario = document.getElementById(
+    "mostrarFormulario",
+  ) as HTMLButtonElement;
+  const cancelar = document.getElementById("cancelar") as HTMLButtonElement;
+
+  function mostrarMensaje(texto: string, tipo: "success" | "error") {
+    mensaje.textContent = texto;
+    mensaje.className = `alert alert-${tipo}`;
+    mensaje.hidden = false;
+  }
+
+  async function cargarVehiculos() {
+    try {
+      const resultado = await apiFetch<Vehiculo[]>(
+        "/api/cliente/mis-vehiculos",
+      );
+
+      const vehiculos = resultado.data ?? [];
+
+      if (vehiculos.length === 0) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <p>No tienes vehículos registrados.</p>
+          </div>
+        `;
+        return;
+      }
+
+      lista.innerHTML = vehiculos
+        .map(
+          (vehiculo) => `
+            <article class="orden-row">
+              <div>
+                <strong>${vehiculo.placa ?? "Sin placa"}</strong>
+                <div class="sub">Placa</div>
+              </div>
+
+              <div>
+                <strong>${vehiculo.marca ?? "Sin marca"}</strong>
+                <div class="sub">${vehiculo.modelo ?? "Sin modelo"}</div>
+              </div>
+
+              <div>
+                <strong>Año: ${vehiculo.anio ?? "-"}</strong>
+                <div class="sub">${vehiculo.km_actuales ?? 0} km actuales</div>
+              </div>
+            </article>
+          `,
+        )
+        .join("");
+    } catch (error) {
+      lista.innerHTML = "";
+      mostrarMensaje(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar los vehículos.",
+        "error",
+      );
+    }
+  }
+
+  mostrarFormulario.addEventListener("click", () => {
+    formulario.hidden = false;
+    mostrarFormulario.hidden = true;
+  });
+
+  cancelar.addEventListener("click", () => {
+    formulario.reset();
+    formulario.hidden = true;
+    mostrarFormulario.hidden = false;
+    mensaje.hidden = true;
+  });
+
+  formulario.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const placa = (document.getElementById("placa") as HTMLInputElement).value
+      .trim();
+
+    const marca = (document.getElementById("marca") as HTMLInputElement).value
+      .trim();
+
+    const modelo = (document.getElementById("modelo") as HTMLInputElement).value
+      .trim();
+
+    const anio = Number(
+      (document.getElementById("anio") as HTMLInputElement).value,
+    );
+
+    const kmActuales = Number(
+      (document.getElementById("kmActuales") as HTMLInputElement).value,
+    );
+
+    try {
+      const resultado = await apiFetch("/api/cliente/mis-vehiculos", {
+        method: "POST",
+        body: JSON.stringify({
+          placa,
+          marca,
+          modelo,
+          anio,
+          km_actuales: kmActuales,
+        }),
+      });
+
+      mostrarMensaje(
+        resultado.message ?? "Vehículo registrado correctamente.",
+        "success",
+      );
+
+      formulario.reset();
+      formulario.hidden = true;
+      mostrarFormulario.hidden = false;
+
+      await cargarVehiculos();
+    } catch (error) {
+      mostrarMensaje(
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar el vehículo.",
+        "error",
+      );
+    }
+  });
+
+  cargarVehiculos();
+</script>
