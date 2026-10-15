@@ -7,7 +7,7 @@ interface DatosVehiculo {
     modelo: string;
     anio: number;
     color?: string;
-    vin: string;
+    vin?: string;
     km_actuales?: number;
 }
 interface DatosEdicionVehiculo {
@@ -49,7 +49,9 @@ export class Vehiculo {
                 datos.modelo,
                 datos.anio,
                 datos.color ?? null,
-                datos.vin.trim().toUpperCase(),
+                datos.vin?.trim()
+                    ? datos.vin.trim().toUpperCase()
+                    : null,
                 datos.km_actuales ?? 0,
             ],
         );

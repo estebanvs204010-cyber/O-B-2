@@ -50,6 +50,28 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       <input id="editIdCliente" type="hidden" />
       <input id="formModo" type="hidden" value="crear" />
 
+      <section id="grupoFotoCliente" class="cliente-photo-editor" hidden>
+        <img
+          id="vistaPreviaFotoCliente"
+          class="cliente-photo-preview"
+          alt="Foto actual del cliente"
+          hidden
+        />
+        <div id="inicialesFotoCliente" class="cliente-photo-placeholder" aria-hidden="true">
+          ?
+        </div>
+        <div class="cliente-photo-controls">
+          <label for="editFotoCliente">Foto del cliente</label>
+          <input
+            id="editFotoCliente"
+            class="cliente-photo-input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          />
+          <small>JPG, PNG o WebP. Tamaño máximo: 5 MB.</small>
+        </div>
+      </section>
+
       <div class="field">
         <label for="editNombre">Nombre completo</label>
         <input id="editNombre" required />
@@ -135,6 +157,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     interface ClienteRow {
       id_cliente: number;
       nombre_completo: string;
+      foto_url?: string | null;
       tipo_documento: string;
       num_documento: string;
       telefono: string;
@@ -156,6 +179,51 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     let gridApi: GridApi<ClienteRow>;
     const modal = document.getElementById("modalCliente") as HTMLDialogElement;
     const formulario = document.getElementById("formCliente") as HTMLFormElement;
+    const inputFoto = document.getElementById("editFotoCliente") as HTMLInputElement;
+    const vistaPreviaFoto = document.getElementById(
+      "vistaPreviaFotoCliente",
+    ) as HTMLImageElement;
+    const inicialesFoto = document.getElementById("inicialesFotoCliente")!;
+    const grupoFoto = document.getElementById("grupoFotoCliente")!;
+    let urlPreviaFoto: string | null = null;
+
+    function mostrarFoto(url: string | null | undefined, nombre: string) {
+      inicialesFoto.textContent = nombre.trim().charAt(0).toLocaleUpperCase("es") || "?";
+      vistaPreviaFoto.hidden = !url;
+      inicialesFoto.hidden = Boolean(url);
+      if (url) vistaPreviaFoto.src = url;
+      else vistaPreviaFoto.removeAttribute("src");
+    }
+
+    vistaPreviaFoto.addEventListener("error", () => {
+      vistaPreviaFoto.hidden = true;
+      inicialesFoto.hidden = false;
+    });
+
+    function limpiarPreviaLocal() {
+      if (urlPreviaFoto) URL.revokeObjectURL(urlPreviaFoto);
+      urlPreviaFoto = null;
+    }
+
+    inputFoto.addEventListener("change", () => {
+      limpiarPreviaLocal();
+      const archivo = inputFoto.files?.[0];
+      if (!archivo) return;
+
+      if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
+        inputFoto.value = "";
+        notificarError("Selecciona una imagen JPG, PNG o WebP.");
+        return;
+      }
+      if (archivo.size > 5 * 1024 * 1024) {
+        inputFoto.value = "";
+        notificarError("La imagen no puede superar los 5 MB.");
+        return;
+      }
+
+      urlPreviaFoto = URL.createObjectURL(archivo);
+      mostrarFoto(urlPreviaFoto, "");
+    });
 
 function accionesCellRenderer(
   params: ICellRendererParams<ClienteRow>,
@@ -202,6 +270,37 @@ function accionesCellRenderer(
       theme: temaOptimus,
 
       columnDefs: [
+        {
+          headerName: "Foto",
+          width: 86,
+          cellRenderer: (params: ICellRendererParams<ClienteRow>) => {
+            const cliente = params.data;
+            const contenedor = document.createElement("div");
+            contenedor.className = "cliente-grid-photo-wrap";
+            const imagen = document.createElement("img");
+            imagen.className = "cliente-grid-photo";
+            imagen.alt = cliente ? `Foto de ${cliente.nombre_completo}` : "";
+            imagen.loading = "lazy";
+            if (cliente?.foto_url) imagen.src = cliente.foto_url;
+            else imagen.removeAttribute("src");
+            imagen.hidden = !cliente?.foto_url;
+            imagen.addEventListener("error", () => {
+              imagen.hidden = true;
+              inicial.textContent =
+                cliente?.nombre_completo.trim().charAt(0).toLocaleUpperCase("es") || "?";
+              inicial.hidden = false;
+            });
+            const inicial = document.createElement("span");
+            inicial.className = "cliente-grid-photo-placeholder";
+            inicial.textContent =
+              cliente?.nombre_completo.trim().charAt(0).toLocaleUpperCase("es") || "?";
+            inicial.hidden = Boolean(cliente?.foto_url);
+            contenedor.append(imagen, inicial);
+            return contenedor;
+          },
+          sortable: false,
+          filter: false,
+        },
         {
           field: "nombre_completo",
           headerName: "Cliente",
@@ -295,6 +394,9 @@ function accionesCellRenderer(
 
     function abrirModalCrear() {
       formulario.reset();
+      limpiarPreviaLocal();
+      grupoFoto.hidden = true;
+      mostrarFoto(null, "");
 
       (document.getElementById("formModo") as HTMLInputElement).value = "crear";
       (document.getElementById("editIdCliente") as HTMLInputElement).value = "";
@@ -324,6 +426,11 @@ function accionesCellRenderer(
           throw new Error("Cliente no encontrado");
         }
 
+        formulario.reset();
+        limpiarPreviaLocal();
+        inputFoto.value = "";
+        grupoFoto.hidden = false;
+        mostrarFoto(detalle.foto_url, detalle.nombre_completo);
         (document.getElementById("formModo") as HTMLInputElement).value = "editar";
         (document.getElementById("editIdCliente") as HTMLInputElement).value =
           String(detalle.id_cliente);
@@ -344,11 +451,11 @@ function accionesCellRenderer(
           detalle.correo;
         (document.getElementById("editDireccion") as HTMLInputElement).value =
           detalle.direccion ?? "";
-        (document.getElementById("grupoContrasena") as HTMLElement).style.display = "block";
+        (document.getElementById("grupoContrasena") as HTMLElement).style.display = "none";
         const inputContrasena = document.getElementById(
   "editContrasena",
         ) as HTMLInputElement;
-        inputContrasena.required = true;
+        inputContrasena.required = false;
         inputContrasena.value = "";
 
         modal.showModal();
@@ -439,6 +546,12 @@ if (modo === "crear") {
       botonGuardar.textContent = "Guardando...";
 
       try {
+        const archivoFoto = modo === "editar" ? inputFoto.files?.[0] : undefined;
+        if (archivoFoto) {
+          botonGuardar.textContent = "Subiendo foto...";
+          body.foto_url = await subirFotoCliente(archivoFoto);
+        }
+
         const respuesta = await apiFetch(
           modo === "crear" ? "/api/clientes" : `/api/clientes/${id}`,
           {
@@ -463,6 +576,44 @@ if (modo === "crear") {
       }
     });
 
+    async function subirFotoCliente(archivo: File): Promise<string> {
+      const respuestaFirma = await apiFetch<{
+        cloudName: string;
+        apiKey: string;
+        timestamp: number;
+        folder: string;
+        signature: string;
+      }>("/api/uploads/firma?tipo=clientes");
+
+      if (!respuestaFirma.data) {
+        throw new Error("El servidor no devolvió los datos para subir la foto.");
+      }
+
+      const firma = respuestaFirma.data;
+      const datos = new FormData();
+      datos.append("file", archivo);
+      datos.append("api_key", firma.apiKey);
+      datos.append("timestamp", String(firma.timestamp));
+      datos.append("folder", firma.folder);
+      datos.append("signature", firma.signature);
+
+      const respuestaCloudinary = await fetch(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(firma.cloudName)}/image/upload`,
+        { method: "POST", body: datos },
+      );
+      const resultado = (await respuestaCloudinary.json()) as {
+        secure_url?: string;
+        error?: { message?: string };
+      };
+
+      if (!respuestaCloudinary.ok || !resultado.secure_url) {
+        throw new Error(
+          resultado.error?.message ?? "Cloudinary no pudo subir la imagen.",
+        );
+      }
+      return resultado.secure_url;
+    }
+
     (document.getElementById("btnCrear") as HTMLButtonElement).addEventListener(
       "click",
       abrirModalCrear,
@@ -480,8 +631,13 @@ if (modo === "crear") {
 
     (document.getElementById("btnCancelarModal") as HTMLButtonElement).addEventListener(
       "click",
-      () => modal.close(),
+      () => {
+        limpiarPreviaLocal();
+        modal.close();
+      },
     );
+
+    modal.addEventListener("close", limpiarPreviaLocal);
 
     const buscador = document.getElementById("quickSearch") as HTMLInputElement;
 

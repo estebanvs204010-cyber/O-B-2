@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Repuesto de motor">
+  <rect width="240" height="180" rx="20" fill="#fff4dc"/>
+  <path d="M65 70h28l12-17h39l12 17h20v48h-18l-10 13H91l-10-13H65z" fill="#d79322"/>
+  <path d="M105 63v16h28V63m-25 38h22m-53-17v19m94-19v19M89 70v48m62-48v48" fill="none" stroke="#fff4dc" stroke-width="8" stroke-linejoin="round"/>
+  <text x="120" y="157" text-anchor="middle" fill="#875b13" font-family="Arial,sans-serif" font-size="16" font-weight="700">MOTOR</text>
+</svg>

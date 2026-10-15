@@ -1,0 +1,135 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import Icon from '../components/Icon.astro';
+import { TALLER, servicios } from '../data/taller';
+
+const objetivos = [
+  { n: '01', titulo: 'Calidad en cada reparación', texto: 'Trabajamos con procesos claros y repuestos confiables para que la falla no vuelva.' },
+  { n: '02', titulo: 'Transparencia total', texto: 'Cotización antes de empezar y aviso previo si aparece algo adicional.' },
+  { n: '03', titulo: 'Seguimiento en línea', texto: 'Consulta el estado de tu orden en cualquier momento desde tu área de cliente.' },
+  { n: '04', titulo: 'Tranquilidad para el cliente', texto: 'Garantía en el servicio y un equipo que responde cuando lo necesitas.' },
+];
+
+const valores = [
+  { icono: 'award', titulo: 'Calidad', texto: 'Reparaciones bien hechas, a la primera.' },
+  { icono: 'shield', titulo: 'Servicio garantizado', texto: 'Respaldamos cada trabajo que entregamos.' },
+  { icono: 'coin', titulo: 'Precios justos', texto: 'Sin sorpresas: pagas lo que cotizamos.' },
+];
+---
+<PublicLayout title="Nosotros | Taller Mecánico OptimusByte" description="Conoce al equipo de OptimusByte: técnicos con experiencia, procesos transparentes y seguimiento en línea de tu vehículo.">
+  <PageBanner
+    eyebrow="Quiénes somos"
+    titulo="Nosotros"
+    texto="Un taller que combina la experiencia de la mecánica tradicional con tecnología para que siempre sepas cómo va tu vehículo."
+  />
+
+  <!-- Introducción -->
+  <section class="hm-section">
+    <div class="hm-wrap hm-split">
+      <div data-reveal>
+        <div class="hm-section-head" style="margin-bottom:22px;">
+          <p class="hm-eyebrow">Taller mecánico OptimusByte</p>
+          <h2>Mecánica y colisión, con seguimiento en línea</h2>
+        </div>
+        <p class="hm-lead">
+          En OptimusByte atendemos mecánica general, diagnóstico electrónico, latonería y pintura para todas las marcas.
+          Cada vehículo que entra queda registrado con su historial, y cada orden de trabajo se actualiza para que el
+          cliente la consulte desde su celular.
+        </p>
+        <p class="hm-lead">
+          Nuestro objetivo es simple: que tu vehículo salga mejor de como llegó y que tú sepas en todo momento qué se
+          le hizo y por qué.
+        </p>
+        <div class="hm-hero-actions" style="margin-top:28px;">
+          <a href="/reservas" class="hm-btn">Reserva tu servicio</a>
+          <a href="/servicios" class="hm-btn hm-btn--ghost">Ver servicios</a>
+        </div>
+      </div>
+      <div class="hm-visual" data-reveal aria-hidden="true">
+        <img src="/hero-auto.svg" alt="" width="640" height="336" />
+        <span class="hm-badge-years"><strong>+{TALLER.anosExperiencia}</strong>años de<br />experiencia</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Objetivos -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Nuestros objetivos</p>
+        <h2>Lo que nos mueve</h2>
+      </div>
+      <div class="hm-goals">
+        {objetivos.map((o, i) => (
+          <article class="hm-goal" data-reveal style={`transition-delay:${i * 0.07}s`}>
+            <span class="hm-goal-n">{o.n}</span>
+            <h3>{o.titulo}</h3>
+            <p>{o.texto}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Equipo -->
+  <section class="hm-section">
+    <div class="hm-wrap hm-split hm-split--rev">
+      <div class="hm-team-card" data-reveal>
+        <div class="hm-team-icon"><Icon name="hardhat" /></div>
+        <h3>Técnicos con experiencia certificada</h3>
+        <ul>
+          <li>Capacitación continua en nuevas tecnologías</li>
+          <li>Herramientas y escáner actualizados</li>
+          <li>Trabajo supervisado y revisión final de calidad</li>
+        </ul>
+      </div>
+      <div data-reveal>
+        <div class="hm-section-head" style="margin-bottom:22px;">
+          <p class="hm-eyebrow">Nuestro equipo</p>
+          <h2>Manos expertas para tu vehículo</h2>
+        </div>
+        <p class="hm-lead">
+          Nuestro equipo se capacita de forma constante para atender desde un mantenimiento sencillo hasta reparaciones
+          complejas de motor, transmisión y electrónica. Cada técnico deja registro de lo que hace en la orden de trabajo,
+          así que la información que ves como cliente es la misma que tiene el taller.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Valores -->
+  <section class="hm-values">
+    <div class="hm-wrap hm-values-grid">
+      {valores.map((v) => (
+        <div class="hm-value" data-reveal>
+          <Icon name={v.icono} />
+          <div><strong>{v.titulo}</strong><small>{v.texto}</small></div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Servicios -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Qué hacemos</p>
+        <h2>Nuestros servicios</h2>
+      </div>
+      <div class="hm-cards hm-cards--3">
+        {servicios.map((s, i) => (
+          <a href={`/servicios#${s.slug}`} class="hm-card" data-reveal style={`transition-delay:${i * 0.06}s`}>
+            <div class="hm-card-icon"><Icon name={s.icono} /></div>
+            <h3>{s.titulo}</h3>
+            <p>{s.texto}</p>
+            <span class="hm-card-link">Ver más →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <QuoteForm id="cotizar" />
+</PublicLayout>

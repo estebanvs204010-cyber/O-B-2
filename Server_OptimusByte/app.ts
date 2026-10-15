@@ -10,13 +10,16 @@ import { NotificacionRouter } from "./Routes/notificacionRoutes.ts";
 import { OrdenRouter } from "./Routes/ordenRoutes.ts";
 import { SolicitudRepuestoRouter } from "./Routes/solicitudRepuestoRoutes.ts";
 import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
+import { UploadRouter } from "./Routes/uploadRoutes.ts";
+import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
 import { AdminOrdenRouter } from "./Routes/adminOrdenRoutes.ts";
 
 const app = new Application();
 
 app.use(
   oakCors({
-    origin: "*",
+    origin: "http://localhost:4321",
+    credentials: true,
   }),
 );
 
@@ -32,6 +35,8 @@ const routes = [
   OrdenRouter,
   SolicitudRepuestoRouter,
   MecanicoPanelRouter,
+  UploadRouter,
+  RepuestoRouter,
   AdminOrdenRouter,
 ];
 

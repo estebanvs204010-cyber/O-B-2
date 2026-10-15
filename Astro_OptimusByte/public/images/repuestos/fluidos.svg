@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Lubricantes y fluidos">
+  <rect width="240" height="180" rx="20" fill="#e7f5f6"/>
+  <path d="M105 45h30v16h17v64H88V61h17z" fill="#2a9a9f"/>
+  <path d="M110 45h20v15h-20z" fill="#176d73"/>
+  <path d="M120 72c-10 14-16 21-16 31a16 16 0 0 0 32 0c0-10-6-17-16-31z" fill="#c8f3ef"/>
+  <text x="120" y="157" text-anchor="middle" fill="#176d73" font-family="Arial,sans-serif" font-size="15" font-weight="700">FLUIDOS</text>
+</svg>

@@ -1,0 +1,86 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import Icon from '../components/Icon.astro';
+import { servicios, pasos, promos } from '../data/taller';
+---
+<PublicLayout title="Servicios | Taller Mecánico OptimusByte" description="Mecánica general, diagnóstico electrónico, latonería y pintura, mecánica especializada, alineación y balanceo en OptimusByte.">
+  <PageBanner
+    eyebrow="Qué hacemos"
+    titulo="Servicios"
+    texto="Mecánica y colisión para todas las marcas, con cotización clara y seguimiento de cada orden."
+  />
+
+  <!-- Accesos rápidos -->
+  <section class="hm-section hm-section--gray" style="padding:56px 0;">
+    <div class="hm-wrap">
+      <div class="hm-chips" data-reveal>
+        {servicios.map((s) => <a href={`#${s.slug}`}><Icon name={s.icono} />{s.titulo}</a>)}
+      </div>
+    </div>
+  </section>
+
+  <!-- Detalle de cada servicio -->
+  {servicios.map((s, i) => (
+    <section class={`hm-section ${i % 2 === 0 ? '' : 'hm-section--gray'}`} id={s.slug} style="padding:80px 0;">
+      <div class={`hm-wrap hm-split ${i % 2 === 0 ? '' : 'hm-split--rev'}`}>
+        <div data-reveal>
+          <div class="hm-section-head" style="margin-bottom:20px;">
+            <p class="hm-eyebrow">Servicio</p>
+            <h2>{s.titulo}</h2>
+          </div>
+          <p class="hm-lead">{s.texto}</p>
+          <a href="/reservas" class="hm-btn hm-btn--sm" style="margin-top:12px;">Cotizar este servicio</a>
+        </div>
+        <div class="hm-service-panel" data-reveal>
+          <div class="hm-service-icon"><Icon name={s.icono} /></div>
+          <ul>
+            {s.items.map((it) => <li>{it}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <!-- Proceso -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Así trabajamos</p>
+        <h2>Tres pasos y listo</h2>
+      </div>
+      <div class="hm-steps">
+        {pasos.map((p, i) => (
+          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Promociones -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Promociones</p>
+        <h2>Revisiones que te ahorran sustos</h2>
+      </div>
+      <div class="hm-promos">
+        {promos.map((p, i) => (
+          <article class="hm-promo" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <span class="hm-promo-tag">{p.etiqueta}</span>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+            <div class="hm-promo-price"><small>Desde</small>{p.precio}</div>
+            <a href="/reservas" class="hm-btn hm-btn--sm">Reservar</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <QuoteForm id="cotizar" />
+</PublicLayout>

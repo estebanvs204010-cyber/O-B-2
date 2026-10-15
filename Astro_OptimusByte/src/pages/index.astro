@@ -1,163 +1,194 @@
 ---
-import '../styles/global.css';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import Icon from '../components/Icon.astro';
+import { TALLER, servicios, pasos, repuestos, promos, articulos } from '../data/taller';
+
+const serviciosHome = servicios.slice(0, 4);
+const articulosHome = articulos.slice(0, 3);
+const fechaLarga = (iso: string) =>
+  new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <title>OptimusByte</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div class="ob-home">
-      <div class="ob-container">
-        <nav class="ob-navbar">
-          <div class="ob-logo">
-            <div class="ob-logo-icon">🔧</div>
-            <div class="ob-logo-text" style="color:white;">Optimus<span>Byte</span></div>
-          </div>
-          <div class="ob-navbar-actions">
-            <button id="btnLoginNav" class="ob-btn ob-btn-outline" style="background:transparent; color:white; border-color:rgba(255,255,255,0.3);">Iniciar sesión</button>
-            <button id="btnRegistroNav" class="ob-btn ob-btn-primary">Registrarse</button>
-          </div>
-        </nav>
-
-        <section class="ob-hero">
-          <span class="ob-hero-eyebrow">Software para talleres automotrices</span>
-          <h1 class="ob-hero-title">Gestiona tu taller<br />de principio a <span>fin</span></h1>
-          <p class="ob-hero-subtitle">
-            Clientes, vehículos, órdenes de trabajo, inventario y facturación en un solo lugar.
-            OptimusByte te ayuda a organizar tu taller automotriz sin perder tiempo en papeleo.
-          </p>
-          <div class="ob-hero-actions">
-            <button id="btnComenzar" class="ob-btn ob-btn-primary">Comenzar ahora</button>
-            <button id="btnLogin" class="ob-btn ob-btn-outline" style="background:transparent; color:white; border-color:rgba(255,255,255,0.3);">Ya tengo cuenta</button>
-          </div>
-          <a href="/cliente" id="btnCliente" class="ob-hero-link">¿Eres cliente? Ingresa a tu área aquí →</a>
-        </section>
-
-        <section class="ob-cta" id="agenda-cliente">
-          <h2 class="ob-cta-title">¿Necesitas atención para tu vehículo?</h2>
-          <p class="ob-cta-text">Agenda una cita en el taller. Inicia sesión para elegir tu vehículo, fecha y horario disponible.</p>
-          <button id="btnAgendarCita" class="ob-btn ob-btn-primary" type="button">Agendar cita</button>
-        </section>
-
-        <section class="ob-stats">
-          <div class="ob-stat">
-            <div class="ob-stat-number">0</div>
-            <div class="ob-stat-label">Clientes gestionados</div>
-          </div>
-          <div class="ob-stat">
-            <div class="ob-stat-number">0</div>
-            <div class="ob-stat-label">Órdenes completadas</div>
-          </div>
-          <div class="ob-stat">
-            <div class="ob-stat-number">0</div>
-            <div class="ob-stat-label">Satisfacción de clientes</div>
-          </div>
-          <div class="ob-stat">
-            <div class="ob-stat-number">24/7</div>
-            <div class="ob-stat-label">Acceso desde cualquier lugar</div>
-          </div>
-        </section>
-
-        <h2 class="ob-section-title">Todo lo que tu taller necesita</h2>
-        <p class="ob-section-subtitle">Un solo sistema para administrar cada parte de tu negocio</p>
-        <section class="ob-features">
-          <div class="ob-feature-card" id="featClientes" style="animation-delay:0.05s;">
-            <div class="ob-feature-icon">👥</div>
-            <h3 class="ob-feature-title">Cliente</h3>
-            <p class="ob-feature-text">Registra y consulta la información de tus clientes en segundos.</p>
-          </div>
-          <div class="ob-feature-card" id="featVehiculos" style="animation-delay:0.1s;">
-            <div class="ob-feature-icon">🚗</div>
-            <h3 class="ob-feature-title">Vehículos</h3>
-            <p class="ob-feature-text">Historial completo de cada vehículo que pasa por tu taller.</p>
-          </div>
-          <div class="ob-feature-card" id="featOrdenes" style="animation-delay:0.15s;">
-            <div class="ob-feature-icon">🧾</div>
-            <h3 class="ob-feature-title">Órdenes de trabajo</h3>
-            <p class="ob-feature-text">Da seguimiento al estado de cada orden, desde "Pendiente" hasta "Listo".</p>
-          </div>
-         
-         
-          <div class="ob-feature-card" id="featMantenimiento" style="animation-delay:0.35s;">
-            <div class="ob-feature-icon">🛠️</div>
-            <h3 class="ob-feature-title">Mantenimiento</h3>
-            <p class="ob-feature-text">Consulta y agenda los mantenimientos programados de tus vehículos.</p>
-          </div>
-        </section>
-
-        <h2 class="ob-section-title">¿Cómo funciona?</h2>
-        <p class="ob-section-subtitle">Empieza a usar OptimusByte en tres pasos</p>
-        <section class="ob-steps">
-          <div class="ob-step">
-            <div class="ob-step-number">1</div>
-            <h3 class="ob-step-title">Crea tu cuenta</h3>
-            <p class="ob-step-text">Regístrate como cliente o como parte del equipo del taller.</p>
-          </div>
-          <div class="ob-step">
-            <div class="ob-step-number">2</div>
-            <h3 class="ob-step-title">Agenda tu servicio</h3>
-            <p class="ob-step-text">Registra el vehículo y crea la orden de trabajo correspondiente.</p>
-          </div>
-          <div class="ob-step">
-            <div class="ob-step-number">3</div>
-            <h3 class="ob-step-title">Da seguimiento</h3>
-            <p class="ob-step-text">Consulta el estado de tu orden en tiempo real desde tu área de cliente.</p>
-          </div>
-        </section>
-
-        <section class="ob-cta">
-          <h2 class="ob-cta-title">¿Listo para organizar tu taller?</h2>
-          <p class="ob-cta-text">Crea tu cuenta gratis y empieza a usar OptimusByte hoy mismo.</p>
-          <button id="btnCtaRegistro" class="ob-btn">Crear cuenta gratis</button>
-        </section>
-
-        <footer class="ob-home-footer">
-          © 2026 OptimusByte. Todos los derechos reservados.
-        </footer>
+<PublicLayout>
+  <!-- ═════════ HERO ═════════ -->
+  <section class="hm-hero">
+    <div class="hm-wrap hm-hero-grid">
+      <div>
+        <p class="hm-eyebrow">Servicio automotriz especializado</p>
+        <h1>Taller<br />mecánico<br /><span>OptimusByte</span></h1>
+        <p class="hm-hero-lead">
+          Mantenimiento, diagnóstico y reparación con seguimiento en línea de cada orden. Tu vehículo en manos expertas.
+        </p>
+        <div class="hm-hero-actions">
+          <a href="/reservas" class="hm-btn">Reserva tu servicio</a>
+          <a href="/login?next=/cliente/index" class="hm-btn hm-btn--ghost">Mi área de cliente</a>
+        </div>
+        <a href="/cliente" id="btnCliente" class="hm-hero-link">¿Ya eres cliente? Consulta el estado de tu orden →</a>
+      </div>
+      <div class="hm-hero-art">
+        <img src="./img/carro.png" alt="Vehículo con vista interna del motor y la suspensión" width="760" height="400" />
       </div>
     </div>
+  </section>
 
-    <script>
-      document.getElementById('btnLoginNav')?.addEventListener('click', () => {
-        window.location.href = '/login';
-      });
-      document.getElementById('btnRegistroNav')?.addEventListener('click', () => {
-        window.location.href = '/registro';
-      });
-      document.getElementById('btnComenzar')?.addEventListener('click', () => {
-        window.location.href = '/registro';
-      });
-      document.getElementById('btnLogin')?.addEventListener('click', () => {
-        window.location.href = '/login';
-      });
-      document.getElementById('btnCtaRegistro')?.addEventListener('click', () => {
-        window.location.href = '/registro';
-      });
-      document.getElementById('btnAgendarCita')?.addEventListener('click', () => {
-        const destino = encodeURIComponent('/cliente/citas');
-        window.location.href = `/login?next=${destino}&motivo=agendar-cita`;
-      });
-      // El link "btnCliente" ya redirige por su href a /cliente,
-      // y esa página se encarga de pedir credenciales si no hay sesión.
+  <!-- ═════════ CIFRAS ═════════ -->
+  <section class="hm-strip" aria-label="Datos del taller">
+    <div class="hm-wrap hm-strip-grid">
+      <div class="hm-strip-item"><strong>+<em>{TALLER.anosExperiencia}</em></strong><span>Años de experiencia</span></div>
+      <div class="hm-strip-item"><strong>+<em>500</em></strong><span>Vehículos atendidos</span></div>
+      <div class="hm-strip-item"><strong><em>100</em>%</strong><span>Seguimiento en línea</span></div>
+      <div class="hm-strip-item"><strong><em>24</em>/7</strong><span>Consulta tu orden</span></div>
+    </div>
+  </section>
 
-      // Tarjetas de "Todo lo que tu taller necesita": si ya hay sesión, van directo
-      // a su sección; si no, pasan primero por /login y luego regresan con ?next=
-      function irASeccion(ruta: string) {
-        const haySesion = localStorage.getItem('ob_session');
-        window.location.href = haySesion ? ruta : `/login?next=${ruta}`;
-      }
+  <!-- ═════════ NOSOTROS ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap hm-about-grid">
+      <div class="hm-about-text" data-reveal>
+        <div class="hm-section-head" style="margin-bottom:24px;">
+          <p class="hm-eyebrow">Nosotros</p>
+          <h2>Mecánica y colisión en un solo lugar</h2>
+        </div>
+        <p>
+          En OptimusByte combinamos la experiencia de un taller tradicional con tecnología: cada vehículo
+          tiene su historial, cada orden de trabajo su seguimiento y cada cliente la tranquilidad de saber
+          en qué etapa va su servicio.
+        </p>
+        <p>
+          Atendemos mecánica general, diagnóstico electrónico, latonería y pintura, y te ayudamos a conseguir
+          los repuestos correctos para tu vehículo.
+        </p>
+        <a href="/nosotros" class="hm-btn hm-btn--ghost">Conócenos</a>
+      </div>
+      <div class="hm-about-card" data-reveal>
+        <h3>¿Por qué elegirnos?</h3>
+        <p>Transparencia desde la cotización hasta la entrega.</p>
+        <ul>
+          <li>Cotización clara antes de empezar</li>
+          <li>Historial completo de tu vehículo</li>
+          <li>Estado de tu orden en tiempo real</li>
+          <li>Técnicos con experiencia certificada</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-      document.getElementById('featClientes')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featVehiculos')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featOrdenes')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featInventario')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featFacturacion')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featReportes')?.addEventListener('click', () => irASeccion('/cliente/index'));
-      document.getElementById('featMantenimiento')?.addEventListener('click', () => irASeccion('/cliente/index'));
-    </script>
-  </body>
-</html>
+  <!-- ═════════ SERVICIOS ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Nuestros servicios</p>
+        <h2>Todo para tu vehículo</h2>
+        <p>Desde un cambio de aceite hasta una reparación completa de colisión.</p>
+      </div>
+      <div class="hm-cards">
+        {serviciosHome.map((s, i) => (
+          <article class="hm-card" data-reveal style={`transition-delay:${i * 0.07}s`}>
+            <div class="hm-card-icon"><Icon name={s.icono} /></div>
+            <h3>{s.titulo}</h3>
+            <p>{s.texto}</p>
+            <a href={`/servicios#${s.slug}`} class="hm-card-link">Ver más →</a>
+          </article>
+        ))}
+      </div>
+      <div class="hm-center-action" data-reveal>
+        <a href="/servicios" class="hm-btn hm-btn--ghost">Ver todos los servicios</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ PROCESO ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Así trabajamos</p>
+        <h2>Tres pasos y listo</h2>
+      </div>
+      <div class="hm-steps">
+        {pasos.map((p, i) => (
+          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ REPUESTOS ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Repuestos</p>
+        <h2>Encuentra lo que necesitas</h2>
+        <p>Repuestos y accesorios para mantener tu vehículo en óptimas condiciones.</p>
+      </div>
+      <div class="hm-parts">
+        {repuestos.map((r, i) => (
+          <a href="/repuestos" class="hm-part" data-reveal style={`transition-delay:${i * 0.05}s`}>
+            <Icon name={r.icono} />
+            {r.nombre}
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ COTIZACIÓN ═════════ -->
+  <QuoteForm id="cotizar" />
+
+  <!-- ═════════ PROMOCIONES ═════════ -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Promociones</p>
+        <h2>Revisiones que te ahorran sustos</h2>
+      </div>
+      <div class="hm-promos">
+        {promos.map((p, i) => (
+          <article class="hm-promo" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <span class="hm-promo-tag">{p.etiqueta}</span>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+            <div class="hm-promo-price"><small>Desde</small>{p.precio}</div>
+            <a href="/reservas" class="hm-btn hm-btn--sm">Reservar</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ BLOG ═════════ -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Blog</p>
+        <h2>Consejos para tu vehículo</h2>
+      </div>
+      <div class="hm-posts">
+        {articulosHome.map((a, i) => (
+          <a href={`/blog#${a.slug}`} class="hm-post" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <div class="hm-post-cover"><Icon name={a.icono} /></div>
+            <div class="hm-post-body">
+              <span class="hm-post-meta">{a.categoria} · {fechaLarga(a.fecha)}</span>
+              <h3>{a.titulo}</h3>
+              <p>{a.resumen}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+      <div class="hm-center-action" data-reveal>
+        <a href="/blog" class="hm-btn hm-btn--ghost">Ver todos los artículos</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ CTA FINAL ═════════ -->
+  <section class="hm-cta">
+    <div class="hm-wrap" data-reveal>
+      <h2>¿Listo para cuidar tu vehículo?</h2>
+      <p>Crea tu cuenta, registra tu vehículo y sigue cada servicio en línea.</p>
+      <a href="/registro" class="hm-btn hm-btn--light" id="btnCtaRegistro">Crear cuenta gratis</a>
+    </div>
+  </section>
+</PublicLayout>

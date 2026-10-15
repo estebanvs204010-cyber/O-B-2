@@ -1,0 +1,835 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Repuestos" active="repuestos">
+  <section class="admin-page-header">
+    <div>
+      <p class="eyebrow">Inventario del taller</p>
+      <h2>Repuestos</h2>
+      <span>Administra piezas, precios y existencias del inventario.</span>
+    </div>
+    <div class="admin-page-actions">
+      <button id="btnRecargarRepuestos" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+      <button id="btnImagenPredeterminadaCategoria" class="btn btn-outline" type="button">
+        Imagen predeterminada por categoría
+      </button>
+      <button id="btnCrearRepuesto" class="btn btn-primary" type="button">
+        + Nuevo repuesto
+      </button>
+    </div>
+  </section>
+
+  <section class="ordenes-resumen repuestos-resumen" aria-label="Resumen del inventario">
+    <article class="ordenes-metrica">
+      <span>Repuestos activos</span>
+      <strong id="repuestosTotal">—</strong>
+    </article>
+    <article class="ordenes-metrica">
+      <span>Stock bajo</span>
+      <strong id="repuestosStockBajo">—</strong>
+    </article>
+    <article class="ordenes-metrica">
+      <span>Sin existencias</span>
+      <strong id="repuestosAgotados">—</strong>
+    </article>
+  </section>
+
+  <section class="admin-panel repuestos-panel">
+    <div class="repuestos-toolbar">
+      <label class="sr-only" for="buscarRepuestos">Buscar en inventario</label>
+      <input
+        id="buscarRepuestos"
+        class="ordenes-search"
+        type="search"
+        placeholder="Buscar por referencia, nombre, categoría o marca"
+      />
+      <div class="repuestos-filtros" role="group" aria-label="Filtrar inventario">
+        <button class="repuesto-filtro active" type="button" data-filtro="todos">Todos</button>
+        <button class="repuesto-filtro" type="button" data-filtro="bajo">Stock bajo</button>
+        <button class="repuesto-filtro" type="button" data-filtro="inactivos">Inactivos</button>
+      </div>
+    </div>
+    <div id="repuestosContenido" class="ordenes-table-wrap" aria-live="polite">
+      <p class="loading">Cargando inventario…</p>
+    </div>
+  </section>
+
+  <dialog id="modalRepuesto" class="repuesto-dialog">
+    <form id="formRepuesto" class="cliente-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Inventario del taller</p>
+          <h2 id="tituloModalRepuesto">Nuevo repuesto</h2>
+        </div>
+        <button id="cerrarModalRepuesto" class="modal-close" type="button" aria-label="Cerrar">
+          &#10005;
+        </button>
+      </div>
+
+      <input id="idRepuesto" type="hidden" />
+      <section class="repuesto-imagen-editor">
+        <img
+          id="vistaPreviaImagenRepuesto"
+          class="repuesto-imagen-preview"
+          alt="Imagen del repuesto"
+        />
+        <div class="repuesto-imagen-controls">
+          <span>Imagen del repuesto</span>
+          <div id="grupoImagenPersonalizada" class="repuesto-imagen-custom">
+            <input
+              id="archivoImagenRepuesto"
+              class="sr-only"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            />
+            <button id="btnImagenPersonalizada" class="btn btn-outline" type="button">
+              Subir imagen personalizada
+            </button>
+            <small>JPG, PNG o WebP. Máximo 5 MB.</small>
+          </div>
+          <small id="ayudaImagenRepuesto">
+            Puedes conservar la imagen de categoría o subir una foto propia.
+          </small>
+        </div>
+      </section>
+      <div class="field-row">
+        <div class="field">
+          <label for="referenciaRepuesto">Referencia</label>
+          <input id="referenciaRepuesto" maxlength="50" autocomplete="off" required />
+        </div>
+        <div class="field">
+          <label for="nombreRepuesto">Nombre</label>
+          <input id="nombreRepuesto" maxlength="100" required />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="categoriaRepuesto">Categoría</label>
+          <input id="categoriaRepuesto" maxlength="50" value="General" required />
+        </div>
+        <div class="field">
+          <label for="marcaRepuesto">Marca</label>
+          <input id="marcaRepuesto" maxlength="50" value="General" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="modeloRepuesto">Modelo compatible (opcional)</label>
+        <input id="modeloRepuesto" maxlength="50" />
+      </div>
+      <div class="field">
+        <label for="descripcionRepuesto">Descripción</label>
+        <textarea id="descripcionRepuesto" rows="3" maxlength="300"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="precioUnitarioRepuesto">Precio unitario (COP)</label>
+          <input id="precioUnitarioRepuesto" type="number" min="0" step="0.01" value="0" required />
+        </div>
+        <div class="field">
+          <label for="stockActualRepuesto">Existencias</label>
+          <input id="stockActualRepuesto" type="number" min="0" step="1" value="0" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="stockMinimoRepuesto">Avisar cuando el stock llegue a</label>
+        <input id="stockMinimoRepuesto" type="number" min="0" step="1" value="0" required />
+        <small class="repuesto-ayuda">El repuesto se marcará con stock bajo al llegar a esta cantidad.</small>
+      </div>
+      <div class="modal-actions">
+        <button id="cancelarModalRepuesto" class="btn btn-outline" type="button">Cancelar</button>
+        <button id="guardarRepuesto" class="btn btn-primary" type="submit">Guardar repuesto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="modalImagenCategoria" class="repuesto-dialog">
+    <form id="formImagenCategoria" class="cliente-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Actualización de imágenes</p>
+          <h2>Imagen predeterminada por categoría</h2>
+        </div>
+        <button id="cerrarModalImagenCategoria" class="modal-close" type="button" aria-label="Cerrar">
+          &#10005;
+        </button>
+      </div>
+      <div class="field">
+        <label for="categoriaImagenPredeterminada">Categoría</label>
+        <select id="categoriaImagenPredeterminada" required disabled>
+          <option value="">Cargando categorías…</option>
+        </select>
+      </div>
+      <div class="repuesto-imagen-global-preview">
+        <img
+          id="vistaPreviaImagenCategoria"
+          class="repuesto-imagen-preview"
+          src="/images/repuestos/general.svg"
+          alt="Imagen predeterminada para la categoría seleccionada"
+        />
+        <span id="cantidadRepuestosCategoria">0 repuestos en esta categoría</span>
+      </div>
+      <div class="repuesto-imagen-custom">
+        <input
+          id="archivoImagenCategoria"
+          class="sr-only"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+        />
+        <button id="btnElegirImagenCategoria" class="btn btn-outline" type="button">
+          Elegir imagen para esta categoría
+        </button>
+        <small>JPG, PNG o WebP. Máximo 5 MB.</small>
+      </div>
+      <p class="repuesto-imagen-aviso">
+        Seguridad: al confirmar, esta imagen reemplazará la actual de todos los repuestos de la categoría, incluidas las imágenes personalizadas. ¿Deseas continuar?
+      </p>
+      <div class="modal-actions">
+        <button id="cancelarModalImagenCategoria" class="btn btn-outline" type="button">No, cancelar</button>
+        <button id="aplicarImagenCategoria" class="btn btn-primary" type="submit">
+          Sí, aplicar imagen
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import Swal from "sweetalert2";
+    import { apiFetch } from "../../lib/api";
+    import { notificarError, notificarExito } from "../../lib/toast";
+    import { abrirMenuAcciones } from "../../lib/menuAcciones";
+
+    interface Repuesto {
+      id_repuesto: number;
+      referencia: string;
+      nombre: string;
+      descripcion: string | null;
+      categoria: string;
+      precio_unitario: number | string;
+      stock_actual: number | string;
+      stock_minimo: number | string;
+      marca: string;
+      modelo: string | null;
+      imagen_url: string | null;
+      activo: number | string;
+    }
+
+    const imagenesPorCategoria: Record<string, string> = {
+      frenos: "/images/repuestos/frenos.svg",
+      freno: "/images/repuestos/frenos.svg",
+      filtros: "/images/repuestos/filtros.svg",
+      filtro: "/images/repuestos/filtros.svg",
+      motor: "/images/repuestos/motor.svg",
+      electrico: "/images/repuestos/electrico.svg",
+      electricidad: "/images/repuestos/electrico.svg",
+      suspension: "/images/repuestos/suspension.svg",
+      fluidos: "/images/repuestos/fluidos.svg",
+      lubricantes: "/images/repuestos/fluidos.svg",
+      lubricacion: "/images/repuestos/fluidos.svg",
+      general: "/images/repuestos/general.svg",
+    };
+
+    const contenido = document.getElementById("repuestosContenido")!;
+    const formulario = document.getElementById("formRepuesto") as HTMLFormElement;
+    const modal = document.getElementById("modalRepuesto") as HTMLDialogElement;
+    const modalImagenCategoria = document.getElementById(
+      "modalImagenCategoria",
+    ) as HTMLDialogElement;
+    const buscar = document.getElementById("buscarRepuestos") as HTMLInputElement;
+    const botonesFiltro = document.querySelectorAll<HTMLButtonElement>(".repuesto-filtro");
+    const selectorCategoriaImagen = document.getElementById(
+      "categoriaImagenPredeterminada",
+    ) as HTMLSelectElement;
+    const inputArchivoCategoria = document.getElementById(
+      "archivoImagenCategoria",
+    ) as HTMLInputElement;
+    const imagenPreviewCategoria = document.getElementById(
+      "vistaPreviaImagenCategoria",
+    ) as HTMLImageElement;
+    let urlPreviaCategoria: string | null = null;
+    const imagenPreview = document.getElementById(
+      "vistaPreviaImagenRepuesto",
+    ) as HTMLImageElement;
+    const inputArchivoImagen = document.getElementById(
+      "archivoImagenRepuesto",
+    ) as HTMLInputElement;
+    const grupoImagenPersonalizada = document.getElementById("grupoImagenPersonalizada")!;
+    let repuestos: Repuesto[] = [];
+    let filtroActual = "todos";
+    let imagenUrlSeleccionada = "";
+    let urlPreviaArchivo: string | null = null;
+
+    function numero(valor: number | string): number {
+      return Number(valor) || 0;
+    }
+
+    function celda(texto: string, clase?: string): HTMLTableCellElement {
+      const elemento = document.createElement("td");
+      elemento.textContent = texto;
+      if (clase) elemento.className = clase;
+      return elemento;
+    }
+
+    function normalizarCategoria(categoria: string): string {
+      return categoria
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLocaleLowerCase("es");
+    }
+
+    function imagenPredeterminada(categoria: string): string {
+      return imagenesPorCategoria[normalizarCategoria(categoria)] ??
+        imagenesPorCategoria.general;
+    }
+
+    function actualizarPreviaCategoria() {
+      const categoria = selectorCategoriaImagen.value;
+      if (!categoria) return;
+      if (!inputArchivoCategoria.files?.length) {
+        imagenPreviewCategoria.src = imagenPredeterminada(categoria);
+      }
+      const cantidad = repuestos.filter(
+        (repuesto) =>
+          normalizarCategoria(repuesto.categoria) === normalizarCategoria(categoria),
+      ).length;
+      document.getElementById("cantidadRepuestosCategoria")!.textContent =
+        `${cantidad} repuesto${cantidad === 1 ? "" : "s"} en esta categoría`;
+    }
+
+    function cargarCategoriasImagen() {
+      const categoriaActual = selectorCategoriaImagen.value;
+      const categorias = [...new Set(
+        repuestos
+          .map((repuesto) => repuesto.categoria?.trim())
+          .filter((categoria): categoria is string => Boolean(categoria)),
+      )].sort((a, b) => a.localeCompare(b, "es"));
+
+      selectorCategoriaImagen.replaceChildren();
+      if (categorias.length === 0) {
+        const opcion = document.createElement("option");
+        opcion.value = "";
+        opcion.textContent = "No hay categorías en el inventario";
+        selectorCategoriaImagen.append(opcion);
+        selectorCategoriaImagen.disabled = true;
+        (document.getElementById("aplicarImagenCategoria") as HTMLButtonElement).disabled = true;
+        return;
+      }
+
+      categorias.forEach((categoria) => {
+        const opcion = document.createElement("option");
+        opcion.value = categoria;
+        opcion.textContent = categoria;
+        selectorCategoriaImagen.append(opcion);
+      });
+      selectorCategoriaImagen.disabled = false;
+      (document.getElementById("aplicarImagenCategoria") as HTMLButtonElement).disabled = false;
+      if (categorias.includes(categoriaActual)) selectorCategoriaImagen.value = categoriaActual;
+      actualizarPreviaCategoria();
+    }
+
+    function mostrarImagen(url: string) {
+      imagenUrlSeleccionada = url;
+      imagenPreview.src = url;
+    }
+
+    function limpiarPreviaArchivo() {
+      if (urlPreviaArchivo) URL.revokeObjectURL(urlPreviaArchivo);
+      urlPreviaArchivo = null;
+    }
+
+    document.getElementById("categoriaRepuesto")!.addEventListener("input", () => {
+      const modo = (document.getElementById("idRepuesto") as HTMLInputElement).value;
+      const imagenEsPredeterminada = Object.values(imagenesPorCategoria).includes(
+        imagenUrlSeleccionada,
+      );
+      if (!modo && !inputArchivoImagen.files?.length && imagenEsPredeterminada) {
+        const categoria = (document.getElementById("categoriaRepuesto") as HTMLInputElement).value;
+        mostrarImagen(imagenPredeterminada(categoria));
+      }
+    });
+
+    imagenPreview.addEventListener("error", () => {
+      const categoria = (document.getElementById("categoriaRepuesto") as HTMLInputElement).value;
+      const predeterminada = imagenPredeterminada(categoria);
+      if (imagenPreview.src !== new URL(predeterminada, window.location.origin).href) {
+        mostrarImagen(predeterminada);
+      }
+    });
+
+    inputArchivoImagen.addEventListener("change", () => {
+      limpiarPreviaArchivo();
+      const archivo = inputArchivoImagen.files?.[0];
+      if (!archivo) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
+        inputArchivoImagen.value = "";
+        notificarError("Selecciona una imagen JPG, PNG o WebP.");
+        return;
+      }
+      if (archivo.size > 5 * 1024 * 1024) {
+        inputArchivoImagen.value = "";
+        notificarError("La imagen no puede superar los 5 MB.");
+        return;
+      }
+      urlPreviaArchivo = URL.createObjectURL(archivo);
+      mostrarImagen(urlPreviaArchivo);
+    });
+
+    function actualizarResumen() {
+      const activos = repuestos.filter((repuesto) => Number(repuesto.activo) === 1);
+      document.getElementById("repuestosTotal")!.textContent = String(activos.length);
+      document.getElementById("repuestosStockBajo")!.textContent = String(
+        activos.filter(
+          (repuesto) => numero(repuesto.stock_actual) <= numero(repuesto.stock_minimo),
+        ).length,
+      );
+      document.getElementById("repuestosAgotados")!.textContent = String(
+        activos.filter((repuesto) => numero(repuesto.stock_actual) === 0).length,
+      );
+    }
+
+    function pintarTabla() {
+      const consulta = buscar.value.trim().toLocaleLowerCase("es");
+      const visibles = repuestos.filter((repuesto) => {
+        const activo = Number(repuesto.activo) === 1;
+        const stockBajo = numero(repuesto.stock_actual) <= numero(repuesto.stock_minimo);
+        const coincideFiltro =
+          filtroActual === "todos" ||
+          (filtroActual === "bajo" && activo && stockBajo) ||
+          (filtroActual === "inactivos" && !activo);
+        const coincideBusqueda = `${repuesto.referencia} ${repuesto.nombre} ${repuesto.categoria} ${repuesto.marca}`
+          .toLocaleLowerCase("es")
+          .includes(consulta);
+        return coincideFiltro && coincideBusqueda;
+      });
+
+      contenido.replaceChildren();
+      if (visibles.length === 0) {
+        const vacio = document.createElement("p");
+        vacio.className = "empty";
+        vacio.textContent = repuestos.length
+          ? "No hay repuestos que coincidan con el filtro."
+          : "Aún no hay repuestos. Crea el primero para comenzar el inventario.";
+        contenido.append(vacio);
+        return;
+      }
+
+      const tabla = document.createElement("table");
+      tabla.className = "ordenes-table repuestos-table";
+      const encabezado = document.createElement("thead");
+      const filaTitulo = document.createElement("tr");
+      ["Referencia", "Repuesto", "Categoría", "Precio", "Existencias", "Estado", "Acciones"].forEach((titulo) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = titulo;
+        filaTitulo.append(th);
+      });
+        const imagenTitulo = document.createElement("th");
+        imagenTitulo.scope = "col";
+        imagenTitulo.textContent = "Imagen";
+        filaTitulo.insertBefore(imagenTitulo, filaTitulo.firstChild);
+        encabezado.append(filaTitulo);
+      const cuerpo = document.createElement("tbody");
+
+      visibles.forEach((repuesto) => {
+        const fila = document.createElement("tr");
+        const imagenCelda = celda("");
+        const imagen = document.createElement("img");
+        imagen.className = "repuesto-tabla-imagen";
+        imagen.alt = `Imagen de ${repuesto.nombre}`;
+        imagen.loading = "lazy";
+        imagen.src = repuesto.imagen_url || imagenPredeterminada(repuesto.categoria);
+        imagen.addEventListener("error", () => {
+          imagen.src = imagenPredeterminada(repuesto.categoria);
+        });
+        imagenCelda.append(imagen);
+        fila.append(imagenCelda);
+        fila.append(celda(repuesto.referencia, "repuestos-codigo"));
+        const nombre = celda("");
+        const titulo = document.createElement("strong");
+        titulo.className = "repuestos-nombre";
+        titulo.textContent = repuesto.nombre;
+        nombre.append(titulo);
+        if (repuesto.descripcion) {
+          const descripcion = document.createElement("span");
+          descripcion.className = "repuestos-descripcion";
+          descripcion.textContent = repuesto.descripcion;
+          nombre.append(descripcion);
+        }
+        fila.append(nombre);
+        fila.append(celda(repuesto.categoria || "General"));
+
+        fila.append(
+          celda(
+            new Intl.NumberFormat("es-CO", {
+              style: "currency",
+              currency: "COP",
+              maximumFractionDigits: 0,
+            }).format(numero(repuesto.precio_unitario)),
+          ),
+        );
+
+        const stock = celda("");
+        const cantidad = document.createElement("strong");
+        cantidad.textContent = String(numero(repuesto.stock_actual));
+        stock.append(cantidad);
+        const minimo = document.createElement("span");
+        minimo.className = "repuestos-stock-minimo";
+        minimo.textContent = `Mínimo: ${numero(repuesto.stock_minimo)}`;
+        stock.append(minimo);
+        fila.append(stock);
+
+        const estado = celda("");
+        const badge = document.createElement("span");
+        const activo = Number(repuesto.activo) === 1;
+        const agotado = numero(repuesto.stock_actual) === 0;
+        const bajo = numero(repuesto.stock_actual) <= numero(repuesto.stock_minimo);
+        badge.className = `repuestos-badge ${!activo ? "inactive" : agotado ? "out" : bajo ? "low" : "available"}`;
+        badge.textContent = !activo
+          ? "Inactivo"
+          : agotado
+            ? "Agotado"
+            : bajo
+              ? "Stock bajo"
+              : "Disponible";
+        estado.append(badge);
+        fila.append(estado);
+
+        const acciones = celda("", "repuestos-actions");
+        const contenedorAcciones = document.createElement("div");
+        contenedorAcciones.className = "grid-actions";
+        const menu = document.createElement("button");
+        menu.type = "button";
+        menu.className = "grid-action-button menu";
+        menu.textContent = "⋮";
+        menu.title = "Acciones del repuesto";
+        menu.setAttribute("aria-label", `Acciones para ${repuesto.nombre}`);
+        menu.addEventListener("click", () => {
+          abrirMenuAcciones(menu, [
+            {
+              etiqueta: "Editar repuesto",
+              alSeleccionar: () => void abrirEdicion(repuesto.id_repuesto),
+            },
+            {
+              etiqueta: activo ? "Desactivar repuesto" : "Activar repuesto",
+              variante: activo ? "danger" : "success",
+              alSeleccionar: () => void cambiarEstadoRepuesto(repuesto, !activo),
+            },
+          ]);
+        });
+        contenedorAcciones.append(menu);
+        acciones.append(contenedorAcciones);
+        fila.append(acciones);
+        cuerpo.append(fila);
+      });
+
+      tabla.append(encabezado, cuerpo);
+      contenido.append(tabla);
+    }
+
+    async function cargarRepuestos() {
+      contenido.innerHTML = '<p class="loading">Cargando inventario…</p>';
+      try {
+        const respuesta = await apiFetch<Repuesto[]>("/api/admin/repuestos?incluir_inactivos=true");
+        repuestos = respuesta.data ?? [];
+        cargarCategoriasImagen();
+        actualizarResumen();
+        pintarTabla();
+      } catch (error) {
+        contenido.replaceChildren();
+        const alerta = document.createElement("p");
+        alerta.className = "alert alert-error";
+        alerta.textContent =
+          error instanceof Error ? error.message : "No se pudo cargar el inventario.";
+        contenido.append(alerta);
+      }
+    }
+
+    function abrirCreacion() {
+      formulario.reset();
+      limpiarPreviaArchivo();
+      inputArchivoImagen.value = "";
+      grupoImagenPersonalizada.hidden = false;
+      mostrarImagen(imagenPredeterminada("General"));
+      (document.getElementById("idRepuesto") as HTMLInputElement).value = "";
+      (document.getElementById("tituloModalRepuesto") as HTMLElement).textContent =
+        "Nuevo repuesto";
+      (document.getElementById("guardarRepuesto") as HTMLButtonElement).textContent =
+        "Crear repuesto";
+      modal.showModal();
+    }
+
+    async function abrirEdicion(id: number) {
+      try {
+        const respuesta = await apiFetch<Repuesto>(`/api/admin/repuestos/${id}`);
+        const repuesto = respuesta.data;
+        if (!repuesto) throw new Error("No se encontró el repuesto.");
+
+        formulario.reset();
+        limpiarPreviaArchivo();
+        inputArchivoImagen.value = "";
+        grupoImagenPersonalizada.hidden = false;
+        (document.getElementById("idRepuesto") as HTMLInputElement).value =
+          String(repuesto.id_repuesto);
+        (document.getElementById("referenciaRepuesto") as HTMLInputElement).value =
+          repuesto.referencia;
+        (document.getElementById("nombreRepuesto") as HTMLInputElement).value =
+          repuesto.nombre;
+        (document.getElementById("categoriaRepuesto") as HTMLInputElement).value =
+          repuesto.categoria ?? "General";
+        (document.getElementById("marcaRepuesto") as HTMLInputElement).value =
+          repuesto.marca ?? "General";
+        (document.getElementById("modeloRepuesto") as HTMLInputElement).value =
+          repuesto.modelo ?? "";
+        mostrarImagen(repuesto.imagen_url || imagenPredeterminada(repuesto.categoria));
+        (document.getElementById("descripcionRepuesto") as HTMLTextAreaElement).value =
+          repuesto.descripcion ?? "";
+        (document.getElementById("precioUnitarioRepuesto") as HTMLInputElement).value =
+          String(numero(repuesto.precio_unitario));
+        (document.getElementById("stockActualRepuesto") as HTMLInputElement).value =
+          String(numero(repuesto.stock_actual));
+        (document.getElementById("stockMinimoRepuesto") as HTMLInputElement).value =
+          String(numero(repuesto.stock_minimo));
+        (document.getElementById("tituloModalRepuesto") as HTMLElement).textContent =
+          "Editar repuesto";
+        (document.getElementById("guardarRepuesto") as HTMLButtonElement).textContent =
+          "Guardar cambios";
+        modal.showModal();
+      } catch (error) {
+        notificarError(
+          error instanceof Error ? error.message : "No se pudo cargar el repuesto.",
+        );
+      }
+    }
+
+    async function cambiarEstadoRepuesto(repuesto: Repuesto, activo: boolean) {
+      const confirmacion = await Swal.fire({
+        title: activo ? "¿Activar repuesto?" : "¿Desactivar repuesto?",
+        text: `¿Deseas ${activo ? "activar" : "desactivar"} "${repuesto.nombre}"?`,
+        icon: activo ? "question" : "warning",
+        showCancelButton: true,
+        confirmButtonText: activo ? "Sí, activar" : "Sí, desactivar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+      });
+      if (!confirmacion.isConfirmed) return;
+
+      try {
+        const respuesta = await apiFetch(
+          `/api/admin/repuestos/${repuesto.id_repuesto}/estado`,
+          { method: "PUT", body: JSON.stringify({ activo }) },
+        );
+        notificarExito(respuesta.message ?? "Estado actualizado.");
+        await cargarRepuestos();
+      } catch (error) {
+        notificarError(
+          error instanceof Error ? error.message : "No se pudo cambiar el estado.",
+        );
+      }
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const id = (document.getElementById("idRepuesto") as HTMLInputElement).value;
+      const boton = document.getElementById("guardarRepuesto") as HTMLButtonElement;
+      const precio = Number((document.getElementById("precioUnitarioRepuesto") as HTMLInputElement).value);
+      const stock = Number((document.getElementById("stockActualRepuesto") as HTMLInputElement).value);
+      const stockMinimo = Number(
+        (document.getElementById("stockMinimoRepuesto") as HTMLInputElement).value,
+      );
+      if (![precio, stock, stockMinimo].every(Number.isFinite)) {
+        notificarError("Revisa los valores de precio y existencias.");
+        return;
+      }
+
+      const body = {
+        referencia: (document.getElementById("referenciaRepuesto") as HTMLInputElement).value.trim(),
+        nombre: (document.getElementById("nombreRepuesto") as HTMLInputElement).value.trim(),
+        categoria: (document.getElementById("categoriaRepuesto") as HTMLInputElement).value.trim(),
+        marca: (document.getElementById("marcaRepuesto") as HTMLInputElement).value.trim(),
+        modelo: (document.getElementById("modeloRepuesto") as HTMLInputElement).value.trim() || null,
+        descripcion: (document.getElementById("descripcionRepuesto") as HTMLTextAreaElement).value.trim() || null,
+        precio_unitario: precio,
+        stock_actual: stock,
+        stock_minimo: stockMinimo,
+        imagen_url: imagenUrlSeleccionada || null,
+      };
+      boton.disabled = true;
+      boton.textContent = "Guardando…";
+      try {
+        const archivoImagen = inputArchivoImagen.files?.[0];
+        if (archivoImagen) {
+          boton.textContent = "Subiendo imagen…";
+          body.imagen_url = await subirImagenPersonalizada(archivoImagen);
+        }
+        const respuesta = await apiFetch(
+          id ? `/api/admin/repuestos/${id}` : "/api/admin/repuestos",
+          { method: id ? "PUT" : "POST", body: JSON.stringify(body) },
+        );
+        modal.close();
+        notificarExito(respuesta.message ?? "Repuesto guardado correctamente.");
+        await cargarRepuestos();
+      } catch (error) {
+        notificarError(
+          error instanceof Error ? error.message : "No se pudo guardar el repuesto.",
+        );
+      } finally {
+        boton.disabled = false;
+        boton.textContent = id ? "Guardar cambios" : "Crear repuesto";
+      }
+    });
+
+    document.getElementById("btnImagenPersonalizada")!.addEventListener("click", () => {
+      inputArchivoImagen.click();
+    });
+    document.getElementById("btnImagenPredeterminadaCategoria")!.addEventListener(
+      "click",
+      () => {
+        inputArchivoCategoria.value = "";
+        if (urlPreviaCategoria) URL.revokeObjectURL(urlPreviaCategoria);
+        urlPreviaCategoria = null;
+        cargarCategoriasImagen();
+        actualizarPreviaCategoria();
+        modalImagenCategoria.showModal();
+      },
+    );
+    selectorCategoriaImagen.addEventListener("change", actualizarPreviaCategoria);
+    document.getElementById("btnElegirImagenCategoria")!.addEventListener("click", () => {
+      inputArchivoCategoria.click();
+    });
+    inputArchivoCategoria.addEventListener("change", () => {
+      if (urlPreviaCategoria) URL.revokeObjectURL(urlPreviaCategoria);
+      urlPreviaCategoria = null;
+      const archivo = inputArchivoCategoria.files?.[0];
+      if (!archivo) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type)) {
+        inputArchivoCategoria.value = "";
+        notificarError("Selecciona una imagen JPG, PNG o WebP.");
+        return;
+      }
+      if (archivo.size > 5 * 1024 * 1024) {
+        inputArchivoCategoria.value = "";
+        notificarError("La imagen no puede superar los 5 MB.");
+        return;
+      }
+      urlPreviaCategoria = URL.createObjectURL(archivo);
+      imagenPreviewCategoria.src = urlPreviaCategoria;
+    });
+    document.getElementById("cerrarModalImagenCategoria")!.addEventListener(
+      "click",
+      () => modalImagenCategoria.close(),
+    );
+    document.getElementById("cancelarModalImagenCategoria")!.addEventListener(
+      "click",
+      () => modalImagenCategoria.close(),
+    );
+    document.getElementById("formImagenCategoria")!.addEventListener(
+      "submit",
+      async (evento) => {
+        evento.preventDefault();
+        const categoria = selectorCategoriaImagen.value;
+        if (!categoria) {
+          notificarError("No hay categorías disponibles en el inventario.");
+          return;
+        }
+        const cantidad = repuestos.filter(
+          (repuesto) =>
+            normalizarCategoria(repuesto.categoria) === normalizarCategoria(categoria),
+        ).length;
+        if (cantidad === 0) {
+          notificarError("No hay repuestos registrados en esa categoría.");
+          return;
+        }
+
+        const boton = document.getElementById(
+          "aplicarImagenCategoria",
+        ) as HTMLButtonElement;
+        boton.disabled = true;
+        const textoOriginal = boton.textContent;
+        try {
+          let imagen_url = imagenPredeterminada(categoria);
+          const archivo = inputArchivoCategoria.files?.[0];
+          if (archivo) {
+            boton.textContent = "Subiendo imagen…";
+            imagen_url = await subirImagenPersonalizada(archivo);
+          }
+          boton.textContent = "Aplicando…";
+          const respuesta = await apiFetch(
+            "/api/admin/repuestos/imagen-categoria",
+            {
+              method: "PUT",
+              body: JSON.stringify({ categoria, imagen_url }),
+            },
+          );
+          modalImagenCategoria.close();
+          notificarExito(respuesta.message ?? "Imagen aplicada a la categoría.");
+          await cargarRepuestos();
+        } catch (error) {
+          notificarError(
+            error instanceof Error
+              ? error.message
+              : "No se pudo actualizar la imagen de la categoría.",
+          );
+        } finally {
+          boton.disabled = false;
+          boton.textContent = textoOriginal;
+        }
+      },
+    );
+    buscar.addEventListener("input", pintarTabla);
+    botonesFiltro.forEach((boton) => {
+      boton.addEventListener("click", () => {
+        filtroActual = boton.dataset.filtro ?? "todos";
+        botonesFiltro.forEach((elemento) => elemento.classList.toggle("active", elemento === boton));
+        pintarTabla();
+      });
+    });
+
+    async function subirImagenPersonalizada(archivo: File): Promise<string> {
+      const respuestaFirma = await apiFetch<{
+        cloudName: string;
+        apiKey: string;
+        timestamp: number;
+        folder: string;
+        signature: string;
+      }>("/api/uploads/firma?tipo=repuestos");
+
+      if (!respuestaFirma.data) {
+        throw new Error("El servidor no devolvió los datos de la firma de Cloudinary.");
+      }
+
+      const firma = respuestaFirma.data;
+      const datos = new FormData();
+      datos.append("file", archivo);
+      datos.append("api_key", firma.apiKey);
+      datos.append("timestamp", String(firma.timestamp));
+      datos.append("folder", firma.folder);
+      datos.append("signature", firma.signature);
+
+      const respuesta = await fetch(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(firma.cloudName)}/image/upload`,
+        { method: "POST", body: datos },
+      );
+      const resultado = (await respuesta.json()) as {
+        secure_url?: string;
+        error?: { message?: string };
+      };
+      if (!respuesta.ok || !resultado.secure_url) {
+        throw new Error(resultado.error?.message ?? "Cloudinary no pudo subir la imagen.");
+      }
+      return resultado.secure_url;
+    }
+    modalImagenCategoria.addEventListener("close", () => {
+      if (urlPreviaCategoria) URL.revokeObjectURL(urlPreviaCategoria);
+      urlPreviaCategoria = null;
+    });
+    document.getElementById("btnCrearRepuesto")!.addEventListener("click", abrirCreacion);
+    document.getElementById("btnRecargarRepuestos")!.addEventListener("click", cargarRepuestos);
+    document.getElementById("cerrarModalRepuesto")!.addEventListener("click", () => modal.close());
+    document.getElementById("cancelarModalRepuesto")!.addEventListener("click", () => modal.close());
+    modal.addEventListener("close", limpiarPreviaArchivo);
+    cargarRepuestos();
+  </script>
+</AdminLayout>

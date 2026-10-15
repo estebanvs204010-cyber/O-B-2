@@ -28,6 +28,7 @@ interface DatosEdicionCliente {
     telefono: string;
     correo: string;
     direccion?: string;
+    foto_url?: string;
 }
 
 
@@ -233,6 +234,7 @@ export class Cliente {
       num_documento,
       telefono,
       correo,
+      foto_url,
       activo
      FROM clientes
      ${where}
@@ -244,7 +246,7 @@ export class Cliente {
         // ---------- Obtener uno solo, por id ----------
     public async ObtenerPorId(id_cliente: number) {
         const [cliente] = await conexion.query(
-            `SELECT id_cliente, id_usuario, nombre_completo, tipo_documento, num_documento, telefono, correo, direccion, activo
+            `SELECT id_cliente, id_usuario, nombre_completo, tipo_documento, num_documento, telefono, correo, direccion, foto_url, activo
              FROM clientes
              WHERE id_cliente = ?`,
             [id_cliente],
@@ -279,7 +281,7 @@ export class Cliente {
             await conexion.transaction(async (conn) => {
                 await conn.execute(
                     `UPDATE clientes
-                     SET nombre_completo = ?, tipo_documento = ?, num_documento = ?, telefono = ?, correo = ?, direccion = ?
+                     SET nombre_completo = ?, tipo_documento = ?, num_documento = ?, telefono = ?, correo = ?, direccion = ?, foto_url = ?
                      WHERE id_cliente = ?`,
                     [
                         datos.nombre_completo,
@@ -288,6 +290,7 @@ export class Cliente {
                         datos.telefono,
                         datos.correo,
                         datos.direccion ?? null,
+                        datos.foto_url ?? clienteActual.foto_url ?? null,
                         id_cliente,
                     ],
                 );

@@ -13,12 +13,28 @@ interface DatosCambioEstado {
 const ESTADOS_QUE_CIERRAN_ORDEN = ["Finalizado", "Entregado", "Cancelado"];
 
 export class Orden {
-  // ---------- Órdenes asignadas a UN mecánico (agenda / citas) ----------
-  // Si "estado" viene vacío, trae todas las de ese mecánico.
-  public async ListarPorMecanico(id_mecanico: number, estado?: string) {
-    if (estado) {
-      return await conexion.query(
-        `SELECT o.id_orden, o.estado, o.tipo_servicio, o.descripcion_problema,
+    // ---------- Todas las órdenes para la bandeja administrativa ----------
+    public async ListarTodas() {
+        return await conexion.query(
+            `SELECT o.id_orden, o.estado, o.tipo_servicio, o.descripcion_problema,
+                    o.fecha_apertura, o.fecha_entrega_estimada,
+                    v.id_vehiculo, v.placa, v.marca, v.modelo,
+                    c.id_cliente, c.nombre_completo AS propietario, c.telefono AS propietario_telefono,
+                    o.id_mecanico, m.nombre_completo AS mecanico
+             FROM ordenestrabajo o
+             INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
+             INNER JOIN clientes c ON c.id_cliente = v.id_cliente
+             LEFT JOIN usuarios m ON m.id_usuario = o.id_mecanico
+             ORDER BY o.fecha_apertura DESC`,
+        );
+    }
+
+    // ---------- Órdenes asignadas a UN mecánico (agenda / citas) ----------
+    // Si "estado" viene vacío, trae todas las de ese mecánico.
+    public async ListarPorMecanico(id_mecanico: number, estado?: string) {
+        if (estado) {
+            return await conexion.query(
+                `SELECT o.id_orden, o.estado, o.tipo_servicio, o.descripcion_problema,
                         o.fecha_apertura, o.fecha_entrega_estimada, o.fecha_cierre,
                         v.id_vehiculo, v.placa, v.marca, v.modelo, v.anio,
                         c.id_cliente, c.nombre_completo AS propietario, c.telefono AS propietario_telefono
@@ -120,9 +136,61 @@ export class Orden {
              LEFT JOIN usuarios u ON u.id_usuario = o.id_mecanico
              WHERE o.id_vehiculo = ?
              ORDER BY o.fecha_apertura DESC`,
-      [id_vehiculo],
-    );
-  }
+            [id_vehiculo],
+        );
+    }
+
+    // ---------- Aceptar una cita y asignarla a un mecánico ----------
+    public async AsignarMecanico(
+        id_orden: number,
+        id_mecanico: number,
+        id_administrador: number,
+    ): Promise<{ success: boolean; message: string }> {
+        const [mecanico] = await conexion.query(
+            `SELECT u.id_usuario
+             FROM usuarios u
+             INNER JOIN roles r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = ? AND r.nombre = 'Mecanico' AND u.activo = 1`,
+            [id_mecanico],
+        );
+
+        if (!mecanico) {
+            return { success: false, message: "El mecánico no existe o está inactivo" };
+        }
+
+        return await conexion.transaction(async (conn) => {
+            const resultadoOrden = await conn.query(
+                `SELECT id_orden, estado
+                 FROM ordenestrabajo
+                 WHERE id_orden = ?
+                 FOR UPDATE`,
+                [id_orden],
+            );
+            const orden = Array.isArray(resultadoOrden) ? resultadoOrden[0] : undefined;
+
+            if (!orden) {
+                return { success: false, message: "La orden no existe" };
+            }
+            if (orden.estado !== "Pendiente") {
+                return { success: false, message: "Solo se pueden aceptar órdenes pendientes" };
+            }
+
+            await conn.execute(
+                `UPDATE ordenestrabajo
+                 SET id_mecanico = ?, id_administrador = ?, estado = 'En Proceso'
+                 WHERE id_orden = ?`,
+                [id_mecanico, id_administrador, id_orden],
+            );
+
+            await conn.execute(
+                `INSERT INTO estadosorden (id_orden, id_usuario, estado_nuevo, observacion)
+                 VALUES (?, ?, 'En Proceso', ?)`,
+                [id_orden, id_administrador, "Cita aceptada y asignada a un mecánico"],
+            );
+
+            return { success: true, message: "Cita aceptada y mecánico asignado correctamente" };
+        });
+    }
 
   // ---------- Cambiar el estado de una orden (acción rápida "Cambiar estado") ----------
   public async CambiarEstado(
