@@ -1,79 +1,61 @@
 import { defineMiddleware } from "astro:middleware";
 import { isAuthenticatedSSR, getRolSSR } from "./utils/auth";
 
-const RUTAS_MECANICO = ["/mecanico"];
-const RUTAS_SOLO_ADMIN = ["/admin"];
-const RUTAS_SOLO_CLIENTE = ["/cliente"];
+const RutasMecanico: string[] = ["/mecanico"];
+const RutasSoloAdmin: string[] = ["/admin"];
+const RutasSoloCliente: string[] = ["/cliente"];
 
-export const onRequest = defineMiddleware(
-  ({ url, cookies, redirect }, next) => {
-    const path = url.pathname;
+export const onRequest = defineMiddleware(({ url, cookies, redirect }, next) => {
+  const path = url.pathname;
 
-    // No proteger APIs ni archivos internos de Astro.
-    if (
-      path.startsWith("/api") ||
-      path.startsWith("/_astro") ||
-      path.startsWith("/favicon")
-    ) {
-      return next();
-    }
-
-    const esRutaMecanico = RUTAS_MECANICO.some(
-      (ruta) => path === ruta || path.startsWith(`${ruta}/`),
-    );
-
-    const esRutaSoloAdmin = RUTAS_SOLO_ADMIN.some(
-      (ruta) => path === ruta || path.startsWith(`${ruta}/`),
-    );
-
-    const esRutaSoloCliente = RUTAS_SOLO_CLIENTE.some(
-      (ruta) => path === ruta || path.startsWith(`${ruta}/`),
-    );
-
-    const esAutenticado = isAuthenticatedSSR(cookies);
-
-    /*
-     * Cliente:
-     * Solo comprobamos que exista una cookie de sesión.
-     * La validación real del rol la hace el backend con:
-     * permitirRoles("Cliente")
-     */
-    if (esRutaSoloCliente) {
-      if (!esAutenticado) {
-        return redirect("/login");
-      }
-
-      return next();
-    }
-
-    if (esRutaMecanico) {
-      if (!esAutenticado) {
-        return redirect("/login");
-      }
-
-      const rol = String(getRolSSR(cookies) ?? "")
-        .trim()
-        .toLowerCase();
-
-      if (rol !== "mecanico" && rol !== "admin") {
-        return redirect("/login");
-      }
-    }
-
-    if (esRutaSoloAdmin) {
-      if (!esAutenticado) {
-        return redirect("/login");
-      }
-
-      const rol = String(getRolSSR(cookies) ?? "")
-        .trim()
-        .toLowerCase();
-
-      if (rol !== "admin") {
-        return redirect("/login");
-      }
-    }
-
+  // No interceptar rutas API ni recursos internos de Astro.
+  if (path.startsWith("/api") || path.startsWith("/_astro")) {
     return next();
-  },
-);
+  }
+
+  const esAutenticado = isAuthenticatedSSR(cookies);
+
+  const esRutaMecanico = RutasMecanico.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
+
+  const esRutaSoloAdmin = RutasSoloAdmin.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
+
+  const esRutaCliente = RutasSoloCliente.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
+
+  if (esRutaCliente) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Cliente") {
+      return redirect("/login");
+    }
+  }
+
+  if (esRutaMecanico) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Mecanico" && rol !== "Admin") {
+      return redirect("/login");
+    }
+  }
+
+  if (esRutaSoloAdmin) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Admin") {
+      return redirect("/login");
+    }
+  }
+
+  return next();
+});
