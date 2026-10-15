@@ -1,0 +1,96 @@
+---
+import MecanicoLayout from "../../layouts/MecanicoLayout.astro";
+---
+
+<MecanicoLayout title="Solicitudes de repuesto" active="solicitudes">
+  <div class="topbar">
+    <div>
+      <h1>Solicitudes de repuesto</h1>
+      <p>Piezas que has pedido para tus órdenes</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-filtro="todas">Todas</button>
+    <button class="tab" data-filtro="pendientes">Pendientes</button>
+  </div>
+
+  <div class="card">
+    <div id="ob-content"><p class="loading">Cargando solicitudes…</p></div>
+  </div>
+
+  <script>
+    import { apiFetch, formatearFechaHora } from "../../lib/api";
+
+    interface Solicitud {
+      id_solicitud: number;
+      id_orden: number;
+      nombre_repuesto: string;
+      cantidad: number;
+      motivo: string | null;
+      fecha_solicitud: string;
+      atendida: number;
+      placa: string;
+      marca: string;
+      modelo: string;
+      propietario: string;
+    }
+
+    const contentEl = document.getElementById("ob-content")!;
+    const tabs = document.querySelectorAll<HTMLButtonElement>(".tab");
+
+    function pintar(solicitudes: Solicitud[]) {
+      if (solicitudes.length === 0) {
+        contentEl.innerHTML = `<p class="empty">No hay solicitudes para mostrar.</p>`;
+        return;
+      }
+
+      contentEl.innerHTML = `
+        <table class="list-table">
+          <thead>
+            <tr><th>Repuesto</th><th>Cant.</th><th>Vehículo</th><th>Orden</th><th>Fecha</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            ${solicitudes
+              .map(
+                (s) => `
+              <tr>
+                <td>${s.nombre_repuesto}${s.motivo ? `<br/><span class="sub">${s.motivo}</span>` : ""}</td>
+                <td>${s.cantidad}</td>
+                <td>${s.placa} · ${s.marca} ${s.modelo}<br/><span class="sub">${s.propietario}</span></td>
+                <td><a href="/mecanico/orden?id=${s.id_orden}">OT-${s.id_orden}</a></td>
+                <td>${formatearFechaHora(s.fecha_solicitud)}</td>
+                <td><span class="badge ${s.atendida ? "badge-listo" : "badge-pendiente"}">${s.atendida ? "Entregada" : "Pendiente"}</span></td>
+              </tr>
+            `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function cargar(soloPendientes: boolean) {
+      contentEl.innerHTML = `<p class="loading">Cargando solicitudes…</p>`;
+      try {
+        const query = soloPendientes ? "?pendientes=1" : "";
+        const resultado = await apiFetch<Solicitud[]>(`/api/mecanico/solicitudes-repuesto${query}`);
+        pintar(resultado.data ?? []);
+      } catch (error) {
+        contentEl.innerHTML = `<div class="alert alert-error">${
+          error instanceof Error ? error.message : "No se pudieron cargar las solicitudes"
+        }</div>`;
+      }
+    }
+
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tabs.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        cargar(btn.dataset.filtro === "pendientes");
+      });
+    });
+
+    cargar(false);
+  </script>
+</MecanicoLayout>

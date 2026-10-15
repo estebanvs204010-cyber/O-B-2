@@ -1,0 +1,18 @@
+---
+interface Props {
+  eyebrow?: string;
+  titulo: string;
+  texto?: string;
+}
+const { eyebrow, titulo, texto } = Astro.props;
+---
+<section class="hm-banner">
+  <div class="hm-wrap">
+    <nav class="hm-crumbs" aria-label="Migas de pan">
+      <a href="/">Inicio</a><span>/</span><strong>{titulo}</strong>
+    </nav>
+    {eyebrow && <p class="hm-eyebrow">{eyebrow}</p>}
+    <h1>{titulo}</h1>
+    {texto && <p class="hm-banner-text">{texto}</p>}
+  </div>
+</section>

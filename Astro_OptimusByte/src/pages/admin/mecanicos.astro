@@ -1,0 +1,589 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Mecánicos" active="mecanicos">
+  <section class="admin-page-header">
+    <div>
+      <p class="eyebrow">Gestión de personal</p>
+      <h2>Mecánicos</h2>
+      <span>Administra las cuentas de acceso del personal del taller.</span>
+    </div>
+
+    <div class="admin-page-actions">
+      <button id="btnRecargarMecanicos" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+
+      <button id="btnCrearMecanico" class="btn btn-primary" type="button">
+        + Nuevo mecánico
+      </button>
+    </div>
+  </section>
+
+  <section class="admin-panel mecanicos-grid-panel">
+    <div class="mecanicos-toolbar">
+      <input
+        id="quickSearchMecanicos"
+        class="mecanicos-search"
+        type="search"
+        placeholder="Buscar por nombre, correo o teléfono"
+      />
+    </div>
+
+    <div id="gridMecanicos" class="mecanicos-grid"></div>
+  </section>
+
+  <dialog id="modalMecanico" class="mecanico-dialog">
+    <form id="formMecanico" class="mecanico-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Información del empleado</p>
+          <h2 id="modalTituloMecanico">Nuevo mecánico</h2>
+        </div>
+
+        <button id="btnCerrarModalMecanico" class="modal-close" type="button">
+          &#10005;
+        </button>
+      </div>
+
+      <input id="editIdMecanico" type="hidden" />
+      <input id="formModoMecanico" type="hidden" value="crear" />
+
+      <div class="field">
+        <label for="editNombreMecanico">Nombre completo</label>
+        <input id="editNombreMecanico" required />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editTelefonoMecanico">Teléfono</label>
+          <input id="editTelefonoMecanico" type="tel" required />
+        </div>
+
+        <div class="field">
+          <label for="editCorreoMecanico">Correo</label>
+          <input id="editCorreoMecanico" type="email" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="editContrasenaMecanico">
+          Contraseña
+        </label>
+
+        <input
+          id="editContrasenaMecanico"
+          type="password"
+          minlength="8"
+        />
+
+        <small id="ayudaContrasenaMecanico">
+          La contraseña debe tener al menos 8 caracteres.
+        </small>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnCancelarModalMecanico" class="btn btn-outline" type="button">
+          Cancelar
+        </button>
+
+        <button id="btnGuardarMecanico" class="btn btn-primary" type="submit">
+          Crear mecánico
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import {
+      createGrid,
+      ModuleRegistry,
+      AllCommunityModule,
+      themeQuartz,
+    } from "ag-grid-community";
+
+    import type {
+      GridApi,
+      GridOptions,
+      ICellRendererParams,
+    } from "ag-grid-community";
+
+    import { apiFetch } from "../../lib/api";
+    import { notificarError, notificarExito } from "../../lib/toast";
+    import { confirmarCambioEstado } from "../../lib/confirmar";
+
+    ModuleRegistry.registerModules([AllCommunityModule]);
+
+    interface MecanicoRow {
+      id_usuario: number;
+      nombre_completo: string;
+      correo: string;
+      telefono: string;
+      activo: number;
+      fecha_creacion: string;
+    }
+
+    const temaOptimus = themeQuartz.withParams({
+      accentColor: "#1e6dff",
+      backgroundColor: "#ffffff",
+      foregroundColor: "#102a50",
+      borderColor: "#e2e8f0",
+      borderRadius: 8,
+      wrapperBorderRadius: 8,
+      headerFontWeight: 700,
+    });
+
+    let gridApi: GridApi<MecanicoRow> | undefined;
+
+    const modal = document.getElementById(
+      "modalMecanico",
+    ) as HTMLDialogElement;
+
+    const formulario = document.getElementById(
+      "formMecanico",
+    ) as HTMLFormElement;
+
+    function estadoCellRenderer(params: ICellRendererParams<MecanicoRow>) {
+      const estado = document.createElement("span");
+      const activo = Number(params.data?.activo) === 1;
+
+      estado.className = activo
+        ? "mecanico-status active"
+        : "mecanico-status inactive";
+
+      estado.textContent = activo ? "Activo" : "Inactivo";
+
+      return estado;
+    }
+
+    type OpcionMenuAccion = {
+      etiqueta: string;
+      variante?: "default" | "danger" | "success";
+      alSeleccionar?: () => void;
+    };
+
+    function abrirMenuAcciones(
+      boton: HTMLElement,
+      opciones: OpcionMenuAccion[],
+    ) {
+      const menuExistente = document.querySelector(
+        ".action-menu-popover",
+      ) as HTMLDivElement | null;
+
+      menuExistente?.remove();
+
+      const menu = document.createElement("div");
+      menu.className = "action-menu-popover";
+      menu.setAttribute("role", "menu");
+      menu.style.position = "fixed";
+      menu.style.zIndex = "10000";
+      menu.style.display = "flex";
+      menu.style.flexDirection = "column";
+      menu.style.minWidth = "180px";
+      menu.style.padding = "8px";
+      menu.style.gap = "6px";
+      menu.style.background = "#ffffff";
+      menu.style.border = "1px solid #dfe7f3";
+      menu.style.borderRadius = "10px";
+      menu.style.boxShadow = "0 10px 30px rgba(15, 23, 42, 0.16)";
+
+      const rect = boton.getBoundingClientRect();
+      menu.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 120)}px`;
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - 220)}px`;
+
+      opciones.forEach(({ etiqueta, variante = "default", alSeleccionar }) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "action-menu-item";
+        item.textContent = etiqueta;
+        item.setAttribute("role", "menuitem");
+        item.style.border = "none";
+        item.style.borderRadius = "8px";
+        item.style.padding = "10px 12px";
+        item.style.textAlign = "left";
+        item.style.cursor = "pointer";
+        item.style.background =
+          variante === "danger"
+            ? "#fff1f2"
+            : variante === "success"
+              ? "#ecfdf5"
+              : "#f8fafc";
+        item.style.color =
+          variante === "danger"
+            ? "#b42318"
+            : variante === "success"
+              ? "#047857"
+              : "#0f172a";
+        item.style.fontWeight = "600";
+
+        item.addEventListener("click", () => {
+          alSeleccionar?.();
+          menu.remove();
+        });
+
+        menu.appendChild(item);
+      });
+
+      document.body.appendChild(menu);
+
+      const cerrarMenu = (event: MouseEvent) => {
+        const target = event.target as Node | null;
+        if (!target || (!menu.contains(target) && target !== boton)) {
+          menu.remove();
+          document.removeEventListener("click", cerrarMenu);
+        }
+      };
+
+      document.addEventListener("click", cerrarMenu);
+    }
+
+    function accionesCellRenderer(
+      params: ICellRendererParams<MecanicoRow>,
+    ) {
+      const mecanico = params.data;
+
+      if (!mecanico) {
+        return document.createElement("div");
+      }
+
+      const contenedor = document.createElement("div");
+      contenedor.className = "grid-actions";
+
+      const menu = document.createElement("button");
+      menu.className = "grid-action-button menu";
+      menu.type = "button";
+      menu.textContent = "⋮";
+      menu.title = "Acciones del mecánico";
+      menu.setAttribute("aria-label", "Acciones del mecánico");
+
+      const activo = Number(mecanico.activo) === 1;
+
+      menu.addEventListener("click", () => {
+        abrirMenuAcciones(menu, [
+          {
+            etiqueta: "Editar mecánico",
+            alSeleccionar: () => abrirModalEditar(mecanico),
+          },
+          {
+            etiqueta: activo ? "Desactivar mecánico" : "Activar mecánico",
+            variante: activo ? "danger" : "success",
+            alSeleccionar: () => {
+              void cambiarEstadoMecanico(mecanico, !activo);
+            },
+          },
+        ]);
+      });
+
+      contenedor.appendChild(menu);
+
+      return contenedor;
+    }
+
+    const gridOptions: GridOptions<MecanicoRow> = {
+      theme: temaOptimus,
+
+      columnDefs: [
+        {
+          field: "nombre_completo",
+          headerName: "Mecánico",
+          flex: 2,
+          filter: true,
+          floatingFilter: true,
+        },
+        {
+          field: "correo",
+          headerName: "Correo",
+          flex: 2,
+          filter: true,
+        },
+        {
+          field: "telefono",
+          headerName: "Teléfono",
+          flex: 1.2,
+          filter: true,
+        },
+        {
+          headerName: "Estado",
+          width: 115,
+          cellRenderer: estadoCellRenderer,
+          sortable: false,
+          filter: false,
+        },
+        {
+          headerName: "Acciones",
+          width: 180,
+          cellRenderer: accionesCellRenderer,
+          sortable: false,
+          filter: false,
+        },
+      ],
+
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+      },
+
+      rowData: [],
+      pagination: true,
+      paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50],
+
+      onGridReady: (params) => {
+        gridApi = params.api;
+        cargarMecanicos();
+      },
+    };
+
+    const gridDiv = document.querySelector<HTMLElement>("#gridMecanicos");
+
+    if (gridDiv) {
+      createGrid(gridDiv, gridOptions);
+    }
+
+    async function cargarMecanicos() {
+      try {
+        const respuesta = await apiFetch<MecanicoRow[]>(
+          "/api/usuarios/mecanico",
+        );
+
+        gridApi?.setGridOption("rowData", respuesta.data ?? []);
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los mecánicos.",
+        );
+      }
+    }
+
+    function abrirModalCrear() {
+      formulario.reset();
+
+      (
+        document.getElementById("formModoMecanico") as HTMLInputElement
+      ).value = "crear";
+
+      (
+        document.getElementById("editIdMecanico") as HTMLInputElement
+      ).value = "";
+
+      (
+        document.getElementById("modalTituloMecanico") as HTMLElement
+      ).textContent = "Nuevo mecánico";
+
+      (
+        document.getElementById("btnGuardarMecanico") as HTMLButtonElement
+      ).textContent = "Crear mecánico";
+
+      const contrasena = document.getElementById(
+        "editContrasenaMecanico",
+      ) as HTMLInputElement;
+
+      const ayuda = document.getElementById(
+        "ayudaContrasenaMecanico",
+      ) as HTMLElement;
+
+      contrasena.required = true;
+      contrasena.value = "";
+      ayuda.textContent = "La contraseña debe tener al menos 8 caracteres.";
+
+      modal.showModal();
+    }
+
+    function abrirModalEditar(mecanico: MecanicoRow) {
+      (
+        document.getElementById("formModoMecanico") as HTMLInputElement
+      ).value = "editar";
+
+      (
+        document.getElementById("editIdMecanico") as HTMLInputElement
+      ).value = String(mecanico.id_usuario);
+
+      (
+        document.getElementById("modalTituloMecanico") as HTMLElement
+      ).textContent = "Editar mecánico";
+
+      (
+        document.getElementById("btnGuardarMecanico") as HTMLButtonElement
+      ).textContent = "Guardar cambios";
+
+      (
+        document.getElementById("editNombreMecanico") as HTMLInputElement
+      ).value = mecanico.nombre_completo;
+
+      (
+        document.getElementById("editCorreoMecanico") as HTMLInputElement
+      ).value = mecanico.correo;
+
+      (
+        document.getElementById("editTelefonoMecanico") as HTMLInputElement
+      ).value = mecanico.telefono;
+
+      const contrasena = document.getElementById(
+        "editContrasenaMecanico",
+      ) as HTMLInputElement;
+
+      const ayuda = document.getElementById(
+        "ayudaContrasenaMecanico",
+      ) as HTMLElement;
+
+      contrasena.required = false;
+      contrasena.value = "";
+      ayuda.textContent =
+        "Déjala vacía si no deseas cambiar la contraseña.";
+
+      modal.showModal();
+    }
+
+    async function cambiarEstadoMecanico(
+  mecanico: MecanicoRow,
+  activar: boolean,
+) {
+  const accion = activar ? "activar" : "desactivar";
+
+  const confirmado = await confirmarCambioEstado(
+    mecanico.nombre_completo,
+    activar,
+  );
+
+  if (!confirmado) return;
+
+  try {
+    const respuesta = await apiFetch(
+      `/api/usuarios/mecanico/${mecanico.id_usuario}/estado`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ activo: activar }),
+      },
+    );
+
+    notificarExito(
+      respuesta.message ??
+        `Mecánico ${activar ? "activado" : "desactivado"} correctamente.`,
+    );
+
+    cargarMecanicos();
+  } catch (error) {
+    notificarError(
+      error instanceof Error
+        ? error.message
+        : `No se pudo ${accion} el mecánico.`,
+    );
+  }
+}
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+
+      const modo = (
+        document.getElementById("formModoMecanico") as HTMLInputElement
+      ).value;
+
+      const id = (
+        document.getElementById("editIdMecanico") as HTMLInputElement
+      ).value;
+
+      const botonGuardar = document.getElementById(
+        "btnGuardarMecanico",
+      ) as HTMLButtonElement;
+
+      const contrasena = (
+        document.getElementById(
+          "editContrasenaMecanico",
+        ) as HTMLInputElement
+      ).value;
+
+      const body: Record<string, string> = {
+        nombre_completo: (
+          document.getElementById(
+            "editNombreMecanico",
+          ) as HTMLInputElement
+        ).value.trim(),
+
+        correo: (
+          document.getElementById(
+            "editCorreoMecanico",
+          ) as HTMLInputElement
+        ).value.trim(),
+
+        telefono: (
+          document.getElementById(
+            "editTelefonoMecanico",
+          ) as HTMLInputElement
+        ).value.trim(),
+      };
+
+      if (contrasena) {
+        body.contrasena = contrasena;
+      }
+
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Guardando...";
+
+      try {
+        const respuesta = await apiFetch(
+          modo === "crear"
+            ? "/api/usuarios/mecanico"
+            : `/api/usuarios/mecanico/${id}`,
+          {
+            method: modo === "crear" ? "POST" : "PUT",
+            body: JSON.stringify(body),
+          },
+        );
+
+        modal.close();
+
+        notificarExito(
+          respuesta.message ??
+            (modo === "crear"
+              ? "Mecánico creado correctamente."
+              : "Mecánico actualizado correctamente."),
+        );
+
+        cargarMecanicos();
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar el mecánico.",
+        );
+      } finally {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent =
+          modo === "crear" ? "Crear mecánico" : "Guardar cambios";
+      }
+    });
+
+    (
+      document.getElementById(
+        "btnCrearMecanico",
+      ) as HTMLButtonElement
+    ).addEventListener("click", abrirModalCrear);
+
+    (
+      document.getElementById(
+        "btnRecargarMecanicos",
+      ) as HTMLButtonElement
+    ).addEventListener("click", cargarMecanicos);
+
+    (
+      document.getElementById(
+        "btnCerrarModalMecanico",
+      ) as HTMLButtonElement
+    ).addEventListener("click", () => modal.close());
+
+    (
+      document.getElementById(
+        "btnCancelarModalMecanico",
+      ) as HTMLButtonElement
+    ).addEventListener("click", () => modal.close());
+
+    const buscador = document.getElementById(
+      "quickSearchMecanicos",
+    ) as HTMLInputElement;
+
+    buscador.addEventListener("input", () => {
+      gridApi?.setGridOption("quickFilterText", buscador.value);
+    });
+  </script>
+</AdminLayout>

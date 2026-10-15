@@ -1,0 +1,56 @@
+---
+import MecanicoLayout from "../../layouts/MecanicoLayout.astro";
+---
+
+<MecanicoLayout title="Mi perfil" active="perfil">
+  <div class="topbar">
+    <div><h1>Mi perfil</h1><p>Datos de tu cuenta en el taller</p></div>
+  </div>
+  <div id="ob-alert" class="alert alert-error" style="display:none;"></div>
+  <div class="grid-2">
+    <section class="card">
+      <h2>Información personal</h2>
+      <div id="ob-perfil"><p class="loading">Cargando perfil…</p></div>
+    </section>
+    <section class="card">
+      <h2>Cuenta</h2>
+      <p>Si necesitas actualizar tus datos o cambiar tu contraseña, comunícate con el administrador del taller.</p>
+      <a href="/mecanico" class="btn btn-outline">Volver al inicio</a>
+    </section>
+  </div>
+
+  <script>
+    import { apiFetch } from "../../lib/api";
+    interface Perfil {
+      nombre_completo: string;
+      correo: string;
+      telefono: string;
+      especialidad: string | null;
+      activo: number | boolean;
+    }
+    const content = document.getElementById("ob-perfil")!;
+    const alert = document.getElementById("ob-alert") as HTMLDivElement;
+    const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[char]!);
+
+    async function cargar() {
+      try {
+        const response = await apiFetch<Perfil>("/api/mecanico/perfil");
+        const p = response.data!;
+        content.innerHTML = `<dl class="mecanico-profile-list">
+          <div><dt>Nombre</dt><dd>${esc(p.nombre_completo)}</dd></div>
+          <div><dt>Correo</dt><dd>${esc(p.correo)}</dd></div>
+          <div><dt>Teléfono</dt><dd>${esc(p.telefono)}</dd></div>
+          <div><dt>Especialidad</dt><dd>${esc(p.especialidad || "Sin definir")}</dd></div>
+          <div><dt>Estado</dt><dd><span class="badge ${p.activo ? "badge-listo" : "badge-cancelado"}">${p.activo ? "Activo" : "Inactivo"}</span></dd></div>
+        </dl>`;
+      } catch (error) {
+        content.innerHTML = "";
+        alert.textContent = error instanceof Error ? error.message : "No se pudo cargar el perfil";
+        alert.style.display = "block";
+      }
+    }
+    cargar();
+  </script>
+</MecanicoLayout>

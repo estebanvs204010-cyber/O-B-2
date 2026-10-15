@@ -1,0 +1,74 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import QuoteForm from '../components/QuoteForm.astro';
+import { TALLER, pasos, promos } from '../data/taller';
+---
+<PublicLayout title="Reservas | Taller Mecánico OptimusByte" description="Reserva tu servicio en línea en OptimusByte: cotiza, agenda tu cita y sigue tu orden desde tu área de cliente.">
+  <PageBanner
+    eyebrow="Reserva en línea"
+    titulo="Reservas"
+    texto="Cuéntanos qué necesita tu vehículo y agenda tu cita. Te confirmamos por WhatsApp."
+  />
+
+  <QuoteForm id="cotizar" titulo="Reserva tu <span>servicio</span>" texto="Completa el formulario con los datos de tu vehículo y la fecha que prefieres. Nosotros confirmamos disponibilidad y precio." />
+
+  <!-- Cómo funciona -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">¿Cómo funciona?</p>
+        <h2>Tu reserva en tres pasos</h2>
+      </div>
+      <div class="hm-steps">
+        {pasos.map((p, i) => (
+          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Horario + cuenta -->
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap hm-info-grid">
+      <article class="hm-info" data-reveal>
+        <h3>Horario de atención</h3>
+        <ul>
+          {TALLER.horario.map(([dia, hora]) => <li><span>{dia}</span><strong>{hora}</strong></li>)}
+        </ul>
+      </article>
+      <article class="hm-info hm-info--dark" data-reveal>
+        <h3>¿Ya tienes cuenta?</h3>
+        <p>Ingresa a tu área de cliente para ver tus vehículos, tus órdenes y su estado en tiempo real.</p>
+        <div class="hm-hero-actions">
+          <a href="/login?next=/cliente/index" class="hm-btn hm-btn--light hm-btn--sm">Iniciar sesión</a>
+          <a href="/registro" class="hm-btn hm-btn--blue hm-btn--sm">Crear cuenta</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Promociones -->
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Promociones</p>
+        <h2>Aprovecha estas revisiones</h2>
+      </div>
+      <div class="hm-promos">
+        {promos.map((p, i) => (
+          <article class="hm-promo" data-reveal style={`transition-delay:${i * 0.08}s`}>
+            <span class="hm-promo-tag">{p.etiqueta}</span>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+            <div class="hm-promo-price"><small>Desde</small>{p.precio}</div>
+            <a href="#cotizar" class="hm-btn hm-btn--sm">Reservar</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</PublicLayout>

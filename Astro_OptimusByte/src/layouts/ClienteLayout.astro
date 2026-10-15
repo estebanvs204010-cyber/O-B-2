@@ -1,0 +1,99 @@
+---
+import "../styles/variables.css";
+import "../styles/base.css";
+import "../styles/components/cliente.css";
+
+interface Props {
+  title?: string;
+  active?: string;
+}
+
+const {
+  title = "Panel del Cliente",
+  active = "inicio",
+} = Astro.props;
+
+const navItems = [
+  { id: "inicio", label: "Inicio", href: "/cliente" },
+  { id: "vehiculos", label: "Vehiculos", href: "/cliente#vehiculos" },
+  { id: "ordenes", label: "Ordenes", href: "/cliente#ordenes" },
+  { id: "citas", label: "Citas", href: "/cliente#citas" },
+  { id: "pagos", label: "Pagos", href: "/cliente#pagos" },
+  { id: "perfil", label: "Perfil", href: "/cliente#perfil" },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} - Optimus Byte</title>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="sidebar-brand" href="/cliente">
+          Optimus <span class="accent">Byte</span>
+        </a>
+
+        <div class="sidebar-section">Portal Cliente</div>
+
+        <nav aria-label="Navegacion del cliente">
+          {
+            navItems.map((item) => (
+              <a
+                class:list={["sidebar-link", active === item.id && "active"]}
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+
+        <div class="sidebar-user">
+          <div class="avatar">C</div>
+
+          <div>
+            <strong>Cliente</strong>
+            <button id="logoutButton" type="button">
+              Cerrar sesion
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>{title}</h1>
+            <p>Gestiona la informacion de tus vehiculos y servicios.</p>
+          </div>
+
+          <a class="btn btn-outline btn-sm" href="/">
+            Volver al sitio
+          </a>
+        </header>
+
+        <slot />
+      </main>
+    </div>
+
+<script>
+  document
+    .getElementById("logoutButton")
+    ?.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+        });
+      } finally {
+        window.location.href = "/login";
+      }
+    });
+</script>
+  </body>
+</html>

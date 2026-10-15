@@ -1,0 +1,574 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+
+<AdminLayout title="Vehículos" active="vehiculos">
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Gestión de vehículos</p>
+      <h2>Vehículos</h2>
+      <span>Registra, edita y desactiva los vehículos de tus clientes.</span>
+    </div>
+
+    <div class="clientes-actions">
+      <button id="btnRecargar" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+
+      <button id="btnCrear" class="btn btn-primary" type="button">
+        + Nuevo vehículo
+      </button>
+    </div>
+  </section>
+
+  <section class="admin-panel clientes-grid-panel">
+    <div class="clientes-toolbar">
+      <input
+        id="quickSearch"
+        class="clientes-search"
+        type="search"
+        placeholder="Buscar por placa, marca, modelo o cliente"
+        aria-label="Buscar vehículos"
+      />
+    </div>
+
+    <div id="myGrid" class="clientes-grid"></div>
+  </section>
+
+  <dialog id="modalVehiculo" class="cliente-dialog">
+    <form id="formVehiculo" class="cliente-form">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Información del vehículo</p>
+          <h2 id="modalTitulo">Nuevo vehículo</h2>
+        </div>
+
+        <button id="btnCerrarModal" class="modal-close" type="button" aria-label="Cerrar">
+          &#10005;
+        </button>
+      </div>
+
+      <input id="editIdVehiculo" type="hidden" />
+      <input id="formModo" type="hidden" value="crear" />
+
+      <div class="field" id="grupoClienteSelect">
+        <label for="editCliente">Propietario</label>
+        <select id="editCliente" required>
+          <option value="">Selecciona un cliente</option>
+        </select>
+      </div>
+
+      <div class="field" id="grupoClienteLectura" hidden>
+        <label>Propietario</label>
+        <input id="editClienteNombre" readonly />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editPlaca">Placa</label>
+          <input
+            id="editPlaca"
+            maxlength="10"
+            autocomplete="off"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="editAnio">Año</label>
+          <input id="editAnio" type="number" min="1886" step="1" required />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editMarca">Marca</label>
+          <input id="editMarca" maxlength="80" required />
+        </div>
+
+        <div class="field">
+          <label for="editModelo">Modelo</label>
+          <input id="editModelo" maxlength="80" required />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="editColor">Color</label>
+          <input id="editColor" maxlength="40" />
+        </div>
+
+        <div class="field">
+          <label for="editKilometraje">Kilometraje actual</label>
+          <input
+            id="editKilometraje"
+            type="number"
+            min="0"
+            step="1"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label id="labelVin" for="editVin">VIN (obligatorio)</label>
+        <input
+          id="editVin"
+          maxlength="50"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnCancelarModal" class="btn btn-outline" type="button">
+          Cancelar
+        </button>
+
+        <button id="btnGuardar" class="btn btn-primary" type="submit">
+          Guardar vehículo
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    import Swal from "sweetalert2";
+    import {
+      createGrid,
+      ModuleRegistry,
+      AllCommunityModule,
+      themeQuartz,
+    } from "ag-grid-community";
+    import type {
+      GridApi,
+      GridOptions,
+      ICellRendererParams,
+    } from "ag-grid-community";
+
+    import { apiFetch } from "../../lib/api";
+    import { notificarError, notificarExito } from "../../lib/toast";
+    import { abrirMenuAcciones } from "../../lib/menuAcciones";
+
+    ModuleRegistry.registerModules([AllCommunityModule]);
+
+    interface VehiculoRow {
+      id_vehiculo: number;
+      id_cliente: number;
+      placa: string;
+      marca: string;
+      modelo: string;
+      anio: number;
+      color: string | null;
+      vin: string;
+      km_actuales: number;
+      cliente: string;
+      activo: number;
+    }
+
+    interface ClienteOption {
+      id_cliente: number;
+      nombre_completo: string;
+    }
+
+    const temaOptimus = themeQuartz.withParams({
+      accentColor: "#1e6dff",
+      backgroundColor: "#ffffff",
+      foregroundColor: "#102a50",
+      borderColor: "#e2e8f0",
+      borderRadius: 8,
+      wrapperBorderRadius: 8,
+      headerFontWeight: 700,
+    });
+
+    let gridApi: GridApi<VehiculoRow> | undefined;
+    const modal = document.getElementById("modalVehiculo") as HTMLDialogElement;
+    const formulario = document.getElementById("formVehiculo") as HTMLFormElement;
+
+    function estadoCellRenderer(params: ICellRendererParams<VehiculoRow>) {
+      const estado = document.createElement("span");
+      const activo = Number(params.data?.activo) === 1;
+
+      estado.className = activo
+        ? "cliente-status active"
+        : "cliente-status inactive";
+      estado.textContent = activo ? "Activo" : "Inactivo";
+
+      return estado;
+    }
+
+    function accionesCellRenderer(params: ICellRendererParams<VehiculoRow>) {
+      const vehiculo = params.data;
+
+      if (!vehiculo) {
+        return document.createElement("div");
+      }
+
+      const contenedor = document.createElement("div");
+      contenedor.className = "grid-actions";
+
+      const menu = document.createElement("button");
+      menu.className = "grid-action-button menu";
+      menu.type = "button";
+      menu.textContent = "⋮";
+      menu.title = "Acciones del vehículo";
+      menu.setAttribute("aria-label", `Acciones para ${vehiculo.placa}`);
+
+      const activo = Number(vehiculo.activo) === 1;
+
+      menu.addEventListener("click", () => {
+        abrirMenuAcciones(menu, [
+          {
+            etiqueta: "Editar vehículo",
+            alSeleccionar: () => {
+              void abrirModalEditar(vehiculo);
+            },
+          },
+          {
+            etiqueta: activo ? "Desactivar vehículo" : "Activar vehículo",
+            variante: activo ? "danger" : "success",
+            alSeleccionar: () => {
+              void cambiarEstadoVehiculo(vehiculo, !activo);
+            },
+          },
+        ]);
+      });
+
+      contenedor.appendChild(menu);
+      return contenedor;
+    }
+
+    const gridOptions: GridOptions<VehiculoRow> = {
+      theme: temaOptimus,
+      columnDefs: [
+        {
+          field: "placa",
+          headerName: "Placa",
+          flex: 1,
+          minWidth: 110,
+          filter: true,
+        },
+        {
+          field: "vin",
+          headerName: "VIN",
+          flex: 1.5,
+          minWidth: 180,
+          filter: true,
+        },
+        {
+          headerName: "Vehículo",
+          flex: 1.8,
+          minWidth: 190,
+          valueGetter: (params) => {
+            const vehiculo = params.data;
+            if (!vehiculo) return "";
+            const detalles = [vehiculo.color].filter(Boolean).join(" · ");
+            return `${vehiculo.marca} ${vehiculo.modelo} ${vehiculo.anio}${detalles ? ` · ${detalles}` : ""}`;
+          },
+          filter: true,
+        },
+        {
+          field: "cliente",
+          headerName: "Propietario",
+          flex: 1.6,
+          minWidth: 160,
+          filter: true,
+        },
+        {
+          field: "km_actuales",
+          headerName: "Kilometraje",
+          flex: 1,
+          minWidth: 130,
+          filter: "agNumberColumnFilter",
+          valueFormatter: (params) =>
+            params.value == null
+              ? ""
+              : `${Number(params.value).toLocaleString("es-CO")} km`,
+        },
+        {
+          field: "activo",
+          headerName: "Estado",
+          width: 120,
+          cellRenderer: estadoCellRenderer,
+          filter: true,
+          valueFormatter: (params) =>
+            Number(params.value) === 1 ? "Activo" : "Inactivo",
+        },
+        {
+          headerName: "Acciones",
+          width: 120,
+          cellRenderer: accionesCellRenderer,
+          sortable: false,
+          filter: false,
+        },
+      ],
+      defaultColDef: {
+        resizable: true,
+        sortable: true,
+      },
+      rowData: [],
+      pagination: true,
+      paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50],
+      onGridReady: (params) => {
+        gridApi = params.api;
+        void cargarVehiculos();
+      },
+    };
+
+    const gridDiv = document.querySelector<HTMLElement>("#myGrid");
+    if (gridDiv) {
+      createGrid(gridDiv, gridOptions);
+    }
+
+    async function cargarVehiculos() {
+      try {
+        const respuesta = await apiFetch<VehiculoRow[]>(
+          "/api/vehiculos?incluir_inactivos=true",
+        );
+        gridApi?.setGridOption("rowData", respuesta.data ?? []);
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los vehículos.",
+        );
+      }
+    }
+
+    async function cargarClientes() {
+      const respuesta = await apiFetch<ClienteOption[]>("/api/clientes");
+      const clientes = respuesta.data ?? [];
+      const selector = document.getElementById("editCliente") as HTMLSelectElement;
+      selector.replaceChildren(new Option("Selecciona un cliente", ""));
+
+      for (const cliente of clientes) {
+        selector.add(new Option(cliente.nombre_completo, String(cliente.id_cliente)));
+      }
+
+      if (clientes.length === 0) {
+        throw new Error("Debes registrar un cliente activo antes de crear un vehículo.");
+      }
+    }
+
+    async function abrirModalCrear() {
+      try {
+        await cargarClientes();
+        formulario.reset();
+        (document.getElementById("editVin") as HTMLInputElement).required = true;
+        (document.getElementById("labelVin") as HTMLElement).textContent =
+          "VIN (obligatorio)";
+        (document.getElementById("formModo") as HTMLInputElement).value = "crear";
+        (document.getElementById("editIdVehiculo") as HTMLInputElement).value = "";
+        (document.getElementById("modalTitulo") as HTMLElement).textContent =
+          "Nuevo vehículo";
+        (document.getElementById("btnGuardar") as HTMLButtonElement).textContent =
+          "Crear vehículo";
+        (document.getElementById("grupoClienteSelect") as HTMLElement).hidden = false;
+        (document.getElementById("grupoClienteLectura") as HTMLElement).hidden = true;
+        (document.getElementById("editCliente") as HTMLSelectElement).required = true;
+        (document.getElementById("editKilometraje") as HTMLInputElement).value = "0";
+        modal.showModal();
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los clientes.",
+        );
+      }
+    }
+
+    async function abrirModalEditar(vehiculo: VehiculoRow) {
+      try {
+        const respuesta = await apiFetch<VehiculoRow>(
+          `/api/vehiculos/${vehiculo.id_vehiculo}`,
+        );
+        const detalle = respuesta.data;
+
+        if (!detalle) {
+          throw new Error("Vehículo no encontrado.");
+        }
+
+        (document.getElementById("formModo") as HTMLInputElement).value = "editar";
+        (document.getElementById("editIdVehiculo") as HTMLInputElement).value =
+          String(detalle.id_vehiculo);
+        (document.getElementById("modalTitulo") as HTMLElement).textContent =
+          "Editar vehículo";
+        (document.getElementById("btnGuardar") as HTMLButtonElement).textContent =
+          "Guardar cambios";
+        (document.getElementById("grupoClienteSelect") as HTMLElement).hidden = true;
+        (document.getElementById("grupoClienteLectura") as HTMLElement).hidden = false;
+        (document.getElementById("editCliente") as HTMLSelectElement).required = false;
+        (document.getElementById("editClienteNombre") as HTMLInputElement).value =
+          detalle.cliente;
+        (document.getElementById("editPlaca") as HTMLInputElement).value =
+          detalle.placa;
+        (document.getElementById("editAnio") as HTMLInputElement).value =
+          String(detalle.anio);
+        (document.getElementById("editMarca") as HTMLInputElement).value =
+          detalle.marca;
+        (document.getElementById("editModelo") as HTMLInputElement).value =
+          detalle.modelo;
+        (document.getElementById("editColor") as HTMLInputElement).value =
+          detalle.color ?? "";
+        (document.getElementById("editKilometraje") as HTMLInputElement).value =
+          String(detalle.km_actuales);
+        const inputVin = document.getElementById("editVin") as HTMLInputElement;
+        inputVin.value = detalle.vin ?? "";
+        inputVin.required = Boolean(detalle.vin);
+        (document.getElementById("labelVin") as HTMLElement).textContent =
+          detalle.vin ? "VIN" : "VIN (opcional para este vehículo)";
+
+        modal.showModal();
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo consultar el vehículo.",
+        );
+      }
+    }
+
+    async function cambiarEstadoVehiculo(
+      vehiculo: VehiculoRow,
+      activar: boolean,
+    ) {
+      const confirmacion = await Swal.fire({
+        title: activar ? "¿Activar vehículo?" : "¿Desactivar vehículo?",
+        text: activar
+          ? `El vehículo ${vehiculo.placa} volverá a estar activo.`
+          : `El vehículo ${vehiculo.placa} quedará registrado como inactivo.`,
+        icon: activar ? "question" : "warning",
+        showCancelButton: true,
+        confirmButtonText: activar ? "Sí, activar" : "Sí, desactivar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+        focusCancel: true,
+        buttonsStyling: false,
+        customClass: {
+          popup: "ob-confirm-dialog",
+          title: "ob-confirm-title",
+          htmlContainer: "ob-confirm-text",
+          confirmButton: "ob-confirm-button",
+          cancelButton: "ob-cancel-button",
+        },
+      });
+
+      if (!confirmacion.isConfirmed) return;
+
+      try {
+        const respuesta = await apiFetch(
+          `/api/vehiculos/${vehiculo.id_vehiculo}/estado`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ activo: activar }),
+          },
+        );
+        notificarExito(
+          respuesta.message ??
+            `Vehículo ${activar ? "activado" : "desactivado"} correctamente.`,
+        );
+        await cargarVehiculos();
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : `No se pudo ${activar ? "activar" : "desactivar"} el vehículo.`,
+        );
+      }
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+
+      const modo = (document.getElementById("formModo") as HTMLInputElement).value;
+      const id = (document.getElementById("editIdVehiculo") as HTMLInputElement).value;
+      const idCliente = (document.getElementById("editCliente") as HTMLSelectElement).value;
+      const botonGuardar = document.getElementById("btnGuardar") as HTMLButtonElement;
+      const kilometraje = Number(
+        (document.getElementById("editKilometraje") as HTMLInputElement).value,
+      );
+
+      const vin = (document.getElementById("editVin") as HTMLInputElement)
+        .value.trim()
+        .toUpperCase();
+      const body = {
+        placa: (document.getElementById("editPlaca") as HTMLInputElement)
+          .value.trim()
+          .toUpperCase(),
+        marca: (document.getElementById("editMarca") as HTMLInputElement).value.trim(),
+        modelo: (document.getElementById("editModelo") as HTMLInputElement).value.trim(),
+        anio: Number((document.getElementById("editAnio") as HTMLInputElement).value),
+        color:
+          (document.getElementById("editColor") as HTMLInputElement).value.trim() ||
+          null,
+        km_actuales: kilometraje,
+        ...(vin ? { vin } : {}),
+        ...(modo === "crear" ? { id_cliente: Number(idCliente) } : {}),
+      };
+
+      if (
+        !Number.isInteger(body.anio) ||
+        !Number.isInteger(body.km_actuales) ||
+        (modo === "crear" && !Number.isInteger(body.id_cliente))
+      ) {
+        notificarError("El año, el kilometraje y el propietario deben ser válidos.");
+        return;
+      }
+
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Guardando...";
+
+      try {
+        const respuesta = await apiFetch(
+          modo === "crear" ? "/api/vehiculos" : `/api/vehiculos/${id}`,
+          {
+            method: modo === "crear" ? "POST" : "PUT",
+            body: JSON.stringify(body),
+          },
+        );
+        modal.close();
+        notificarExito(
+          respuesta.message ?? "Vehículo guardado correctamente.",
+        );
+        await cargarVehiculos();
+      } catch (error) {
+        notificarError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar el vehículo.",
+        );
+      } finally {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent =
+          modo === "crear" ? "Crear vehículo" : "Guardar cambios";
+      }
+    });
+
+    (document.getElementById("btnCrear") as HTMLButtonElement).addEventListener(
+      "click",
+      () => {
+        void abrirModalCrear();
+      },
+    );
+    (document.getElementById("btnRecargar") as HTMLButtonElement).addEventListener(
+      "click",
+      () => {
+        void cargarVehiculos();
+      },
+    );
+    (document.getElementById("btnCerrarModal") as HTMLButtonElement).addEventListener(
+      "click",
+      () => modal.close(),
+    );
+    (document.getElementById("btnCancelarModal") as HTMLButtonElement).addEventListener(
+      "click",
+      () => modal.close(),
+    );
+
+    const buscador = document.getElementById("quickSearch") as HTMLInputElement;
+    buscador.addEventListener("input", () => {
+      gridApi?.setGridOption("quickFilterText", buscador.value);
+    });
+  </script>
+</AdminLayout>
