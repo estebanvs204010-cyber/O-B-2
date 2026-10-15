@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Repuesto de taller">
+  <rect width="240" height="180" rx="20" fill="#edf2f8"/>
+  <path d="M144 48a32 32 0 0 0-39 39l-33 33a14 14 0 0 0 20 20l33-33a32 32 0 0 0 39-39l-18 18-20-20z" fill="#54708e"/>
+  <circle cx="86" cy="128" r="5" fill="#edf2f8"/>
+  <text x="120" y="157" text-anchor="middle" fill="#344d68" font-family="Arial,sans-serif" font-size="16" font-weight="700">REPUESTO</text>
+</svg>

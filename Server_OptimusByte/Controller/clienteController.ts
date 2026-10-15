@@ -140,6 +140,16 @@ export const PutEditarCliente = async (ctx: RouterContext<"/api/clientes/:id">) 
             }
         }
 
+        if (
+            body.foto_url !== undefined &&
+            (typeof body.foto_url !== "string" ||
+                !body.foto_url.startsWith("https://"))
+        ) {
+            response.status = 400;
+            response.body = { success: false, message: "La URL de la foto no es válida" };
+            return;
+        }
+
         const objCliente = new Cliente();
         const resultado = await objCliente.Editar(id, body);
 

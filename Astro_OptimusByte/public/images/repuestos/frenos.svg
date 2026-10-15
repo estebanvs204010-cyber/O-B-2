@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Repuesto de frenos">
+  <rect width="240" height="180" rx="20" fill="#fff1ed"/>
+  <circle cx="120" cy="82" r="49" fill="#f8c3b6"/>
+  <circle cx="120" cy="82" r="34" fill="#c95745"/>
+  <circle cx="120" cy="82" r="15" fill="#fff1ed"/>
+  <path d="M149 48c18 7 28 27 21 46l-17-5-10-22z" fill="#883c36"/>
+  <text x="120" y="157" text-anchor="middle" fill="#883c36" font-family="Arial,sans-serif" font-size="16" font-weight="700">FRENOS</text>
+</svg>

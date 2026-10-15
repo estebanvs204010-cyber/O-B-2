@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Repuesto eléctrico">
+  <rect width="240" height="180" rx="20" fill="#f1edff"/>
+  <rect x="65" y="54" width="110" height="66" rx="12" fill="#7256c8"/>
+  <path d="M91 45v14m58-14v14M91 114v14m58-14v14" stroke="#47328f" stroke-width="9" stroke-linecap="round"/>
+  <path d="m130 64-25 29h18l-5 19 25-31h-18z" fill="#fff" stroke="#fff" stroke-linejoin="round"/>
+  <text x="120" y="157" text-anchor="middle" fill="#49358c" font-family="Arial,sans-serif" font-size="16" font-weight="700">ELÉCTRICO</text>
+</svg>

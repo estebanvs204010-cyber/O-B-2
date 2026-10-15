@@ -1,0 +1,307 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import {
+  ArrowUpRight,
+  CarFront,
+  ClipboardList,
+  HardHat,
+  RefreshCw,
+  Users,
+} from "lucide-astro";
+---
+
+<AdminLayout title="Dashboard" active="dashboard">
+  <section class="dashboard-heading">
+    <div>
+      <p class="eyebrow">Resumen operativo</p>
+      <h2>Panel de administración</h2>
+      <p class="dashboard-subtitle">
+        Aquí tienes lo más importante del taller, todo en un solo lugar.
+      </p>
+    </div>
+    <div class="dashboard-heading-actions">
+      <p id="dashboardFecha" class="dashboard-date"></p>
+      <button id="dashboardRecargar" class="btn btn-outline" type="button">
+        <RefreshCw aria-hidden="true" />
+        Actualizar
+      </button>
+    </div>
+  </section>
+
+  <section class="dashboard-metrics" aria-label="Resumen del taller">
+    <a class="dashboard-metric" href="/admin/ordenes">
+      <span class="dashboard-metric-icon metric-blue"><ClipboardList aria-hidden="true" /></span>
+      <span class="dashboard-metric-copy">
+        <span>Órdenes activas</span>
+        <strong id="dashboardOrdenesActivas">—</strong>
+        <small id="dashboardOrdenesPendientes">Cargando órdenes…</small>
+      </span>
+      <ArrowUpRight class="dashboard-metric-arrow" aria-hidden="true" />
+    </a>
+    <a class="dashboard-metric" href="/admin/clientes">
+      <span class="dashboard-metric-icon metric-green"><Users aria-hidden="true" /></span>
+      <span class="dashboard-metric-copy">
+        <span>Clientes registrados</span>
+        <strong id="dashboardClientes">—</strong>
+        <small>Clientes activos</small>
+      </span>
+      <ArrowUpRight class="dashboard-metric-arrow" aria-hidden="true" />
+    </a>
+    <a class="dashboard-metric" href="/admin/vehiculos">
+      <span class="dashboard-metric-icon metric-amber"><CarFront aria-hidden="true" /></span>
+      <span class="dashboard-metric-copy">
+        <span>Vehículos registrados</span>
+        <strong id="dashboardVehiculos">—</strong>
+        <small>Vehículos activos</small>
+      </span>
+      <ArrowUpRight class="dashboard-metric-arrow" aria-hidden="true" />
+    </a>
+    <a class="dashboard-metric" href="/admin/mecanicos">
+      <span class="dashboard-metric-icon metric-violet"><HardHat aria-hidden="true" /></span>
+      <span class="dashboard-metric-copy">
+        <span>Mecánicos disponibles</span>
+        <strong id="dashboardMecanicos">—</strong>
+        <small>Personal activo</small>
+      </span>
+      <ArrowUpRight class="dashboard-metric-arrow" aria-hidden="true" />
+    </a>
+  </section>
+
+  <div id="dashboardError" class="alert alert-error dashboard-error" role="alert" hidden></div>
+
+  <div class="dashboard-grid">
+    <section class="admin-panel dashboard-status-panel">
+      <div class="dashboard-panel-heading">
+        <div>
+          <p class="eyebrow">Seguimiento</p>
+          <h3>Estado de las órdenes</h3>
+        </div>
+        <a class="dashboard-text-link" href="/admin/ordenes">
+          Ver órdenes <ArrowUpRight aria-hidden="true" />
+        </a>
+      </div>
+      <div id="dashboardEstados" class="dashboard-status-list" aria-live="polite">
+        <p class="loading">Cargando estados…</p>
+      </div>
+    </section>
+
+    <section class="admin-panel dashboard-recent-panel">
+      <div class="dashboard-panel-heading">
+        <div>
+          <p class="eyebrow">Actividad</p>
+          <h3>Órdenes recientes</h3>
+        </div>
+        <a class="dashboard-text-link" href="/admin/ordenes">
+          Ver todas <ArrowUpRight aria-hidden="true" />
+        </a>
+      </div>
+      <div id="dashboardRecientes" class="dashboard-recent-wrap" aria-live="polite">
+        <p class="loading">Cargando órdenes…</p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    import { apiFetch, claseEstado, formatearFechaHora } from "../../lib/api";
+
+    interface OrdenAdmin {
+      id_orden: number;
+      estado: string;
+      tipo_servicio: string;
+      fecha_apertura: string;
+      placa: string;
+      marca: string;
+      modelo: string;
+      propietario: string;
+    }
+
+    interface Mecanico {
+      activo: number | string;
+    }
+
+    const ordenesElemento = document.getElementById("dashboardOrdenesActivas")!;
+    const pendientesElemento = document.getElementById("dashboardOrdenesPendientes")!;
+    const clientesElemento = document.getElementById("dashboardClientes")!;
+    const vehiculosElemento = document.getElementById("dashboardVehiculos")!;
+    const mecanicosElemento = document.getElementById("dashboardMecanicos")!;
+    const estadosElemento = document.getElementById("dashboardEstados")!;
+    const recientesElemento = document.getElementById("dashboardRecientes")!;
+    const errorElemento = document.getElementById("dashboardError")!;
+    const recargarBoton = document.getElementById("dashboardRecargar") as HTMLButtonElement;
+    const fechaElemento = document.getElementById("dashboardFecha")!;
+
+    const estados = [
+      { nombre: "Pendiente", clase: "status-pending" },
+      { nombre: "En Proceso", clase: "status-progress" },
+      { nombre: "Esperando Repuestos", clase: "status-waiting" },
+      { nombre: "Finalizado", clase: "status-complete" },
+      { nombre: "Entregado", clase: "status-complete" },
+      { nombre: "Cancelado", clase: "status-cancelled" },
+    ];
+
+    function obtenerLista<T>(respuesta: { success: boolean; data?: T[] }, recurso: string): T[] {
+      if (!respuesta.success || !Array.isArray(respuesta.data)) {
+        throw new Error(`No se pudieron cargar los datos de ${recurso}.`);
+      }
+      return respuesta.data;
+    }
+
+    function crearCelda(texto: string, clase?: string): HTMLTableCellElement {
+      const celda = document.createElement("td");
+      celda.textContent = texto;
+      if (clase) celda.className = clase;
+      return celda;
+    }
+
+    function pintarEstados(ordenes: OrdenAdmin[]) {
+      estadosElemento.replaceChildren();
+      const total = ordenes.length;
+
+      estados.forEach(({ nombre, clase }) => {
+        const cantidad = ordenes.filter((orden) => orden.estado === nombre).length;
+        const fila = document.createElement("div");
+        fila.className = "dashboard-status-row";
+
+        const encabezado = document.createElement("div");
+        encabezado.className = "dashboard-status-label";
+        const etiqueta = document.createElement("span");
+        etiqueta.textContent = nombre;
+        const valor = document.createElement("strong");
+        valor.textContent = String(cantidad);
+        encabezado.append(etiqueta, valor);
+
+        const barra = document.createElement("div");
+        barra.className = "dashboard-progress-track";
+        barra.setAttribute("role", "progressbar");
+        barra.setAttribute("aria-label", `Órdenes ${nombre}`);
+        barra.setAttribute("aria-valuemin", "0");
+        barra.setAttribute("aria-valuemax", String(total));
+        barra.setAttribute("aria-valuenow", String(cantidad));
+        const progreso = document.createElement("span");
+        progreso.className = `dashboard-progress-fill ${clase}`;
+        progreso.style.width = `${total ? (cantidad / total) * 100 : 0}%`;
+        barra.append(progreso);
+        fila.append(encabezado, barra);
+        estadosElemento.append(fila);
+      });
+    }
+
+    function pintarRecientes(ordenes: OrdenAdmin[]) {
+      recientesElemento.replaceChildren();
+      if (ordenes.length === 0) {
+        const vacio = document.createElement("p");
+        vacio.className = "empty";
+        vacio.textContent = "Todavía no hay órdenes registradas.";
+        recientesElemento.append(vacio);
+        return;
+      }
+
+      const tabla = document.createElement("table");
+      tabla.className = "ordenes-table dashboard-recent-table";
+      const encabezado = document.createElement("thead");
+      const filaEncabezado = document.createElement("tr");
+      ["Orden", "Cliente / vehículo", "Fecha", "Estado"].forEach((titulo) => {
+        const celda = document.createElement("th");
+        celda.scope = "col";
+        celda.textContent = titulo;
+        filaEncabezado.append(celda);
+      });
+      encabezado.append(filaEncabezado);
+
+      const cuerpo = document.createElement("tbody");
+      const recientes = [...ordenes]
+        .sort(
+          (a, b) =>
+            new Date(b.fecha_apertura).getTime() - new Date(a.fecha_apertura).getTime(),
+        )
+        .slice(0, 6);
+
+      recientes.forEach((orden) => {
+        const fila = document.createElement("tr");
+        fila.append(crearCelda(`OT-${orden.id_orden}`, "ordenes-id"));
+
+        const vehiculo = document.createElement("td");
+        const propietario = document.createElement("strong");
+        propietario.className = "dashboard-owner";
+        propietario.textContent = orden.propietario || "Cliente sin nombre";
+        const detalle = document.createElement("span");
+        detalle.className = "dashboard-vehicle";
+        detalle.textContent = `${orden.placa} · ${orden.marca} ${orden.modelo}`;
+        vehiculo.append(propietario, detalle);
+        fila.append(vehiculo);
+        fila.append(crearCelda(formatearFechaHora(orden.fecha_apertura)));
+
+        const estado = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = `badge ${claseEstado(orden.estado)}`;
+        badge.textContent = orden.estado;
+        estado.append(badge);
+        fila.append(estado);
+        cuerpo.append(fila);
+      });
+
+      tabla.append(encabezado, cuerpo);
+      recientesElemento.append(tabla);
+    }
+
+    async function cargarDashboard() {
+      recargarBoton.disabled = true;
+      errorElemento.hidden = true;
+      estadosElemento.innerHTML = '<p class="loading">Cargando estados…</p>';
+      recientesElemento.innerHTML = '<p class="loading">Cargando órdenes…</p>';
+
+      try {
+        const [respuestaOrdenes, respuestaClientes, respuestaVehiculos, respuestaMecanicos] =
+          await Promise.all([
+            apiFetch<OrdenAdmin[]>("/api/admin/ordenes"),
+            apiFetch<unknown[]>("/api/clientes"),
+            apiFetch<unknown[]>("/api/vehiculos"),
+            apiFetch<Mecanico[]>("/api/usuarios/mecanico"),
+          ]);
+        const ordenes = obtenerLista(respuestaOrdenes, "órdenes");
+        const clientes = obtenerLista(respuestaClientes, "clientes");
+        const vehiculos = obtenerLista(respuestaVehiculos, "vehículos");
+        const mecanicos = obtenerLista(respuestaMecanicos, "mecánicos");
+        const activas = ordenes.filter(
+          (orden) =>
+            orden.estado !== "Finalizado" &&
+            orden.estado !== "Entregado" &&
+            orden.estado !== "Cancelado",
+        );
+        const pendientes = ordenes.filter((orden) => orden.estado === "Pendiente").length;
+        const mecanicosActivos = mecanicos.filter(
+          (mecanico) => Number(mecanico.activo) === 1,
+        ).length;
+
+        ordenesElemento.textContent = String(activas.length);
+        pendientesElemento.textContent = `${pendientes} pendiente${pendientes === 1 ? "" : "s"} por asignar`;
+        clientesElemento.textContent = String(clientes.length);
+        vehiculosElemento.textContent = String(vehiculos.length);
+        mecanicosElemento.textContent = String(mecanicosActivos);
+        pintarEstados(ordenes);
+        pintarRecientes(ordenes);
+      } catch (error) {
+        estadosElemento.replaceChildren();
+        recientesElemento.replaceChildren();
+        const mensaje = document.createElement("p");
+        mensaje.textContent =
+          error instanceof Error
+            ? error.message
+            : "No fue posible cargar la información del dashboard.";
+        errorElemento.textContent = `${mensaje.textContent} Verifica tu conexión e intenta actualizar.`;
+        errorElemento.hidden = false;
+      } finally {
+        recargarBoton.disabled = false;
+      }
+    }
+
+    fechaElemento.textContent = new Intl.DateTimeFormat("es-CO", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date());
+    recargarBoton.addEventListener("click", cargarDashboard);
+    cargarDashboard();
+  </script>
+</AdminLayout>
