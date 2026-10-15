@@ -1,81 +1,72 @@
-/**
- * Verifica si el token existe y no ha expirado leyendo el campo "exp" del JWT.
- * No verifica la firma: esa validación real se realiza en el backend Deno.
- */
+const COOKIE_NAME = "ob_token";
+
+interface CookieValue {
+  value: string;
+}
+
+interface CookiesSSR {
+  get(nombre: string): CookieValue | undefined;
+}
+
+interface JwtPayload {
+  sub?: string;
+  rol?: string;
+  exp?: number;
+}
+
 export function isAuthenticatedSSR(
-  cookies: {
-    get: (key: string) => { value: string } | undefined;
-  },
+  cookies: CookiesSSR,
 ): boolean {
-  const token = cookies.get("jwt_token")?.value;
+  const token = cookies.get(COOKIE_NAME)?.value;
 
-  if (!token) return false;
-
-  try {
-    const payloadBase64 = token.split(".")[1];
-
-    if (!payloadBase64) {
-      return false;
-    }
-
-    const payloadJson = atob(
-      payloadBase64.replace(/-/g, "+").replace(/_/g, "/"),
-    );
-
-    const payload = JSON.parse(payloadJson);
-    const ahoraEnSegundos = Math.floor(Date.now() / 1000);
-
-    if (
-      typeof payload.exp === "number" &&
-      payload.exp < ahoraEnSegundos
-    ) {
-      return false;
-    }
-
-    return true;
-  } catch {
+  if (!token) {
     return false;
   }
+
+  const payload = obtenerPayload(token);
+
+  if (!payload) {
+    return false;
+  }
+
+  if (payload.exp && payload.exp * 1000 < Date.now()) {
+    return false;
+  }
+
+  return true;
 }
 
-/**
- * Obtiene el JWT desde la cookie HttpOnly.
- */
-export function getTokenSRR(
-  cookies: {
-    get: (key: string) => { value: string } | undefined;
-  },
-): string | null {
-  return cookies.get("jwt_token")?.value ?? null;
-}
-
-/**
- * Extrae el rol del JWT para redirecciones de interfaz.
- * La validación real de permisos ocurre en el backend Deno.
- */
 export function getRolSSR(
-  cookies: {
-    get: (key: string) => { value: string } | undefined;
-  },
+  cookies: CookiesSSR,
 ): string | null {
-  const token = getTokenSRR(cookies);
+  const token = cookies.get(COOKIE_NAME)?.value;
 
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
 
+  const payload = obtenerPayload(token);
+
+  return payload?.rol?.trim() ?? null;
+}
+
+function obtenerPayload(
+  token: string,
+): JwtPayload | null {
   try {
-    const payloadBase64 = token.split(".")[1];
+    const partes = token.split(".");
 
-    if (!payloadBase64) {
+    if (partes.length !== 3) {
       return null;
     }
 
-    const payloadJson = atob(
-      payloadBase64.replace(/-/g, "+").replace(/_/g, "/"),
-    );
+    const payloadBase64 = partes[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
 
-    const payload = JSON.parse(payloadJson);
+    const json = atob(payloadBase64);
 
-    return typeof payload.rol === "string" ? payload.rol : null;
+    return JSON.parse(json) as JwtPayload;
   } catch {
     return null;
   }
