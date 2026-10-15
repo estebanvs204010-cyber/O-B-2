@@ -1,0 +1,78 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import PageBanner from '../components/PageBanner.astro';
+import Icon from '../components/Icon.astro';
+import { TALLER, repuestos, pasos } from '../data/taller';
+
+const wa = (cat: string) =>
+  `https://wa.me/${TALLER.whatsapp}?text=${encodeURIComponent(`Hola, necesito cotizar repuestos de ${cat} para mi vehículo.`)}`;
+
+const ventajas = [
+  { icono: 'check', titulo: 'Compatibilidad verificada', texto: 'Confirmamos la referencia exacta para tu marca, modelo y año.' },
+  { icono: 'wrench', titulo: 'Instalación en el taller', texto: 'Si lo prefieres, lo instalamos nosotros con garantía de servicio.' },
+  { icono: 'zap', titulo: 'Cotización rápida', texto: 'Escríbenos por WhatsApp y te respondemos con precio y disponibilidad.' },
+];
+---
+<PublicLayout title="Repuestos | Taller Mecánico OptimusByte" description="Repuestos y accesorios para tu vehículo: frenos, motor, suspensión, dirección, carrocería y más. Cotiza por WhatsApp.">
+  <PageBanner
+    eyebrow="Tienda de repuestos"
+    titulo="Repuestos"
+    texto="Encuentra los repuestos y accesorios que tu vehículo necesita, con asesoría de nuestros técnicos."
+  />
+
+  <section class="hm-section">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">Categorías</p>
+        <h2>¿Qué estás buscando?</h2>
+        <p>Elige una categoría y cotízala por WhatsApp con tu vehículo.</p>
+      </div>
+      <div class="hm-cards hm-cards--3">
+        {repuestos.map((r, i) => (
+          <article class="hm-card" data-reveal style={`transition-delay:${i * 0.06}s`}>
+            <div class="hm-card-icon"><Icon name={r.icono} /></div>
+            <h3>{r.nombre}</h3>
+            <p>{r.texto}</p>
+            <a href={wa(r.nombre)} target="_blank" rel="noopener" class="hm-card-link">Cotizar por WhatsApp →</a>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="hm-values">
+    <div class="hm-wrap hm-values-grid">
+      {ventajas.map((v) => (
+        <div class="hm-value" data-reveal>
+          <Icon name={v.icono} />
+          <div><strong>{v.titulo}</strong><small>{v.texto}</small></div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="hm-section hm-section--gray">
+    <div class="hm-wrap">
+      <div class="hm-section-head center" data-reveal>
+        <p class="hm-eyebrow">¿Cómo pedirlos?</p>
+        <h2>Fácil y sin vueltas</h2>
+      </div>
+      <div class="hm-steps">
+        {pasos.map((p, i) => (
+          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
+            <h3>{p.titulo}</h3>
+            <p>{p.texto}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="hm-cta">
+    <div class="hm-wrap" data-reveal>
+      <h2>¿No encuentras tu repuesto?</h2>
+      <p>Escríbenos con la marca, modelo y año de tu vehículo y lo conseguimos.</p>
+      <a href={`https://wa.me/${TALLER.whatsapp}`} target="_blank" rel="noopener" class="hm-btn hm-btn--light">Escribir por WhatsApp</a>
+    </div>
+  </section>
+</PublicLayout>

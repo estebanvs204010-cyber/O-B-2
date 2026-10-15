@@ -7,6 +7,11 @@ interface Props {
   wide?: boolean;
 }
 const { title, wide = false } = Astro.props;
+
+// Imagen flotante del panel izquierdo. Para usar tu propia foto/render de un motor:
+// copia el archivo a /public (PNG o WebP con fondo transparente se ve mejor)
+// y cambia esta ruta, por ejemplo: "/motor.png"
+const MOTOR_IMG = "/motor.svg";
 ---
 
 <!doctype html>
@@ -16,13 +21,53 @@ const { title, wide = false } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} · OptimusByte</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div class="auth-shell">
-      <div class:list={["auth-card", { wide }]}>
-        <div class="auth-brand">Optimus<span class="accent">Byte</span></div>
-        <slot />
-      </div>
+      <!-- Panel visual -->
+      <aside class="auth-visual" aria-hidden="false">
+        <a href="/" class="auth-logo" aria-label="OptimusByte, ir al inicio">
+          <span class="auth-logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </span>
+          <span class="auth-logo-text">
+            <small>TALLER</small>
+            <strong>Optimus<span>Byte</span></strong>
+          </span>
+        </a>
+
+        <div class="auth-visual-copy">
+          <p class="auth-eyebrow">Área de clientes y técnicos</p>
+          <h2>Tu vehículo, <span>siempre al día</span></h2>
+          <p class="auth-visual-lead">
+            Consulta el estado de tus órdenes, el historial de cada vehículo y agenda tus servicios desde un solo lugar.
+          </p>
+        </div>
+
+        <div class="auth-motor">
+          <img src={MOTOR_IMG} alt="Motor" width="640" height="440" />
+        </div>
+
+        <ul class="auth-points">
+          <li>Estado de tu orden en tiempo real</li>
+          <li>Historial completo de tu vehículo</li>
+          <li>Reservas y cotizaciones en línea</li>
+        </ul>
+      </aside>
+
+      <!-- Panel del formulario -->
+      <main class="auth-panel">
+        <div class:list={["auth-card", { wide }]}>
+          <a href="/" class="auth-back">&larr; Volver al inicio</a>
+          <div class="auth-brand">Optimus<span class="accent">Byte</span></div>
+          <p class="auth-eyebrow auth-eyebrow--form">Bienvenido</p>
+          <h1 class="auth-title">{title}</h1>
+          <slot />
+        </div>
+      </main>
     </div>
   </body>
 </html>
