@@ -8,6 +8,20 @@ interface DatosSolicitud {
 }
 
 export class SolicitudRepuesto {
+    // ---------- Solicitudes pendientes para la bandeja de notificaciones admin ----------
+    public async ListarPendientesAdmin() {
+        return await conexion.query(
+            `SELECT s.id_solicitud, s.id_orden, s.id_mecanico, s.nombre_repuesto, s.cantidad, s.motivo,
+                    s.fecha_solicitud, v.placa, m.nombre_completo AS mecanico
+             FROM solicitudesrepuesto s
+             INNER JOIN ordenestrabajo o ON o.id_orden = s.id_orden
+             INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
+             INNER JOIN usuarios m ON m.id_usuario = s.id_mecanico
+             WHERE s.atendida = 0
+             ORDER BY s.fecha_solicitud DESC`,
+        );
+    }
+
     // ---------- Un mecánico pide un repuesto para una orden suya ----------
     public async Crear(id_mecanico: number, datos: DatosSolicitud) {
         const [orden] = await conexion.query(

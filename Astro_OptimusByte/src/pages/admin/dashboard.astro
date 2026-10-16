@@ -115,8 +115,21 @@ import {
       propietario: string;
     }
 
-    interface Mecanico {
-      activo: number | string;
+    interface DashboardAdmin {
+      resumen: {
+        total_ordenes: number;
+        ordenes_pendientes: number;
+        ordenes_activas: number;
+        ordenes_en_proceso: number;
+        ordenes_esperando_repuestos: number;
+        ordenes_finalizadas: number;
+        ordenes_entregadas: number;
+        ordenes_canceladas: number;
+        clientes_activos: number;
+        vehiculos_activos: number;
+        mecanicos_activos: number;
+      };
+      ordenes_recientes: OrdenAdmin[];
     }
 
     const ordenesElemento = document.getElementById("dashboardOrdenesActivas")!;
@@ -139,13 +152,6 @@ import {
       { nombre: "Cancelado", clase: "status-cancelled" },
     ];
 
-    function obtenerLista<T>(respuesta: { success: boolean; data?: T[] }, recurso: string): T[] {
-      if (!respuesta.success || !Array.isArray(respuesta.data)) {
-        throw new Error(`No se pudieron cargar los datos de ${recurso}.`);
-      }
-      return respuesta.data;
-    }
-
     function crearCelda(texto: string, clase?: string): HTMLTableCellElement {
       const celda = document.createElement("td");
       celda.textContent = texto;
@@ -153,12 +159,14 @@ import {
       return celda;
     }
 
-    function pintarEstados(ordenes: OrdenAdmin[]) {
+    function pintarEstados(
+      ordenes: Array<{ estado: string; cantidad: number }>,
+      total: number,
+    ) {
       estadosElemento.replaceChildren();
-      const total = ordenes.length;
 
       estados.forEach(({ nombre, clase }) => {
-        const cantidad = ordenes.filter((orden) => orden.estado === nombre).length;
+        const cantidad = ordenes.find((orden) => orden.estado === nombre)?.cantidad ?? 0;
         const fila = document.createElement("div");
         fila.className = "dashboard-status-row";
 
@@ -209,12 +217,7 @@ import {
       encabezado.append(filaEncabezado);
 
       const cuerpo = document.createElement("tbody");
-      const recientes = [...ordenes]
-        .sort(
-          (a, b) =>
-            new Date(b.fecha_apertura).getTime() - new Date(a.fecha_apertura).getTime(),
-        )
-        .slice(0, 6);
+      const recientes = ordenes.slice(0, 6);
 
       recientes.forEach((orden) => {
         const fila = document.createElement("tr");
@@ -251,35 +254,28 @@ import {
       recientesElemento.innerHTML = '<p class="loading">Cargando órdenes…</p>';
 
       try {
-        const [respuestaOrdenes, respuestaClientes, respuestaVehiculos, respuestaMecanicos] =
-          await Promise.all([
-            apiFetch<OrdenAdmin[]>("/api/admin/ordenes"),
-            apiFetch<unknown[]>("/api/clientes"),
-            apiFetch<unknown[]>("/api/vehiculos"),
-            apiFetch<Mecanico[]>("/api/usuarios/mecanico"),
-          ]);
-        const ordenes = obtenerLista(respuestaOrdenes, "órdenes");
-        const clientes = obtenerLista(respuestaClientes, "clientes");
-        const vehiculos = obtenerLista(respuestaVehiculos, "vehículos");
-        const mecanicos = obtenerLista(respuestaMecanicos, "mecánicos");
-        const activas = ordenes.filter(
-          (orden) =>
-            orden.estado !== "Finalizado" &&
-            orden.estado !== "Entregado" &&
-            orden.estado !== "Cancelado",
-        );
-        const pendientes = ordenes.filter((orden) => orden.estado === "Pendiente").length;
-        const mecanicosActivos = mecanicos.filter(
-          (mecanico) => Number(mecanico.activo) === 1,
-        ).length;
+        const respuesta = await apiFetch<DashboardAdmin>("/api/admin/dashboard");
+        const dashboard = respuesta.data;
+        if (!respuesta.success || !dashboard) {
+          throw new Error("No se pudo cargar el resumen del dashboard.");
+        }
 
-        ordenesElemento.textContent = String(activas.length);
-        pendientesElemento.textContent = `${pendientes} pendiente${pendientes === 1 ? "" : "s"} por asignar`;
-        clientesElemento.textContent = String(clientes.length);
-        vehiculosElemento.textContent = String(vehiculos.length);
-        mecanicosElemento.textContent = String(mecanicosActivos);
-        pintarEstados(ordenes);
-        pintarRecientes(ordenes);
+        const resumen = dashboard.resumen;
+        ordenesElemento.textContent = String(resumen.ordenes_activas);
+        pendientesElemento.textContent =
+          `${resumen.ordenes_pendientes} pendiente${resumen.ordenes_pendientes === 1 ? "" : "s"} por asignar`;
+        clientesElemento.textContent = String(resumen.clientes_activos);
+        vehiculosElemento.textContent = String(resumen.vehiculos_activos);
+        mecanicosElemento.textContent = String(resumen.mecanicos_activos);
+        pintarEstados([
+          { estado: "Pendiente", cantidad: resumen.ordenes_pendientes },
+          { estado: "En Proceso", cantidad: resumen.ordenes_en_proceso },
+          { estado: "Esperando Repuestos", cantidad: resumen.ordenes_esperando_repuestos },
+          { estado: "Finalizado", cantidad: resumen.ordenes_finalizadas },
+          { estado: "Entregado", cantidad: resumen.ordenes_entregadas },
+          { estado: "Cancelado", cantidad: resumen.ordenes_canceladas },
+        ], resumen.total_ordenes);
+        pintarRecientes(dashboard.ordenes_recientes);
       } catch (error) {
         estadosElemento.replaceChildren();
         recientesElemento.replaceChildren();

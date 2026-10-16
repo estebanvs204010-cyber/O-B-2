@@ -1,5 +1,24 @@
 import { Context, RouterContext } from "../Dependencies/dependencias.ts";
 import { SolicitudRepuesto } from "../Model/solicitudRepuestoModel.ts";
+import { Orden } from "../Model/ordenModel.ts";
+
+// GET /api/admin/notificaciones -> órdenes y pedidos de repuestos pendientes
+export const GetNotificacionesAdmin = async (ctx: Context) => {
+    const { response } = ctx;
+
+    try {
+        const [ordenes, solicitudes] = await Promise.all([
+            new Orden().ListarPendientesAdmin(),
+            new SolicitudRepuesto().ListarPendientesAdmin(),
+        ]);
+        response.status = 200;
+        response.body = { success: true, data: { ordenes, solicitudes } };
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
 
 // POST /api/mecanico/solicitudes-repuesto   (Mecanico) -> pide un repuesto para una orden suya
 export const PostCrearSolicitudRepuesto = async (ctx: Context) => {
