@@ -1,0 +1,2 @@
+ALTER TABLE clientes
+ADD COLUMN foto_url VARCHAR(2048) NULL;

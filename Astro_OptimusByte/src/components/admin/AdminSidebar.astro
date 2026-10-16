@@ -3,6 +3,7 @@ import {
   Wrench,
   LayoutDashboard,
   ClipboardList,
+  CalendarCheck,
   Users,
   HardHat,
   CarFront,
@@ -16,6 +17,7 @@ interface Props {
     | "dashboard"
     | "clientes"
     | "ordenes"
+    | "citas"
     | "repuestos"
     | "vehiculos"
     | "facturacion"
@@ -38,7 +40,7 @@ const { active } = Astro.props;
     <p class="admin-nav-title">Principal</p>
 
     <a
-      href="/admin"
+      href="/admin/dashboard"
       class:list={["admin-nav-link", { active: active === "dashboard" }]}
     >
       <LayoutDashboard aria-hidden="true" />
@@ -53,6 +55,14 @@ const { active } = Astro.props;
     >
       <ClipboardList aria-hidden="true" />
       Ordenes
+    </a>
+
+    <a
+      href="/admin/citas"
+      class:list={["admin-nav-link", { active: active === "citas" }]}
+    >
+      <CalendarCheck aria-hidden="true" />
+      Citas
     </a>
 
     <a

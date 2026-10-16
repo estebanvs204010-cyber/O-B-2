@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" role="img" aria-label="Repuesto de filtros">
+  <rect width="240" height="180" rx="20" fill="#eaf5ff"/>
+  <path d="M77 45h86l12 18v45l-12 18H77l-12-18V63z" fill="#4182c4"/>
+  <path d="M85 58v56m14-56v56m14-56v56m14-56v56m14-56v56m14-56v56" stroke="#d4ebff" stroke-width="7"/>
+  <text x="120" y="157" text-anchor="middle" fill="#245887" font-family="Arial,sans-serif" font-size="16" font-weight="700">FILTROS</text>
+</svg>

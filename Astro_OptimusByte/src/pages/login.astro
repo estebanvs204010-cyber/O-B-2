@@ -1,9 +1,12 @@
 ---
 import AuthLayout from "../layouts/AuthLayout.astro";
+const GOOGLE_CLIENT_ID = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? "";
 ---
 
 <AuthLayout title="Iniciar sesión">
   <p class="auth-sub">Ingresa con tu correo y contraseña</p>
+
+  <div id="ob-login-info" class="alert alert-info" style="display:none;"></div>
 
   <div id="ob-alert" class="alert alert-error" style="display:none;"></div>
 
@@ -20,6 +23,12 @@ import AuthLayout from "../layouts/AuthLayout.astro";
     <button id="ob-submit" type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
   </form>
 
+  <div class="login-divider"><span>o también puedes entrar con</span></div>
+  <div class="google-login">
+    <div id="google-button" data-client-id={GOOGLE_CLIENT_ID}></div>
+    <p id="google-config-hint" class="google-config-hint" hidden>Falta configurar Google en el archivo .env de Astro.</p>
+  </div>
+
   <p class="auth-footer">
     ¿Aún no tienes cuenta? <a href="/registro">Regístrate</a>
   </p>
@@ -27,14 +36,88 @@ import AuthLayout from "../layouts/AuthLayout.astro";
   <script>
     import { apiFetch, rutaSegunRol } from "../lib/api";
 
+    type GoogleCredentialResponse = { credential: string };
+    type GoogleIdentity = {
+      accounts: {
+        id: {
+          initialize: (options: { client_id: string; callback: (response: GoogleCredentialResponse) => void }) => void;
+          renderButton: (element: HTMLElement, options: Record<string, string | number | boolean>) => void;
+        };
+      };
+    };
+    declare global { interface Window { google?: GoogleIdentity } }
+
     const form = document.getElementById("ob-login-form") as HTMLFormElement;
     const alertBox = document.getElementById("ob-alert") as HTMLDivElement;
     const submitBtn = document.getElementById("ob-submit") as HTMLButtonElement;
+    const parametros = new URLSearchParams(window.location.search);
+    const destinoSolicitado = parametros.get("next") ?? "";
+    const vieneDeAgendar = parametros.get("motivo") === "agendar-cita";
+    const googleButton = document.getElementById("google-button");
+    const googleClientId = googleButton?.getAttribute("data-client-id")?.trim() ?? "";
+    const info = document.getElementById("ob-login-info");
+    if (vieneDeAgendar && info) {
+      info.textContent = "Por favor, inicia sesión para agendar tu cita. Al entrar, podrás elegir tu vehículo y un horario disponible.";
+      info.style.display = "block";
+    }
 
     function mostrarError(msg: string) {
       alertBox.textContent = msg;
       alertBox.style.display = "block";
     }
+
+    function destinoDeLogin(rol: string) {
+      const esDestinoCliente = destinoSolicitado.startsWith("/cliente") && !destinoSolicitado.startsWith("//");
+      return rol === "Cliente" && esDestinoCliente ? destinoSolicitado : rutaSegunRol(rol as "Admin" | "Mecanico" | "Cliente");
+    }
+
+    async function cargarBotonGoogle() {
+      const hint = document.getElementById("google-config-hint");
+      if (!googleClientId || !googleButton) {
+        if (hint) hint.hidden = false;
+        return;
+      }
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("No se pudo cargar el inicio de sesión de Google"));
+          document.head.appendChild(script);
+        });
+
+        if (!window.google) throw new Error("Google Identity Services no está disponible");
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async ({ credential }) => {
+            alertBox.style.display = "none";
+            try {
+              const response = await fetch("/api/auth/google", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ credential }),
+              });
+              const resultado = await response.json();
+              if (!response.ok || !resultado.success || !resultado.usuario) {
+                throw new Error(resultado.message ?? "No se pudo iniciar sesión con Google");
+              }
+              window.location.href = destinoDeLogin(resultado.usuario.rol);
+            } catch (error) {
+              mostrarError(error instanceof Error ? error.message : "No se pudo iniciar sesión con Google");
+            }
+          },
+        });
+        window.google.accounts.id.renderButton(googleButton, {
+          theme: "outline", size: "large", shape: "rectangular", text: "signin_with", locale: "es", width: 360,
+        });
+      } catch (error) {
+        mostrarError(error instanceof Error ? error.message : "No se pudo cargar Google");
+      }
+    }
+
+    void cargarBotonGoogle();
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -56,7 +139,7 @@ import AuthLayout from "../layouts/AuthLayout.astro";
           return;
         }
 
-        window.location.href = rutaSegunRol(resultado.usuario.rol);
+        window.location.href = destinoDeLogin(resultado.usuario.rol);
       } catch (error) {
         mostrarError(error instanceof Error ? error.message : "Correo o contraseña incorrectos");
       } finally {
