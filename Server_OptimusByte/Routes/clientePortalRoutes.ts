@@ -1,6 +1,11 @@
 import { Router } from "../Dependencies/dependencias.ts";
 
 import {
+    GetMiPerfilCliente,
+    PutActualizarMiPerfil,
+    GetMisVehiculos,
+    GetMisOrdenes,
+    PostRegistrarMiVehiculo,
   GetMiPerfilCliente,
   PutActualizarMiPerfil,
   PutActualizarFotoPerfil,
@@ -41,6 +46,13 @@ ClientePortalRouter.get(
   authMiddleware,
   permitirRoles("Cliente"),
   GetMisVehiculos,
+);
+
+ClientePortalRouter.get(
+    "/api/cliente/mis-ordenes",
+    authMiddleware,
+    permitirRoles("Cliente"),
+    GetMisOrdenes,
 );
 
 ClientePortalRouter.post(

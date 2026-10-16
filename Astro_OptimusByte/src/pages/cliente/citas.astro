@@ -20,3 +20,184 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     </div>
   </section>
 </ClienteLayout>
+---
+import ClienteLayout from "../../layouts/ClienteLayout.astro";
+---
+
+<ClienteLayout title="Agendar cita" active="citas">
+  <section class="appointment-hero">
+    <a class="back-link" href="/cliente">← Volver al panel</a>
+    <span class="eyebrow">SERVICIO PARA TU VEHÍCULO</span>
+    <h1>Agenda tu cita</h1>
+    <p>Cuéntanos qué necesita tu vehículo. Elige una fecha y consulta los horarios disponibles.</p>
+    <div class="appointment-steps" aria-label="Pasos para agendar">
+      <span><b>1</b> Datos del vehículo</span><span><b>2</b> Fecha y horario</span><span><b>3</b> Confirmación del taller</span>
+    </div>
+  </section>
+
+  <div class="appointment-layout">
+  <section class="appointment-card">
+    <div class="form-heading"><div class="form-icon">✦</div><div><h2>Detalles de la cita</h2><p>La solicitud queda pendiente hasta que el taller la confirme.</p></div></div>
+    <div id="estadoInicial" class="notice">Cargando tus vehículos…</div>
+    <form id="formCita" hidden>
+      <div class="field"><label for="citaVehiculo">Vehículo</label><select id="citaVehiculo" required><option value="">Selecciona tu vehículo</option></select></div>
+      <div class="field-row">
+        <div class="field"><label for="citaFecha">Fecha preferida</label><input id="citaFecha" type="date" required /></div>
+        <div class="field"><label for="citaHora">Horario disponible</label><select id="citaHora" required><option value="">Primero selecciona una fecha</option></select></div>
+      </div>
+      <div class="field"><label for="citaMotivo">¿Qué servicio necesitas? <span>(opcional)</span></label><textarea id="citaMotivo" rows="4" maxlength="300" placeholder="Por ejemplo: cambio de aceite, revisión de frenos…"></textarea></div>
+      <div id="mensaje" class="notice" hidden></div>
+      <div class="form-footer"><p>Los horarios pueden cambiar según disponibilidad del taller.</p><button class="btn btn-primary" type="submit">Solicitar cita <span>→</span></button></div>
+    </form>
+    <div id="sinVehiculo" class="empty-state" hidden><div class="empty-icon">🚗</div><h3>Primero registra tu vehículo</h3><p>Necesitamos asociar la cita a uno de tus vehículos.</p><a class="btn btn-primary" href="/cliente#vehiculos">Registrar vehículo</a></div>
+  </section>
+  <aside class="appointment-aside">
+    <section class="aside-card status-card">
+      <div class="status-top"><span class="status-icon">✓</span><span class="status-label">ASÍ FUNCIONA</span></div>
+      <h2>Tu cita, paso a paso</h2>
+      <div class="timeline">
+        <div class="timeline-item"><span>1</span><div><strong>Envías la solicitud</strong><p>Cuéntanos qué necesita tu vehículo.</p></div></div>
+        <div class="timeline-item"><span>2</span><div><strong>El taller la revisa</strong><p>Verificamos el horario y el servicio.</p></div></div>
+        <div class="timeline-item"><span>3</span><div><strong>Te confirmamos</strong><p>La cita aparecerá en tu panel cuando esté confirmada.</p></div></div>
+      </div>
+    </section>
+    <section class="aside-card reminder-card">
+      <span class="reminder-icon">i</span>
+      <div><h3>Ten en cuenta</h3><p>Enviar la solicitud no confirma todavía la cita. Espera la respuesta del taller antes de llevar tu vehículo.</p></div>
+    </section>
+    <a class="aside-link" href="/cliente#citas">Ver mis citas y solicitudes <span>→</span></a>
+  </aside>
+  </div>
+</ClienteLayout>
+
+<style>
+  .appointment-hero { padding: 12px 0 25px; }
+  .back-link { display: inline-block; margin-bottom: 20px; color: #536b8c; font-size: 14px; }
+  .eyebrow { display: block; color: #2870ed; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+  h1 { margin: 7px 0; color: #102b50; font-size: clamp(28px, 4vw, 38px); }
+  .appointment-hero > p { max-width: 620px; margin: 0; color: #71839c; }
+  .appointment-steps { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 22px; color: #536b8c; font-size: 13px; }
+  .appointment-steps b { display: inline-grid; width: 24px; height: 24px; margin-right: 6px; place-items: center; border-radius: 50%; background: #e8f0ff; color: #2168e8; }
+  .appointment-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .75fr); align-items: start; gap: 22px; }
+  .appointment-card { min-width: 0; padding: 30px; border: 1px solid #e2e9f2; border-radius: 16px; background: white; box-shadow: 0 12px 35px #16365c12; }
+  .appointment-aside { display: grid; gap: 16px; }
+  .aside-card { padding: 23px; border: 1px solid #e2e9f2; border-radius: 16px; background: white; box-shadow: 0 12px 35px #16365c0d; }
+  .status-card { background: linear-gradient(145deg, #102b50, #193d6c); color: white; }
+  .status-top { display: flex; align-items: center; gap: 10px; }
+  .status-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 11px; background: #ffffff20; color: #a8c7ff; font-weight: 800; }
+  .status-label { color: #b6c9e4; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+  .status-card h2 { margin: 18px 0 20px; font-size: 21px; }
+  .timeline { display: grid; gap: 17px; }
+  .timeline-item { display: grid; grid-template-columns: 28px 1fr; gap: 11px; align-items: start; }
+  .timeline-item > span { display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid #ffffff44; border-radius: 50%; color: #c5d8f5; font-size: 12px; font-weight: 700; }
+  .timeline-item strong { display: block; margin: 2px 0 4px; font-size: 13px; }
+  .timeline-item p { margin: 0; color: #c0d0e4; font-size: 12px; line-height: 1.55; }
+  .reminder-card { display: flex; gap: 12px; background: #f5f8fe; }
+  .reminder-icon { display: grid; flex: 0 0 28px; height: 28px; place-items: center; border-radius: 50%; background: #e3edff; color: #2870ed; font-weight: 800; }
+  .reminder-card h3 { margin: 2px 0 5px; color: #17365e; font-size: 14px; }
+  .reminder-card p { margin: 0; color: #71839c; font-size: 12px; line-height: 1.6; }
+  .aside-link { display: flex; justify-content: space-between; padding: 15px 17px; border: 1px solid #dce6f4; border-radius: 12px; background: #fff; color: #2168e8; font-size: 13px; font-weight: 700; }
+  .aside-link:hover { background: #f5f8fe; }
+  #formCita[hidden], .empty-state[hidden], .notice[hidden] { display: none; }
+  .form-heading { display: flex; align-items: center; gap: 13px; margin-bottom: 24px; }
+  .form-heading h2 { margin: 0 0 4px; color: #102b50; font-size: 20px; }
+  .form-heading p { margin: 0; color: #71839c; font-size: 13px; }
+  .form-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 13px; background: #eaf1ff; color: #2168e8; font-size: 23px; }
+  #formCita { display: grid; gap: 18px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: grid; gap: 7px; }
+  .field label { color: #17365e; font-size: 14px; font-weight: 650; }
+  .field label span { color: #8795a9; font-weight: 400; }
+  .field input, .field select, .field textarea { width: 100%; min-height: 46px; padding: 11px 13px; border: 1px solid #d8e1ed; border-radius: 9px; background: #fff; color: #17365e; font: inherit; }
+  .field textarea { resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid #2870ed22; border-color: #2870ed; }
+  .notice { padding: 13px 15px; border-radius: 9px; background: #eff5ff; color: #315a91; font-size: 14px; }
+  .notice.error { background: #fff0f0; color: #ac3030; }
+  .notice.success { background: #eaf8ef; color: #247244; }
+  .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 18px; border-top: 1px solid #e7edf4; }
+  .form-footer p { margin: 0; color: #8795a9; font-size: 12px; }
+  .btn span { margin-left: 8px; }
+  .empty-state { padding: 30px 10px 8px; text-align: center; }
+  .empty-icon { font-size: 38px; }
+  .empty-state h3 { margin: 9px 0 5px; color: #17365e; }
+  .empty-state p { margin: 0 0 18px; color: #71839c; }
+  @media (max-width: 900px) { .appointment-layout { grid-template-columns: 1fr; } .appointment-aside { grid-template-columns: 1fr 1fr; } .aside-link { grid-column: 1 / -1; } }
+  @media (max-width: 650px) { .appointment-card { padding: 20px; } .appointment-aside { grid-template-columns: 1fr; } .aside-link { grid-column: auto; } .field-row { grid-template-columns: 1fr; } .form-footer { align-items: stretch; flex-direction: column; } .form-footer .btn { width: 100%; } }
+</style>
+
+<script>
+  import { apiFetch } from "../../lib/api";
+
+  interface Vehiculo { id_vehiculo: number; placa: string; marca: string; modelo: string; }
+  const form = document.querySelector<HTMLFormElement>("#formCita")!;
+  const estado = document.querySelector<HTMLElement>("#estadoInicial")!;
+  const sinVehiculo = document.querySelector<HTMLElement>("#sinVehiculo")!;
+  const vehiculoSelect = document.querySelector<HTMLSelectElement>("#citaVehiculo")!;
+  const fechaInput = document.querySelector<HTMLInputElement>("#citaFecha")!;
+  const horaSelect = document.querySelector<HTMLSelectElement>("#citaHora")!;
+  const motivoInput = document.querySelector<HTMLTextAreaElement>("#citaMotivo")!;
+  const mensaje = document.querySelector<HTMLElement>("#mensaje")!;
+
+  const hoy = new Date();
+  const offset = hoy.getTimezoneOffset();
+  fechaInput.min = new Date(hoy.getTime() - offset * 60_000).toISOString().slice(0, 10);
+
+  async function cargarVehiculos() {
+    try {
+      const respuesta = await apiFetch<Vehiculo[]>("/api/cliente/mis-vehiculos");
+      const vehiculos = respuesta.data ?? [];
+      estado.hidden = true;
+      if (!vehiculos.length) { sinVehiculo.hidden = false; return; }
+      vehiculos.forEach((v) => {
+        const option = document.createElement("option");
+        option.value = String(v.id_vehiculo);
+        option.textContent = `${v.placa} · ${v.marca} ${v.modelo}`;
+        vehiculoSelect.append(option);
+      });
+      form.hidden = false;
+    } catch (error) {
+      estado.textContent = error instanceof Error ? error.message : "No se pudieron cargar tus vehículos.";
+      estado.classList.add("error");
+    }
+  }
+
+  fechaInput.addEventListener("change", async () => {
+    horaSelect.innerHTML = '<option value="">Consultando disponibilidad…</option>';
+    mensaje.hidden = true;
+    try {
+      const res = await apiFetch<{ turnos: Array<{ hora: string; disponible: boolean }> }>(`/api/citas/disponibilidad?fecha=${encodeURIComponent(fechaInput.value)}`);
+      const turnos = (res.data?.turnos ?? []).filter((turno) => turno.disponible);
+      horaSelect.replaceChildren();
+      if (!turnos.length) { horaSelect.innerHTML = '<option value="">No hay horarios disponibles</option>'; return; }
+      horaSelect.add(new Option("Selecciona un horario", ""));
+      turnos.forEach((turno) => horaSelect.add(new Option(turno.hora, turno.hora)));
+    } catch (error) {
+      horaSelect.innerHTML = '<option value="">No se pudo cargar</option>';
+      mensaje.textContent = error instanceof Error ? error.message : "Error al consultar horarios.";
+      mensaje.className = "notice error";
+      mensaje.hidden = false;
+    }
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    button.disabled = true;
+    button.textContent = "Enviando solicitud…";
+    try {
+      const result = await apiFetch("/api/citas", { method: "POST", body: JSON.stringify({ id_vehiculo: Number(vehiculoSelect.value), fecha: fechaInput.value, hora: horaSelect.value, motivo: motivoInput.value.trim() || null }) });
+      mensaje.textContent = result.message ?? "Solicitud enviada. El taller debe confirmar la cita.";
+      mensaje.className = "notice success";
+      mensaje.hidden = false;
+      form.reset();
+      fechaInput.min = new Date(hoy.getTime() - offset * 60_000).toISOString().slice(0, 10);
+      horaSelect.innerHTML = '<option value="">Primero selecciona una fecha</option>';
+    } catch (error) {
+      mensaje.textContent = error instanceof Error ? error.message : "No se pudo solicitar la cita.";
+      mensaje.className = "notice error";
+      mensaje.hidden = false;
+    } finally { button.disabled = false; button.innerHTML = 'Solicitar cita <span>→</span>'; }
+  });
+
+  void cargarVehiculos();
+</script>

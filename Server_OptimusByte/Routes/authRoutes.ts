@@ -1,6 +1,7 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import {
   PostLogin,
+  PostLoginGoogle,
   PostLogout,
   PostSolicitarRecuperacion,
   PostRestablecerPassword,
@@ -10,6 +11,7 @@ import { PostRegistroCliente } from "../Controller/clienteController.ts";
 const AuthRouter = new Router();
 
 AuthRouter.post("/api/auth/login", PostLogin);
+AuthRouter.post("/api/auth/google", PostLoginGoogle);
 AuthRouter.post("/api/auth/logout", PostLogout);
 AuthRouter.post(
   "/api/auth/solicitar-recuperacion",

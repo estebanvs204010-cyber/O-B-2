@@ -8,9 +8,57 @@ import {
 } from "../Helpers/cookies.ts";
 import { enviarCorreoHtml } from "../Helpers/emailService.ts";
 import { correoRecuperacionPassword } from "../Helpers/templates.ts";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
-const FRONTEND_URL =
-  Deno.env.get("FRONTEND_URL") ?? "http://localhost:4321";
+const FRONTEND_URL = Deno.env.get("FRONTEND_URL") ?? "http://localhost:4321";
+const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/certs"));
+
+// POST /api/auth/google { credential }
+export const PostLoginGoogle = async (ctx: Context) => {
+    const { request, response } = ctx;
+
+    try {
+        const { credential } = await request.body.json() as { credential?: string };
+        const clientId = Deno.env.get("GOOGLE_CLIENT_ID")?.trim();
+
+        if (!clientId) {
+            response.status = 500;
+            response.body = { success: false, message: "Falta configurar GOOGLE_CLIENT_ID en el servidor" };
+            return;
+        }
+        if (!credential || credential.length > 10_000) {
+            response.status = 400;
+            response.body = { success: false, message: "No se recibió una credencial válida de Google" };
+            return;
+        }
+
+        const { payload } = await jwtVerify(credential, GOOGLE_JWKS, {
+            issuer: ["https://accounts.google.com", "accounts.google.com"],
+            audience: clientId,
+        });
+        const correo = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+        if (!correo || payload.email_verified !== true) {
+            response.status = 401;
+            response.body = { success: false, message: "Google no devolvió un correo verificado" };
+            return;
+        }
+
+        const resultado = await new Usuario().IniciarSesionGoogle(correo);
+        if (!resultado.success || !resultado.data) {
+            response.status = 401;
+            response.body = { success: false, message: resultado.message };
+            return;
+        }
+
+        const token = await crearToken(resultado.data.id_usuario, resultado.data.rol);
+        response.status = 200;
+        response.body = { success: true, message: resultado.message, token, usuario: resultado.data };
+    } catch (error) {
+        console.error("Error validando inicio de sesión de Google:", error);
+        response.status = 401;
+        response.body = { success: false, message: "No se pudo validar la cuenta de Google. Inténtalo de nuevo." };
+    }
+};
 
 // POST /api/auth/login
 export const PostLogin = async (ctx: Context) => {

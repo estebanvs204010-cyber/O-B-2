@@ -1,6 +1,4 @@
 ---
-import { Bell } from "lucide-astro";
-
 const { title } = Astro.props;
 ---
 
@@ -38,7 +36,12 @@ const { title } = Astro.props;
       </section>
     </div>
 
+    <button id="ob-notif-btn" class="topbar-btn" type="button" title="Notificaciones">
+      <i class="bi bi-bell"></i>
+      <span id="ob-notif-dot" class="notif-dot" style="display:none;"></span>
+    </button>
     <div class="topbar-sep"></div>
+
   </div>
 </header>
 
@@ -200,4 +203,29 @@ const { title } = Astro.props;
     void cargarNotificaciones();
     window.setInterval(() => void cargarNotificaciones(), 20_000);
   }
+</script>
+
+<script>
+  import { apiFetch } from "../../lib/api";
+
+  // Por ahora solo prende/apaga el punto rojo según si hay notificaciones
+  // sin leer, y al hacer clic manda a /admin/citas (que es lo único
+  // accionable hoy). La vista de detalle de cada notificación queda
+  // pendiente para después, como se acordó.
+  async function actualizarContadorNotificaciones() {
+    try {
+      const respuesta = await apiFetch<{ noLeidas: number }>("/api/notificaciones/contador");
+      const dot = document.getElementById("ob-notif-dot");
+      if (dot) dot.style.display = (respuesta.data?.noLeidas ?? 0) > 0 ? "block" : "none";
+    } catch {
+      // si falla, simplemente no mostramos el punto — no es crítico
+    }
+  }
+
+  document.getElementById("ob-notif-btn")?.addEventListener("click", () => {
+    window.location.href = "/admin/citas";
+  });
+
+  actualizarContadorNotificaciones();
+  setInterval(actualizarContadorNotificaciones, 30000);
 </script>

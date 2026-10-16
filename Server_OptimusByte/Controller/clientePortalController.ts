@@ -346,6 +346,42 @@ export const GetMisVehiculos = async (ctx: Context) => {
   }
 };
 
+// GET /api/cliente/mis-ordenes — solo devuelve órdenes de vehículos del usuario autenticado.
+export const GetMisOrdenes = async (ctx: Context) => {
+    const { response } = ctx;
+    const idUsuario = obtenerIdUsuario(ctx);
+
+    if (!idUsuario) {
+        response.status = 401;
+        response.body = { success: false, message: "Usuario no autenticado" };
+        return;
+    }
+
+    try {
+        const ordenes = await conexion.query(
+            `SELECT o.id_orden, o.estado, o.tipo_servicio, o.descripcion_problema,
+                    o.diagnostico, o.km_ingreso, o.fecha_apertura,
+                    o.fecha_entrega_estimada, o.fecha_cierre,
+                    v.id_vehiculo, v.placa, v.marca, v.modelo,
+                    mecanico.nombre_completo AS mecanico
+             FROM ordenestrabajo o
+             INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
+             INNER JOIN clientes c ON c.id_cliente = v.id_cliente
+             LEFT JOIN usuarios mecanico ON mecanico.id_usuario = o.id_mecanico
+             WHERE c.id_usuario = ? AND c.activo = 1 AND v.activo = 1
+             ORDER BY o.fecha_apertura DESC, o.id_orden DESC`,
+            [idUsuario],
+        );
+
+        response.status = 200;
+        response.body = { success: true, data: ordenes };
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "No se pudieron cargar tus órdenes" };
+    }
+};
+
 // POST /api/cliente/mis-vehiculos
 export const PostRegistrarMiVehiculo = async (
   ctx: Context,
