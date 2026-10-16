@@ -8,6 +8,7 @@ import { SolicitudRepuestoRouter } from "./Routes/solicitudRepuestoRoutes.ts";
 import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
 import { UploadRouter } from "./Routes/uploadRoutes.ts";
 import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
+import { ClientePortalRouter } from "./Routes/clientePortalRoutes.ts";
 
 const app = new Application();
 
@@ -21,6 +22,7 @@ app.use(
 const routes = [
   AuthRouter,
   ClienteRouter,
+  ClientePortalRouter,
   UsuarioRouter,
   VehiculoRouter,
   OrdenRouter,

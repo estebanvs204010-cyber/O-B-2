@@ -1,0 +1,22 @@
+---
+import ClienteLayout from "../../layouts/ClienteLayout.astro";
+---
+
+<ClienteLayout title="Mis citas" active="citas">
+  <section class="panel client-section">
+    <div class="panel-heading-row">
+      <div>
+        <h2>Mis citas</h2>
+        <p>Consulta tus próximas visitas al taller.</p>
+      </div>
+
+      <button class="btn btn-primary" type="button">
+        Solicitar cita
+      </button>
+    </div>
+
+    <div class="empty-state">
+      <p>No tienes citas programadas.</p>
+    </div>
+  </section>
+</ClienteLayout>
