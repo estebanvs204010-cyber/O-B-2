@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 export const POST: APIRoute = ({ cookies }) => {
   cookies.delete("jwt_token", { path: "/" });
+  cookies.delete("ob_token", { path: "/" });
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,

@@ -1,4 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
+import { getTokenSRR } from "./utils/auth";
 
 const RUTAS_PROTEGIDAS = [
   "/cliente",
@@ -28,7 +29,7 @@ export const onRequest = defineMiddleware(
       return next();
     }
 
-    const token = cookies.get("ob_token")?.value;
+    const token = getTokenSRR(cookies);
 
     if (!token) {
       return redirect("/login");

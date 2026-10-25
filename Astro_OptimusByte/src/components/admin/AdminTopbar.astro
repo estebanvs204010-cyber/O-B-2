@@ -1,4 +1,6 @@
 ---
+import { Bell } from "lucide-astro";
+
 const { title } = Astro.props;
 ---
 
@@ -35,12 +37,6 @@ const { title } = Astro.props;
         </div>
       </section>
     </div>
-
-    <button id="ob-notif-btn" class="topbar-btn" type="button" title="Notificaciones">
-      <i class="bi bi-bell"></i>
-      <span id="ob-notif-dot" class="notif-dot" style="display:none;"></span>
-    </button>
-    <div class="topbar-sep"></div>
 
   </div>
 </header>
@@ -82,9 +78,15 @@ const { title } = Astro.props;
   const list = document.getElementById("notification-list") as HTMLDivElement | null;
 
   if (button && panel && badge && summary && list) {
+    const notificationButton = button;
+    const notificationPanel = panel;
+    const notificationBadge = badge;
+    const notificationSummary = summary;
+    const notificationList = list;
+
     function togglePanel(open: boolean) {
-      panel.hidden = !open;
-      button.setAttribute("aria-expanded", String(open));
+      notificationPanel.hidden = !open;
+      notificationButton.setAttribute("aria-expanded", String(open));
     }
 
     function crearNotificacion(item: Notificacion) {
@@ -131,22 +133,22 @@ const { title } = Astro.props;
     }
 
     function mostrarNotificaciones(notificaciones: Notificacion[]) {
-      badge.hidden = notificaciones.length === 0;
-      badge.textContent = notificaciones.length > 99 ? "99+" : String(notificaciones.length);
-      summary.textContent = notificaciones.length === 1
+      notificationBadge.hidden = notificaciones.length === 0;
+      notificationBadge.textContent = notificaciones.length > 99 ? "99+" : String(notificaciones.length);
+      notificationSummary.textContent = notificaciones.length === 1
         ? "1 pendiente"
         : `${notificaciones.length} pendientes`;
-      list.replaceChildren();
+      notificationList.replaceChildren();
 
       if (notificaciones.length === 0) {
         const empty = document.createElement("p");
         empty.className = "notification-empty";
         empty.textContent = "No hay órdenes ni solicitudes pendientes.";
-        list.append(empty);
+        notificationList.append(empty);
         return;
       }
 
-      notificaciones.forEach((item) => list.append(crearNotificacion(item)));
+      notificaciones.forEach((item) => notificationList.append(crearNotificacion(item)));
     }
 
     async function cargarNotificaciones() {
@@ -178,20 +180,23 @@ const { title } = Astro.props;
         );
       } catch (error) {
         console.error("No se pudieron cargar las notificaciones administrativas", error);
-        list.replaceChildren();
+        notificationList.replaceChildren();
         const message = document.createElement("p");
         message.className = "notification-empty notification-error";
         message.textContent = "No se pudieron cargar las notificaciones.";
-        list.append(message);
+        notificationList.append(message);
       }
     }
 
-    button.addEventListener("click", () => {
-      togglePanel(panel.hidden);
+    notificationButton.addEventListener("click", () => {
+      togglePanel(Boolean(notificationPanel.hidden));
     });
 
     document.addEventListener("click", (event) => {
-      if (!panel.contains(event.target as Node) && !button.contains(event.target as Node)) {
+      if (
+        !notificationPanel.contains(event.target as Node) &&
+        !notificationButton.contains(event.target as Node)
+      ) {
         togglePanel(false);
       }
     });
@@ -203,29 +208,4 @@ const { title } = Astro.props;
     void cargarNotificaciones();
     window.setInterval(() => void cargarNotificaciones(), 20_000);
   }
-</script>
-
-<script>
-  import { apiFetch } from "../../lib/api";
-
-  // Por ahora solo prende/apaga el punto rojo según si hay notificaciones
-  // sin leer, y al hacer clic manda a /admin/citas (que es lo único
-  // accionable hoy). La vista de detalle de cada notificación queda
-  // pendiente para después, como se acordó.
-  async function actualizarContadorNotificaciones() {
-    try {
-      const respuesta = await apiFetch<{ noLeidas: number }>("/api/notificaciones/contador");
-      const dot = document.getElementById("ob-notif-dot");
-      if (dot) dot.style.display = (respuesta.data?.noLeidas ?? 0) > 0 ? "block" : "none";
-    } catch {
-      // si falla, simplemente no mostramos el punto — no es crítico
-    }
-  }
-
-  document.getElementById("ob-notif-btn")?.addEventListener("click", () => {
-    window.location.href = "/admin/citas";
-  });
-
-  actualizarContadorNotificaciones();
-  setInterval(actualizarContadorNotificaciones, 30000);
 </script>

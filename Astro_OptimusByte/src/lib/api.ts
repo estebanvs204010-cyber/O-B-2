@@ -16,6 +16,33 @@ export interface ApiResponse<T = unknown> {
   token?: string;
 }
 
+export const ESTADOS_ORDEN = [
+  "Pendiente",
+  "En Proceso",
+  "Esperando Repuestos",
+  "Finalizado",
+  "Entregado",
+  "Cancelado",
+] as const;
+
+export function claseEstado(estado: string): string {
+  switch (estado.trim().toLowerCase()) {
+    case "pendiente":
+      return "badge-pendiente";
+    case "en proceso":
+      return "badge-proceso";
+    case "esperando repuestos":
+      return "badge-espera";
+    case "finalizado":
+    case "entregado":
+      return "badge-listo";
+    case "cancelado":
+      return "badge-cancelado";
+    default:
+      return "badge-pendiente";
+  }
+}
+
 /*
  * La sesión se guarda en una cookie HttpOnly desde el backend.
  * Esta función se conserva para evitar errores en login. 
@@ -29,7 +56,7 @@ export function guardarSesion(
 }
 
 export async function cerrarSesion(): Promise<void> {
-  await fetch(`${API_BASE_URL}/api/auth/logout`, {
+  await fetch("/api/auth/logout", {
     method: "POST",
     credentials: "include",
   }).catch(() => {});
@@ -45,7 +72,7 @@ export async function apiFetch<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(path, {
     ...options,
     headers,
     credentials: "include",

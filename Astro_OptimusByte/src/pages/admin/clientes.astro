@@ -364,17 +364,17 @@ function accionesCellRenderer(
       paginationPageSize: 10,
       paginationPageSizeSelector: [10, 20, 50],
 
-      onGridReady: (params) => {
-        gridApi = params.api;
-        cargarClientes();
-      },
+      
     };
 
     const gridDiv = document.querySelector<HTMLElement>("#myGrid");
 
-    if (gridDiv) {
-      createGrid(gridDiv, gridOptions);
-    }
+    if (!gridDiv) {
+  throw new Error("No se encontró el contenedor de la tabla de clientes.");
+}
+
+gridApi = createGrid(gridDiv, gridOptions);
+void cargarClientes();
 
     async function cargarClientes() {
       try {

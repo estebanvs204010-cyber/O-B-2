@@ -329,17 +329,17 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       paginationPageSize: 10,
       paginationPageSizeSelector: [10, 20, 50],
 
-      onGridReady: (params) => {
-        gridApi = params.api;
-        cargarMecanicos();
-      },
+      
     };
 
     const gridDiv = document.querySelector<HTMLElement>("#gridMecanicos");
 
-    if (gridDiv) {
-      createGrid(gridDiv, gridOptions);
-    }
+    if (!gridDiv) {
+  throw new Error("No se encontró el contenedor de la tabla de mecánicos.");
+}
+
+gridApi = createGrid(gridDiv, gridOptions);
+void cargarMecanicos();
 
     async function cargarMecanicos() {
       try {
