@@ -6,11 +6,26 @@ const RUTAS_PROTEGIDAS = [
   "/mecanico",
   "/admin",
 ];
+const RUTAS_PROTEGIDAS = [
+  "/cliente",
+  "/mecanico",
+  "/admin",
+];
 
 export const onRequest = defineMiddleware(
   ({ url, cookies, redirect }, next) => {
     const path = url.pathname;
+export const onRequest = defineMiddleware(
+  ({ url, cookies, redirect }, next) => {
+    const path = url.pathname;
 
+    if (
+      path.startsWith("/api") ||
+      path.startsWith("/_astro") ||
+      path.startsWith("/favicon")
+    ) {
+      return next();
+    }
     if (
       path.startsWith("/api") ||
       path.startsWith("/_astro") ||
@@ -24,7 +39,14 @@ export const onRequest = defineMiddleware(
         path === ruta ||
         path.startsWith(`${ruta}/`),
     );
+    const rutaProtegida = RUTAS_PROTEGIDAS.some(
+      (ruta) =>
+        path === ruta ||
+        path.startsWith(`${ruta}/`),
+    );
 
+    if (!rutaProtegida) {
+      return next();
     if (!rutaProtegida) {
       return next();
     }
@@ -32,9 +54,14 @@ export const onRequest = defineMiddleware(
     const token = getTokenSRR(cookies);
 
     if (!token) {
+    if (!token) {
       return redirect("/login");
     }
+    }
 
+    return next();
+  },
+);
     return next();
   },
 );

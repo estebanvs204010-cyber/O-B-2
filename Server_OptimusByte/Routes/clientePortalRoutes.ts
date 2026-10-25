@@ -1,15 +1,25 @@
 import { Router } from "../Dependencies/dependencias.ts";
 
 import {
+<<<<<<< HEAD
+    GetMiPerfilCliente,
+    PutActualizarMiPerfil,
+    GetMisVehiculos,
+    GetMisOrdenes,
+    PostRegistrarMiVehiculo,
+=======
   GetMiPerfilCliente,
-  GetMisOrdenes,
+  PutActualizarMiPerfil,
+  PutActualizarFotoPerfil,
   GetMisVehiculos,
   PostRegistrarMiVehiculo,
-  PutActualizarFotoPerfil,
-  PutActualizarMiPerfil,
+>>>>>>> origin/Lucho
 } from "../Controller/clientePortalController.ts";
 
-import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
+import {
+  authMiddleware,
+  permitirRoles,
+} from "../Middlewares/validarJWT.ts";
 
 const ClientePortalRouter = new Router();
 
@@ -41,6 +51,7 @@ ClientePortalRouter.get(
   GetMisVehiculos,
 );
 
+<<<<<<< HEAD
 ClientePortalRouter.get(
   "/api/cliente/mis-ordenes",
   authMiddleware,
@@ -48,6 +59,8 @@ ClientePortalRouter.get(
   GetMisOrdenes,
 );
 
+export { ClientePortalRouter };
+=======
 ClientePortalRouter.post(
   "/api/cliente/mis-vehiculos",
   authMiddleware,
@@ -56,3 +69,4 @@ ClientePortalRouter.post(
 );
 
 export { ClientePortalRouter };
+>>>>>>> origin/Lucho

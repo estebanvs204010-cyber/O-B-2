@@ -9,9 +9,23 @@ interface DatosRegistroCliente {
   correo: string;
   contrasena: string;
   direccion?: string;
+  nombre_completo: string;
+  tipo_documento: string;
+  num_documento: string;
+  telefono: string;
+  correo: string;
+  contrasena: string;
+  direccion?: string;
 }
 
 interface DatosClienteSinCuenta {
+  nombre_completo: string;
+  tipo_documento: string;
+  num_documento: string;
+  telefono: string;
+  correo: string;
+  contrasena: string;
+  direccion?: string;
   nombre_completo: string;
   tipo_documento: string;
   num_documento: string;
@@ -45,7 +59,36 @@ export class Cliente {
         message: "Ese correo ya está registrado",
       };
     }
+  public async RegistrarConCuenta(
+    datos: DatosRegistroCliente,
+  ) {
+    const [correoExistente] = await conexion.query(
+      `SELECT id_usuario
+       FROM usuarios
+       WHERE correo = ?`,
+      [datos.correo],
+    );
 
+    if (correoExistente) {
+      return {
+        success: false,
+        message: "Ese correo ya está registrado",
+      };
+    }
+
+    const [documentoExistente] = await conexion.query(
+      `SELECT id_cliente
+       FROM clientes
+       WHERE num_documento = ?`,
+      [datos.num_documento],
+    );
+
+    if (documentoExistente) {
+      return {
+        success: false,
+        message: "Ese número de documento ya está registrado",
+      };
+    }
     const [documentoExistente] = await conexion.query(
       `SELECT id_cliente
        FROM clientes
@@ -72,7 +115,20 @@ export class Cliente {
         message: "No se encontró el rol Cliente",
       };
     }
+    const [rolCliente] = await conexion.query(
+      `SELECT id_rol
+       FROM roles
+       WHERE nombre = 'Cliente'`,
+    );
 
+    if (!rolCliente) {
+      return {
+        success: false,
+        message: "No se encontró el rol Cliente",
+      };
+    }
+
+    const contrasenaHasheada = await hash(datos.contrasena);
     const contrasenaHasheada = await hash(datos.contrasena);
 
     try {
@@ -94,9 +150,51 @@ export class Cliente {
             rolCliente.id_rol,
           ],
         );
+    try {
+      await conexion.transaction(async (conn) => {
+        const resultadoUsuario = await conn.execute(
+          `INSERT INTO usuarios (
+             nombre_completo,
+             correo,
+             telefono,
+             contrasena_hash,
+             id_rol
+           )
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            datos.nombre_completo,
+            datos.correo,
+            datos.telefono,
+            contrasenaHasheada,
+            rolCliente.id_rol,
+          ],
+        );
 
         const idUsuario = resultadoUsuario.lastInsertId;
+        const idUsuario = resultadoUsuario.lastInsertId;
 
+        await conn.execute(
+          `INSERT INTO clientes (
+             id_usuario,
+             nombre_completo,
+             tipo_documento,
+             num_documento,
+             telefono,
+             correo,
+             direccion
+           )
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            idUsuario,
+            datos.nombre_completo,
+            datos.tipo_documento,
+            datos.num_documento,
+            datos.telefono,
+            datos.correo,
+            datos.direccion ?? null,
+          ],
+        );
+      });
         await conn.execute(
           `INSERT INTO clientes (
              id_usuario,
@@ -142,8 +240,35 @@ export class Cliente {
        FROM usuarios
        WHERE correo = ?`,
       [datos.correo],
+      return {
+        success: true,
+        message: "Cuenta creada correctamente",
+      };
+    } catch (error) {
+      console.error(error);
+
+      return {
+        success: false,
+        message: "No se pudo completar el registro",
+      };
+    }
+  }
+
+  public async RegistrarSinCuenta(
+    datos: DatosClienteSinCuenta,
+  ) {
+    const [correoExistente] = await conexion.query(
+      `SELECT id_usuario
+       FROM usuarios
+       WHERE correo = ?`,
+      [datos.correo],
     );
 
+    if (correoExistente) {
+      return {
+        success: false,
+        message: "Ese correo ya tiene una cuenta registrada",
+      };
     if (correoExistente) {
       return {
         success: false,
@@ -156,9 +281,17 @@ export class Cliente {
        FROM clientes
        WHERE num_documento = ?`,
       [datos.num_documento],
+      `SELECT id_cliente
+       FROM clientes
+       WHERE num_documento = ?`,
+      [datos.num_documento],
     );
 
     if (documentoExistente) {
+      return {
+        success: false,
+        message: "Ese número de documento ya está registrado",
+      };
       return {
         success: false,
         message: "Ese número de documento ya está registrado",
@@ -169,9 +302,16 @@ export class Cliente {
       `SELECT id_rol
        FROM roles
        WHERE nombre = 'Cliente'`,
+      `SELECT id_rol
+       FROM roles
+       WHERE nombre = 'Cliente'`,
     );
 
     if (!rolCliente) {
+      return {
+        success: false,
+        message: "No se encontró el rol Cliente",
+      };
       return {
         success: false,
         message: "No se encontró el rol Cliente",
@@ -200,9 +340,52 @@ export class Cliente {
             rolCliente.id_rol,
           ],
         );
+      await conexion.transaction(async (conn) => {
+        const resultadoUsuario = await conn.execute(
+          `INSERT INTO usuarios (
+             nombre_completo,
+             correo,
+             telefono,
+             contrasena_hash,
+             id_rol,
+             activo
+           )
+           VALUES (?, ?, ?, ?, ?, 1)`,
+          [
+            datos.nombre_completo,
+            datos.correo,
+            datos.telefono,
+            contrasenaHasheada,
+            rolCliente.id_rol,
+          ],
+        );
 
         const idUsuario = resultadoUsuario.lastInsertId;
+        const idUsuario = resultadoUsuario.lastInsertId;
 
+        await conn.execute(
+          `INSERT INTO clientes (
+             id_usuario,
+             nombre_completo,
+             tipo_documento,
+             num_documento,
+             telefono,
+             correo,
+             direccion,
+             activo
+           )
+           VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+          [
+            idUsuario,
+            datos.nombre_completo,
+            datos.tipo_documento,
+            datos.num_documento,
+            datos.telefono,
+            datos.correo,
+            datos.direccion ?? null,
+          ],
+        );
+      });
         await conn.execute(
           `INSERT INTO clientes (
              id_usuario,
@@ -231,16 +414,32 @@ export class Cliente {
         success: true,
         message: "Cliente y cuenta creados correctamente",
       };
+      return {
+        success: true,
+        message: "Cliente y cuenta creados correctamente",
+      };
     } catch (error) {
+      console.error(error);
       console.error(error);
 
       return {
         success: false,
         message: "No se pudo crear el cliente y su cuenta",
       };
+      return {
+        success: false,
+        message: "No se pudo crear el cliente y su cuenta",
+      };
     }
   }
+  }
 
+  public async Listar(
+    busqueda?: string,
+    incluirInactivos = false,
+  ) {
+    const condiciones: string[] = [];
+    const parametros: string[] = [];
   public async Listar(
     busqueda?: string,
     incluirInactivos = false,
@@ -251,7 +450,12 @@ export class Cliente {
     if (!incluirInactivos) {
       condiciones.push("activo = 1");
     }
+    if (!incluirInactivos) {
+      condiciones.push("activo = 1");
+    }
 
+    if (busqueda) {
+      const termino = `%${busqueda}%`;
     if (busqueda) {
       const termino = `%${busqueda}%`;
 
@@ -260,10 +464,18 @@ export class Cliente {
           OR num_documento LIKE ?
           OR correo LIKE ?)`,
       );
+      condiciones.push(
+        `(nombre_completo LIKE ?
+          OR num_documento LIKE ?
+          OR correo LIKE ?)`,
+      );
 
       parametros.push(termino, termino, termino);
     }
+      parametros.push(termino, termino, termino);
+    }
 
+    const where = condiciones.length > 0
     const where = condiciones.length > 0
       ? `WHERE ${condiciones.join(" AND ")}`
       : "";
@@ -428,7 +640,21 @@ export class Cliente {
         message: "El cliente no existe",
       };
     }
+    if (!clienteActual) {
+      return {
+        success: false,
+        message: "El cliente no existe",
+      };
+    }
 
+    try {
+      await conexion.transaction(async (conn) => {
+        await conn.execute(
+          `UPDATE clientes
+           SET activo = ?
+           WHERE id_cliente = ?`,
+          [activo ? 1 : 0, id_cliente],
+        );
     try {
       await conexion.transaction(async (conn) => {
         await conn.execute(
@@ -447,6 +673,15 @@ export class Cliente {
           );
         }
       });
+        if (clienteActual.id_usuario) {
+          await conn.execute(
+            `UPDATE usuarios
+             SET activo = ?
+             WHERE id_usuario = ?`,
+            [activo ? 1 : 0, clienteActual.id_usuario],
+          );
+        }
+      });
 
       return {
         success: true,
@@ -456,7 +691,21 @@ export class Cliente {
       };
     } catch (error) {
       console.error(error);
+      return {
+        success: true,
+        message: activo
+          ? "Cliente activado correctamente"
+          : "Cliente desactivado correctamente",
+      };
+    } catch (error) {
+      console.error(error);
 
+      return {
+        success: false,
+        message: "No se pudo cambiar el estado del cliente",
+      };
+    }
+  }
       return {
         success: false,
         message: "No se pudo cambiar el estado del cliente",

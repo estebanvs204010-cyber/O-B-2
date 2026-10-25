@@ -192,6 +192,27 @@ export const PutEditarCliente = async (
       "correo",
     ];
 
+<<<<<<< HEAD
+        if (
+            body.foto_url !== undefined &&
+            (typeof body.foto_url !== "string" ||
+                !body.foto_url.startsWith("https://"))
+        ) {
+            response.status = 400;
+            response.body = { success: false, message: "La URL de la foto no es válida" };
+            return;
+        }
+
+        const objCliente = new Cliente();
+        const resultado = await objCliente.Editar(id, body);
+
+        response.status = resultado.success ? 200 : 400;
+        response.body = resultado;
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+=======
     for (const campo of camposObligatorios) {
       if (!body[campo]) {
         response.status = 400;
@@ -201,6 +222,7 @@ export const PutEditarCliente = async (
         };
         return;
       }
+>>>>>>> origin/Lucho
     }
 
     const cliente = new Cliente();

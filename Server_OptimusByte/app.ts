@@ -10,9 +10,13 @@ import { NotificacionRouter } from "./Routes/notificacionRoutes.ts";
 import { OrdenRouter } from "./Routes/ordenRoutes.ts";
 import { SolicitudRepuestoRouter } from "./Routes/solicitudRepuestoRoutes.ts";
 import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
+<<<<<<< HEAD
 import { UploadRouter } from "./Routes/uploadRoutes.ts";
 import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
 import { AdminOrdenRouter } from "./Routes/adminOrdenRoutes.ts";
+=======
+import { ClientePortalRouter } from "./Routes/clientePortalRoutes.ts";
+>>>>>>> origin/Lucho
 
 const app = new Application();
 
@@ -29,6 +33,7 @@ const routes = [
   ClientePortalRouter,
   UsuarioRouter,
   VehiculoRouter,
+<<<<<<< HEAD
   CitaRouter,
   MantenimientoRouter,
   NotificacionRouter,
@@ -38,6 +43,8 @@ const routes = [
   UploadRouter,
   RepuestoRouter,
   AdminOrdenRouter,
+=======
+>>>>>>> origin/Lucho
 ];
 
 routes.forEach((router) => {
