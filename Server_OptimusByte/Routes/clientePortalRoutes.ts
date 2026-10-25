@@ -7,6 +7,8 @@ import {
   GetMisVehiculos,
   GetMisOrdenes,
   PostRegistrarMiVehiculo,
+  GetMisCitas,
+  PostSolicitarCita,
 } from "../Controller/clientePortalController.ts";
 
 import {
@@ -52,10 +54,17 @@ ClientePortalRouter.post(
 );
 
 ClientePortalRouter.get(
-  "/api/cliente/mis-ordenes",
+  "/api/cliente/citas",
   authMiddleware,
   permitirRoles("Cliente"),
-  GetMisOrdenes,
+  GetMisCitas,
+);
+
+ClientePortalRouter.post(
+  "/api/cliente/citas",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PostSolicitarCita,
 );
 
 export { ClientePortalRouter };
