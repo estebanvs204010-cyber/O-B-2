@@ -1,39 +1,61 @@
 import { defineMiddleware } from "astro:middleware";
+import { isAuthenticatedSSR, getRolSSR } from "./utils/auth";
 
-const RUTAS_PROTEGIDAS = [
-  "/cliente",
-  "/mecanico",
-  "/admin",
-];
+const RutasMecanico: string[] = ["/mecanico"];
+const RutasSoloAdmin: string[] = ["/admin"];
+const RutasSoloCliente: string[] = ["/cliente"];
 
-export const onRequest = defineMiddleware(
-  ({ url, cookies, redirect }, next) => {
-    const path = url.pathname;
+export const onRequest = defineMiddleware(({ url, cookies, redirect }, next) => {
+  const path = url.pathname;
 
-    if (
-      path.startsWith("/api") ||
-      path.startsWith("/_astro") ||
-      path.startsWith("/favicon")
-    ) {
-      return next();
-    }
+  // No interceptar rutas API ni recursos internos de Astro.
+  if (path.startsWith("/api") || path.startsWith("/_astro")) {
+    return next();
+  }
 
-    const rutaProtegida = RUTAS_PROTEGIDAS.some(
-      (ruta) =>
-        path === ruta ||
-        path.startsWith(`${ruta}/`),
-    );
+  const esAutenticado = isAuthenticatedSSR(cookies);
 
-    if (!rutaProtegida) {
-      return next();
-    }
+  const esRutaMecanico = RutasMecanico.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
 
-    const token = cookies.get("ob_token")?.value;
+  const esRutaSoloAdmin = RutasSoloAdmin.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
 
-    if (!token) {
+  const esRutaCliente = RutasSoloCliente.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
+
+  if (esRutaCliente) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Cliente") {
       return redirect("/login");
     }
+  }
 
-    return next();
-  },
-);
+  if (esRutaMecanico) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Mecanico" && rol !== "Admin") {
+      return redirect("/login");
+    }
+  }
+
+  if (esRutaSoloAdmin) {
+    if (!esAutenticado) return redirect("/login");
+
+    const rol = getRolSSR(cookies);
+
+    if (rol !== "Admin") {
+      return redirect("/login");
+    }
+  }
+
+  return next();
+});
