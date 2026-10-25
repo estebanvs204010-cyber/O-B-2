@@ -1,22 +1,15 @@
 import { Router } from "../Dependencies/dependencias.ts";
 
 import {
-    GetMiPerfilCliente,
-    PutActualizarMiPerfil,
-    GetMisVehiculos,
-    GetMisOrdenes,
-    PostRegistrarMiVehiculo,
   GetMiPerfilCliente,
-  PutActualizarMiPerfil,
-  PutActualizarFotoPerfil,
+  GetMisOrdenes,
   GetMisVehiculos,
   PostRegistrarMiVehiculo,
+  PutActualizarFotoPerfil,
+  PutActualizarMiPerfil,
 } from "../Controller/clientePortalController.ts";
 
-import {
-  authMiddleware,
-  permitirRoles,
-} from "../Middlewares/validarJWT.ts";
+import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
 
 const ClientePortalRouter = new Router();
 
@@ -49,10 +42,10 @@ ClientePortalRouter.get(
 );
 
 ClientePortalRouter.get(
-    "/api/cliente/mis-ordenes",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    GetMisOrdenes,
+  "/api/cliente/mis-ordenes",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisOrdenes,
 );
 
 ClientePortalRouter.post(

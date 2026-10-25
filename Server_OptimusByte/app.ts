@@ -13,7 +13,6 @@ import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
 import { UploadRouter } from "./Routes/uploadRoutes.ts";
 import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
 import { AdminOrdenRouter } from "./Routes/adminOrdenRoutes.ts";
-import { ClientePortalRouter } from "./Routes/clientePortalRoutes.ts";
 
 const app = new Application();
 
@@ -27,7 +26,6 @@ app.use(
 const routes = [
   AuthRouter,
   ClienteRouter,
-  ClientePortalRouter,
   ClientePortalRouter,
   UsuarioRouter,
   VehiculoRouter,
