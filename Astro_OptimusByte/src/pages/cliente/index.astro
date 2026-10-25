@@ -2,6 +2,7 @@
 import ClienteLayout from "../../layouts/ClienteLayout.astro";
 ---
 
+
 <ClienteLayout title="Panel del Cliente" active="inicio">
   <div class="client-dashboard">
     <div class="dashboard-left">
@@ -9,131 +10,33 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
         <h2>Resumen de tu cuenta</h2>
 
         <div class="summary-grid">
-          <a
-            class="card summary-link"
-            href="/cliente/vehiculos"
-          >
+          <a class="card summary-link" href="#vehiculos">
             <h3>Vehículos registrados</h3>
             <strong id="vehiculosCount">0</strong>
             <p>Ver los vehículos asociados a tu cuenta.</p>
-            <span class="summary-action">
-              Ver vehículos →
-            </span>
+            <span class="summary-action">Ver vehículos →</span>
           </a>
 
-          <a
-            class="card summary-link"
-            href="/cliente/citas"
-          >
+          <a class="card summary-link" href="#ordenes">
+            <h3>Órdenes de servicio</h3>
+            <strong id="ordenesCount">0</strong>
+            <p>Consultar el estado de tus servicios.</p>
+            <span class="summary-action">Ver órdenes →</span>
+          </a>
+
+          <a class="card summary-link" href="#citas">
             <h3>Citas programadas</h3>
             <strong id="citasCount">0</strong>
             <p>Revisar tus próximas visitas.</p>
-            <span class="summary-action">
-              Ver citas →
-            </span>
+            <span class="summary-action">Ver citas →</span>
           </a>
-    <div class="grid-2">
-      <a class="card summary-link" href="#vehiculos">
-        <h3>Vehiculos registrados</h3>
-        <strong id="vehiculosCount">0</strong>
-        <p>Ver los vehiculos asociados a tu cuenta.</p>
-        <span class="summary-action">Ver vehiculos →</span>
-      </a>
 
-      <a class="card summary-link" href="#ordenes">
-        <h3>Ordenes de servicio</h3>
-        <strong id="ordenesCount">0</strong>
-        <p>Consultar el estado de tus servicios.</p>
-        <span class="summary-action">Ver ordenes →</span>
-      </a>
-
-      <a class="card summary-link" href="/cliente/citas">
-        <h3>Citas programadas</h3>
-        <strong id="citasCount">0</strong>
-        <p>Revisar tus proximas visitas.</p>
-        <span class="summary-action">Ver citas →</span>
-      </a>
-
-      <a class="card summary-link" href="#pagos">
-        <h3>Pagos registrados</h3>
-        <strong id="pagosCount">0</strong>
-        <p>Consultar facturas y pagos.</p>
-        <span class="summary-action">Ver pagos →</span>
-      </a>
-    </div>
-  </section>
-
-  <section class="grid-2">
-    <div>
-      <section class="card" id="perfil">
-        <div class="panel-heading-row">
-          <div>
-            <h2>Mi perfil</h2>
-            <p>Actualiza tus datos de contacto.</p>
-          </div>
-          <button class="btn btn-outline btn-sm" id="btnEditarPerfil" type="button">
-            Editar perfil
-          </button>
-        </div>
-
-        <div id="perfilEstado" class="loading">Cargando perfil...</div>
-
-        <div id="perfilDatos" hidden>
-          <p><strong>Nombre:</strong> <span id="perfilNombre"></span></p>
-          <p><strong>Correo:</strong> <span id="perfilCorreo"></span></p>
-          <p><strong>Telefono:</strong> <span id="perfilTelefono"></span></p>
-          <p><strong>Documento:</strong> <span id="perfilDocumento"></span></p>
-          <p><strong>Direccion:</strong> <span id="perfilDireccion">-</span></p>
-        </div>
-
-        <form id="formPerfil" class="vehicle-form" hidden>
-          <h3>Editar informacion</h3>
-
-          <div class="field">
-            <label for="perfilNombreInput">Nombre completo</label>
-            <input id="perfilNombreInput" name="nombre_completo" required />
-          </div>
-
-          <div class="field-row">
-            <div class="field">
-              <label for="perfilCorreoInput">Correo</label>
-              <input id="perfilCorreoInput" name="correo" type="email" required />
-            </div>
-            <div class="field">
-              <label for="perfilTelefonoInput">Telefono</label>
-              <input id="perfilTelefonoInput" name="telefono" required />
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="perfilDireccionInput">Direccion</label>
-            <input id="perfilDireccionInput" name="direccion" />
-          </div>
-
-          <div class="field">
-            <label for="perfilDocumentoInput">Documento</label>
-            <input id="perfilDocumentoInput" disabled />
-          </div>
-
-          <div id="perfilMensaje" class="alert" hidden></div>
-
-          <div class="vehicle-actions">
-            <button class="btn btn-outline" id="btnCancelarPerfil" type="button">
-              Cancelar
-            </button>
-            <button class="btn btn-primary" type="submit">
-              Guardar cambios
-            </button>
-          </div>
-        </form>
-
-        <div class="password-section">
-          <h3>Contraseña</h3>
-          <p>Recibiras un enlace de verificacion en tu correo.</p>
-          <button class="btn btn-outline btn-sm" id="btnCambiarContrasena" type="button">
-            Cambiar contraseña por correo
-          </button>
-          <div id="passwordMensaje" class="alert" hidden></div>
+          <a class="card summary-link" href="#pagos">
+            <h3>Pagos registrados</h3>
+            <strong id="pagosCount">0</strong>
+            <p>Consultar facturas y pagos.</p>
+            <span class="summary-action">Ver pagos →</span>
+          </a>
         </div>
       </section>
 
@@ -255,12 +158,52 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
         </form>
       </section>
 
+      <div class="dashboard-more">
       <section class="card" id="ordenes">
         <h2>Ordenes de servicio</h2>
         <p>Consulta el avance de los trabajos de tus vehículos.</p>
         <div id="ordenesEstado" class="loading">Cargando tus órdenes...</div>
         <div id="ordenesLista" class="orden-list"></div>
       </section>
+
+      <section class="card" id="citas">
+        <div class="panel-heading-row">
+          <div><h2>Mis citas</h2><p>Solicita una cita y espera la confirmación del taller.</p></div>
+          <a class="btn btn-primary btn-sm" href="/cliente/citas">Agendar cita</a>
+        </div>
+        <div id="citasEstado" class="loading">Cargando tus citas...</div>
+        <div id="citasLista" class="orden-list"></div>
+        <form id="formCita" class="vehicle-form" hidden>
+          <h3 id="tituloFormCita">Agendar cita</h3>
+          <div class="field">
+            <label for="citaVehiculo">Vehículo</label>
+            <select id="citaVehiculo" required></select>
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="citaFecha">Fecha</label><input id="citaFecha" type="date" required /></div>
+            <div class="field"><label for="citaHora">Horario disponible</label>
+              <select id="citaHora" required><option value="">Selecciona primero una fecha</option></select>
+            </div>
+          </div>
+          <div class="field"><label for="citaMotivo">Motivo (opcional)</label><textarea id="citaMotivo" rows="3" maxlength="300"></textarea></div>
+          <div id="citaMensaje" class="alert" hidden></div>
+          <div class="vehicle-actions">
+            <button id="btnCancelarFormularioCita" class="btn btn-outline" type="button">Cerrar</button>
+            <button class="btn btn-primary" type="submit">Solicitar cita</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="pagos">
+        <h2>Pagos y facturas</h2>
+        <div class="empty">No tienes pagos registrados.</div>
+      </section>
+
+      <section class="card" id="recordatorios">
+        <h2>Recordatorios</h2>
+        <div class="empty">No tienes recordatorios activos.</div>
+      </section>
+      </div>
     </div>
 
     <aside class="dashboard-right">
@@ -328,43 +271,6 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 
           <div id="passwordMensaje" class="alert" hidden></div>
         </div>
-    <div>
-      <section class="card" id="citas">
-        <div class="panel-heading-row">
-          <div><h2>Mis citas</h2><p>Solicita una cita y espera la confirmación del taller.</p></div>
-          <a class="btn btn-primary btn-sm" href="/cliente/citas">Agendar cita</a>
-        </div>
-        <div id="citasEstado" class="loading">Cargando tus citas...</div>
-        <div id="citasLista" class="orden-list"></div>
-        <form id="formCita" class="vehicle-form" hidden>
-          <h3 id="tituloFormCita">Agendar cita</h3>
-          <div class="field">
-            <label for="citaVehiculo">Vehículo</label>
-            <select id="citaVehiculo" required></select>
-          </div>
-          <div class="field-row">
-            <div class="field"><label for="citaFecha">Fecha</label><input id="citaFecha" type="date" required /></div>
-            <div class="field"><label for="citaHora">Horario disponible</label>
-              <select id="citaHora" required><option value="">Selecciona primero una fecha</option></select>
-            </div>
-          </div>
-          <div class="field"><label for="citaMotivo">Motivo (opcional)</label><textarea id="citaMotivo" rows="3" maxlength="300"></textarea></div>
-          <div id="citaMensaje" class="alert" hidden></div>
-          <div class="vehicle-actions">
-            <button id="btnCancelarFormularioCita" class="btn btn-outline" type="button">Cerrar</button>
-            <button class="btn btn-primary" type="submit">Solicitar cita</button>
-          </div>
-        </form>
-      </section>
-
-      <section class="card" id="pagos">
-        <h2>Pagos y facturas</h2>
-        <div class="empty">No tienes pagos registrados.</div>
-      </section>
-
-      <section class="card" id="recordatorios">
-        <h2>Recordatorios</h2>
-        <div class="empty">No tienes recordatorios activos.</div>
       </section>
     </aside>
   </div>
@@ -512,6 +418,17 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
       vehiculosLista?.replaceChildren();
       vehiculosEstado?.setAttribute("hidden", "true");
 
+      vehiculosDelCliente = vehiculos;
+      if (citaVehiculo) {
+        citaVehiculo.replaceChildren();
+        vehiculos.forEach((vehiculo) => {
+          const opcion = document.createElement("option");
+          opcion.value = String(vehiculo.id_vehiculo);
+          opcion.textContent = `${vehiculo.placa ?? "Sin placa"} · ${vehiculo.marca ?? ""} ${vehiculo.modelo ?? ""}`.trim();
+          citaVehiculo.appendChild(opcion);
+        });
+      }
+
       if (vehiculos.length === 0) {
         if (vehiculosEstado) {
           vehiculosEstado.textContent =
@@ -520,11 +437,6 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
           vehiculosEstado.className = "empty";
           vehiculosEstado.removeAttribute("hidden");
         }
-
-        return;
-      }
-
-      vehiculos.forEach((vehiculo) => {
       } else vehiculos.forEach((vehiculo) => {
         const article = document.createElement("article");
         article.className = "orden-row";
@@ -952,6 +864,25 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     box-sizing: border-box;
   }
 
+
+  .dashboard-left > .dashboard-more {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  .dashboard-more > #ordenes,
+  .dashboard-more > #citas {
+    grid-column: 1 / -1;
+  }
+
+  .dashboard-more .card {
+    box-sizing: border-box;
+  }
+
   .dashboard-right {
     grid-column: 2;
     grid-row: 1;
@@ -1020,6 +951,7 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     }
 
     .dashboard-left > .summary-panel,
+    .dashboard-left > .dashboard-more,
     .dashboard-left > #vehiculos,
     .dashboard-right {
       grid-column: auto;
@@ -1036,6 +968,10 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
   }
 
   @media (max-width: 700px) {
+    .dashboard-more {
+      grid-template-columns: 1fr;
+    }
+
     .summary-grid {
       grid-template-columns: 1fr;
       padding: 16px 0;

@@ -124,3 +124,31 @@ export function formatearFechaHora(
     minute: "2-digit",
   });
 }
+
+export const ESTADOS_ORDEN = [
+  "Pendiente",
+  "En Proceso",
+  "Esperando Repuestos",
+  "Finalizado",
+  "Entregado",
+  "Cancelado",
+] as const;
+
+/* Devuelve la clase CSS del badge según el estado de la orden. */
+export function claseEstado(estado?: string | null): string {
+  switch (estado) {
+    case "Pendiente":
+      return "badge-pendiente";
+    case "En Proceso":
+      return "badge-proceso";
+    case "Esperando Repuestos":
+      return "badge-espera";
+    case "Finalizado":
+    case "Entregado":
+      return "badge-listo";
+    case "Cancelado":
+      return "badge-cancelado";
+    default:
+      return "badge-pendiente";
+  }
+}

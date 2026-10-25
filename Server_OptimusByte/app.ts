@@ -27,7 +27,6 @@ const routes = [
   AuthRouter,
   ClienteRouter,
   ClientePortalRouter,
-  ClientePortalRouter,
   UsuarioRouter,
   VehiculoRouter,
   CitaRouter,
