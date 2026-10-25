@@ -1,31 +1,21 @@
 import { defineMiddleware } from "astro:middleware";
-import { getTokenSRR } from "./utils/auth";
+import { isAuthenticatedSSR, getRolSSR } from "./utils/auth";
 
-const RUTAS_PROTEGIDAS = [
-  "/cliente",
-  "/mecanico",
-  "/admin",
-];
-const RUTAS_PROTEGIDAS = [
-  "/cliente",
-  "/mecanico",
-  "/admin",
-];
+const RUTAS_MECANICO = ["/mecanico"];
+const RUTAS_ADMIN = ["/admin"];
+const RUTAS_CLIENTE = ["/cliente"];
+
+function perteneceARuta(path: string, rutas: string[]) {
+  return rutas.some(
+    (ruta) => path === ruta || path.startsWith(`${ruta}/`),
+  );
+}
 
 export const onRequest = defineMiddleware(
   ({ url, cookies, redirect }, next) => {
     const path = url.pathname;
-export const onRequest = defineMiddleware(
-  ({ url, cookies, redirect }, next) => {
-    const path = url.pathname;
 
-    if (
-      path.startsWith("/api") ||
-      path.startsWith("/_astro") ||
-      path.startsWith("/favicon")
-    ) {
-      return next();
-    }
+    // No proteger rutas API ni archivos internos de Astro.
     if (
       path.startsWith("/api") ||
       path.startsWith("/_astro") ||
@@ -34,34 +24,38 @@ export const onRequest = defineMiddleware(
       return next();
     }
 
-    const rutaProtegida = RUTAS_PROTEGIDAS.some(
-      (ruta) =>
-        path === ruta ||
-        path.startsWith(`${ruta}/`),
-    );
-    const rutaProtegida = RUTAS_PROTEGIDAS.some(
-      (ruta) =>
-        path === ruta ||
-        path.startsWith(`${ruta}/`),
-    );
+    const autenticado = isAuthenticatedSSR(cookies);
 
-    if (!rutaProtegida) {
-      return next();
-    if (!rutaProtegida) {
+    const esRutaCliente = perteneceARuta(path, RUTAS_CLIENTE);
+    const esRutaMecanico = perteneceARuta(path, RUTAS_MECANICO);
+    const esRutaAdmin = perteneceARuta(path, RUTAS_ADMIN);
+
+    if (!esRutaCliente && !esRutaMecanico && !esRutaAdmin) {
       return next();
     }
 
-    const token = getTokenSRR(cookies);
-
-    if (!token) {
-    if (!token) {
+    if (!autenticado) {
       return redirect("/login");
     }
+
+    const rol = getRolSSR(cookies);
+
+    if (esRutaCliente && rol !== "Cliente") {
+      return redirect("/login");
     }
 
-    return next();
-  },
-);
+    if (
+      esRutaMecanico &&
+      rol !== "Mecanico" &&
+      rol !== "Admin"
+    ) {
+      return redirect("/login");
+    }
+
+    if (esRutaAdmin && rol !== "Admin") {
+      return redirect("/login");
+    }
+
     return next();
   },
 );

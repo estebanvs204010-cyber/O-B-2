@@ -1,19 +1,12 @@
 import { Router } from "../Dependencies/dependencias.ts";
 
 import {
-<<<<<<< HEAD
-    GetMiPerfilCliente,
-    PutActualizarMiPerfil,
-    GetMisVehiculos,
-    GetMisOrdenes,
-    PostRegistrarMiVehiculo,
-=======
   GetMiPerfilCliente,
   PutActualizarMiPerfil,
   PutActualizarFotoPerfil,
   GetMisVehiculos,
+  GetMisOrdenes,
   PostRegistrarMiVehiculo,
->>>>>>> origin/Lucho
 } from "../Controller/clientePortalController.ts";
 
 import {
@@ -51,7 +44,13 @@ ClientePortalRouter.get(
   GetMisVehiculos,
 );
 
-<<<<<<< HEAD
+ClientePortalRouter.post(
+  "/api/cliente/mis-vehiculos",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PostRegistrarMiVehiculo,
+);
+
 ClientePortalRouter.get(
   "/api/cliente/mis-ordenes",
   authMiddleware,
@@ -60,13 +59,3 @@ ClientePortalRouter.get(
 );
 
 export { ClientePortalRouter };
-=======
-ClientePortalRouter.post(
-  "/api/cliente/mis-vehiculos",
-  authMiddleware,
-  permitirRoles("Cliente"),
-  PostRegistrarMiVehiculo,
-);
-
-export { ClientePortalRouter };
->>>>>>> origin/Lucho

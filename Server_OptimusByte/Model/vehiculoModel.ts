@@ -1,16 +1,6 @@
 import { conexion } from "./conexion.ts";
 
 interface DatosVehiculo {
-<<<<<<< HEAD
-    id_cliente: number;
-    placa: string;
-    marca: string;
-    modelo: string;
-    anio: number;
-    color?: string;
-    vin?: string;
-    km_actuales?: number;
-=======
   id_cliente: number;
   placa: string;
   marca: string;
@@ -19,7 +9,6 @@ interface DatosVehiculo {
   color?: string;
   vin?: string;
   km_actuales?: number;
->>>>>>> origin/Lucho
 }
 
 interface DatosEdicionVehiculo {
@@ -38,41 +27,12 @@ export class Vehiculo {
     const placa = datos.placa.trim().toUpperCase();
     const vin = datos.vin?.trim().toUpperCase() ?? "";
 
-<<<<<<< HEAD
-        const [placaExistente] = await conexion.query(
-            `SELECT id_vehiculo FROM vehiculos WHERE placa = ?`,
-            [datos.placa],
-        );
-        if (placaExistente) {
-            return { success: false, message: "Ya existe un vehículo registrado con esa placa" };
-        }
-
-    await conexion.execute(
-      `INSERT INTO vehiculos
-        (id_cliente, placa, marca, modelo, anio, color, vin, km_actuales)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        datos.id_cliente,
-        placa,
-        datos.marca.trim(),
-        datos.modelo.trim(),
-        datos.anio,
-        datos.color?.trim() || null,
-        vin,
-        datos.km_actuales ?? 0,
-      ],
-    );
-
-        return { success: true, message: "Vehículo registrado correctamente" };
-=======
-    if (!placa) {
-      return {
-        success: false,
-        message: "La placa es obligatoria",
-      };
->>>>>>> origin/Lucho
-    }
-
+if (!placa) {
+  return {
+    success: false,
+    message: "La placa es obligatoria",
+  };
+}
     const [clienteExiste] = await conexion.query(
       `SELECT id_cliente
        FROM clientes
