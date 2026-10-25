@@ -1,51 +1,69 @@
 import { Router } from "../Dependencies/dependencias.ts";
+
 import {
-    GetMiPerfilCliente,
-    PutActualizarMiPerfil,
-    GetMisVehiculos,
-    GetMisOrdenes,
-    PostRegistrarMiVehiculo,
+  GetMiPerfilCliente,
+  PutActualizarMiPerfil,
+  PutActualizarFotoPerfil,
+  GetMisVehiculos,
+  PostRegistrarMiVehiculo,
+  GetMisCitas,
+  PostSolicitarCita,
 } from "../Controller/clientePortalController.ts";
+
 import {
-    authMiddleware,
-    permitirRoles,
+  authMiddleware,
+  permitirRoles,
 } from "../Middlewares/validarJWT.ts";
 
 const ClientePortalRouter = new Router();
 
 ClientePortalRouter.get(
-    "/api/cliente/me",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    GetMiPerfilCliente,
+  "/api/cliente/me",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMiPerfilCliente,
 );
 
 ClientePortalRouter.put(
-    "/api/cliente/me",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    PutActualizarMiPerfil,
+  "/api/cliente/me",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PutActualizarMiPerfil,
+);
+
+ClientePortalRouter.put(
+  "/api/cliente/foto",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PutActualizarFotoPerfil,
+);
+
+ClientePortalRouter.get(
+  "/api/cliente/mis-vehiculos",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisVehiculos,
 );
 
 ClientePortalRouter.post(
-    "/api/cliente/mis-vehiculos",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    PostRegistrarMiVehiculo,
+  "/api/cliente/mis-vehiculos",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PostRegistrarMiVehiculo,
 );
 
 ClientePortalRouter.get(
-    "/api/cliente/mis-vehiculos",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    GetMisVehiculos,
+  "/api/cliente/citas",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisCitas,
 );
 
-ClientePortalRouter.get(
-    "/api/cliente/mis-ordenes",
-    authMiddleware,
-    permitirRoles("Cliente"),
-    GetMisOrdenes,
+ClientePortalRouter.post(
+  "/api/cliente/citas",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PostSolicitarCita,
 );
 
 export { ClientePortalRouter };

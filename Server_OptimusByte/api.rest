@@ -1,48 +1,46 @@
-### Login (dale nombre con @name)
+@baseUrl = http://localhost:8002
+
+@correoCliente = louisfonseca070@gmail.com
+@contrasenaCliente = TU_CONTRASENA
+
+### LOGIN CLIENTE
 # @name login
-POST http://localhost:8002/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
-  "correo": "admin@misena.edu.co",
-  "contrasena": "hola1234"
+  "correo": "{{correoCliente}}",
+  "contrasena": "{{contrasenaCliente}}"
 }
 
-### Login (dale nombre con @name)
-# @name loginCliente
-POST http://localhost:8002/api/auth/login
+### SESION CLIENTE
+# Ejecutar después de LOGIN CLIENTE
+GET {{baseUrl}}/api/cliente/me
+
+### VEHICULOS DEL CLIENTE
+GET {{baseUrl}}/api/cliente/mis-vehiculos
+
+### REGISTRAR VEHICULO DEL CLIENTE
+POST {{baseUrl}}/api/cliente/mis-vehiculos
 Content-Type: application/json
 
 {
-  "correo": "juan.perez@example.com",
-  "contrasena": "ClaveSegura123"
+  "placa": "AKL123",
+  "marca": "Chevrolet",
+  "modelo": "Spark",
+  "anio": 2021,
+  "km_actuales": 30000
 }
 
-
-###
-POST http://localhost:8002/api/auth/solicitar-recuperacion
-Content-Type: application/json
-
-{ 
-    "correo": "andresffonseca5@gmail.com"
-}
-
-
-### Restablecer contraseña
-POST http://localhost:8002/api/auth/restablecer-password
+### ACTUALIZAR PERFIL DEL CLIENTE
+PUT {{baseUrl}}/api/cliente/me
 Content-Type: application/json
 
 {
-  "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
-  "nuevaContrasena": "NuevaClave123"
-}
-
-POST http://localhost:8002/api/auth/restablecer-password
-Content-Type: application/json
-
-{
-  "token": "7b1fd88e-fec9-4715-bba4-9efaadc3e293",
-  "nuevaContrasena": "NuevaClave123"
+  "nombre_completo": "Louis Fonseca",
+  "correo": "louisfonseca070@gmail.com",
+  "telefono": "3000000000",
+  "direccion": "Dirección de prueba"
 }
 
 <<<<<<< HEAD
@@ -127,43 +125,12 @@ GET http://localhost:8002/api/mantenimiento/vehiculos/1
 Authorization: Bearer TU_TOKEN_ADMIN
 =======
 
-### Auto-registro de cliente
-POST http://localhost:8002/api/auth/registro-cliente
+### SOLICITAR RECUPERACION DE CONTRASEÑA
+POST {{baseUrl}}/api/auth/solicitar-recuperacion
 Content-Type: application/json
 
 {
-  "nombre_completo": "Juan Pére",
-  "tipo_documento": "CC",
-  "num_documento": "1152334455",
-  "telefono": "3001234567",
-  "correo": "juan.perAz@example.com",
-  "contrasena": "ClaveSegura183"
-}
-
-### Cliente creado por Admin (usa el token del login de arriba)
-POST http://localhost:8002/api/clientes
-Content-Type: application/json
-Authorization: Bearer {{login.response.body.token}}
-
-{
-  "nombre_completo": "María Gómez",
-  "tipo_documento": "CC",
-  "num_documento": "9988776655",
-  "telefono": "3109876543",
-  "correo": "maria.gomez@example.com"
-}
-
-
-### Crear Mecánico
-POST http://localhost:8002/api/usuarios/mecanico
-Content-Type: application/json
-Authorization: Bearer {{login.response.body.token}}
-
-{
-  "nombre_completo": "andres pr9",
-  "correo": "2139milu@gmail.com",
-  "telefono": "3185094530",
-  "contrasena": "2130luna"
+  "correo": "{{correoCliente}}"
 }
 
 
