@@ -1,4 +1,6 @@
 ---
+import { Bell } from "lucide-astro";
+
 const { title } = Astro.props;
 ---
 
@@ -6,36 +8,204 @@ const { title } = Astro.props;
   <h1>{title}</h1>
 
   <div class="topbar-actions">
-    <button id="ob-notif-btn" class="topbar-btn" type="button" title="Notificaciones">
-      <i class="bi bi-bell"></i>
-      <span id="ob-notif-dot" class="notif-dot" style="display:none;"></span>
-    </button>
-    <div class="topbar-sep"></div>
+    <div class="notification-menu">
+      <button
+        id="admin-notifications"
+        class="topbar-btn"
+        type="button"
+        title="Notificaciones"
+        aria-label="Notificaciones"
+        aria-expanded="false"
+        aria-controls="admin-notification-panel"
+      >
+        <Bell aria-hidden="true" />
+        <span id="notification-badge" class="notif-badge" hidden></span>
+      </button>
+
+      <section
+        id="admin-notification-panel"
+        class="notification-panel"
+        aria-label="Notificaciones pendientes"
+        hidden
+      >
+        <header class="notification-panel-header">
+          <strong>Notificaciones</strong>
+          <span id="notification-summary">Pendientes</span>
+        </header>
+        <div id="notification-list" class="notification-list" aria-live="polite">
+          <p class="notification-empty">Cargando notificaciones…</p>
+        </div>
+      </section>
+    </div>
 
   </div>
 </header>
 
 <script>
-  import { apiFetch } from "../../lib/api";
+  import { apiFetch, formatearFechaHora } from "../../lib/api";
+  import { notificarError, notificarExito } from "../../lib/toast";
 
-  // Por ahora solo prende/apaga el punto rojo según si hay notificaciones
-  // sin leer, y al hacer clic manda a /admin/citas (que es lo único
-  // accionable hoy). La vista de detalle de cada notificación queda
-  // pendiente para después, como se acordó.
-  async function actualizarContadorNotificaciones() {
-    try {
-      const respuesta = await apiFetch<{ noLeidas: number }>("/api/notificaciones/contador");
-      const dot = document.getElementById("ob-notif-dot");
-      if (dot) dot.style.display = (respuesta.data?.noLeidas ?? 0) > 0 ? "block" : "none";
-    } catch {
-      // si falla, simplemente no mostramos el punto — no es crítico
-    }
+  interface SolicitudPendiente {
+    id_solicitud: number;
+    id_orden: number;
+    nombre_repuesto: string;
+    cantidad: number;
+    fecha_solicitud: string;
+    placa: string;
+    mecanico: string;
   }
 
-  document.getElementById("ob-notif-btn")?.addEventListener("click", () => {
-    window.location.href = "/admin/citas";
-  });
+  interface NotificacionesAdmin {
+    ordenes: Array<{
+      id_orden: number;
+      estado: string;
+      tipo_servicio: string;
+      fecha_apertura: string;
+      placa: string;
+      propietario: string;
+    }>;
+    solicitudes: SolicitudPendiente[];
+  }
 
-  actualizarContadorNotificaciones();
-  setInterval(actualizarContadorNotificaciones, 30000);
+  type Notificacion =
+    | { tipo: "orden"; id: number; fecha: string; titulo: string; detalle: string }
+    | { tipo: "repuesto"; id: number; fecha: string; titulo: string; detalle: string };
+
+  const button = document.getElementById("admin-notifications") as HTMLButtonElement | null;
+  const panel = document.getElementById("admin-notification-panel") as HTMLElement | null;
+  const badge = document.getElementById("notification-badge") as HTMLSpanElement | null;
+  const summary = document.getElementById("notification-summary") as HTMLSpanElement | null;
+  const list = document.getElementById("notification-list") as HTMLDivElement | null;
+
+  if (button && panel && badge && summary && list) {
+    const notificationButton = button;
+    const notificationPanel = panel;
+    const notificationBadge = badge;
+    const notificationSummary = summary;
+    const notificationList = list;
+
+    function togglePanel(open: boolean) {
+      notificationPanel.hidden = !open;
+      notificationButton.setAttribute("aria-expanded", String(open));
+    }
+
+    function crearNotificacion(item: Notificacion) {
+      const card = document.createElement("article");
+      card.className = "notification-card";
+
+      const link = document.createElement("a");
+      link.className = "notification-item";
+      link.href = "/admin/ordenes";
+
+      const title = document.createElement("strong");
+      title.textContent = item.titulo;
+      const detail = document.createElement("span");
+      detail.textContent = item.detalle;
+      const date = document.createElement("time");
+      date.textContent = formatearFechaHora(item.fecha);
+      link.append(title, detail, date);
+      card.append(link);
+
+      if (item.tipo === "repuesto") {
+        const attendButton = document.createElement("button");
+        attendButton.className = "notification-attend";
+        attendButton.type = "button";
+        attendButton.textContent = "Marcar atendida";
+        attendButton.addEventListener("click", async () => {
+          attendButton.disabled = true;
+          try {
+            await apiFetch(`/api/mecanico/solicitudes-repuesto/${item.id}/atender`, {
+              method: "PUT",
+            });
+            notificarExito("Solicitud marcada como atendida");
+            await cargarNotificaciones();
+          } catch (error) {
+            notificarError(
+              error instanceof Error ? error.message : "No se pudo actualizar la solicitud",
+            );
+            attendButton.disabled = false;
+          }
+        });
+        card.append(attendButton);
+      }
+
+      return card;
+    }
+
+    function mostrarNotificaciones(notificaciones: Notificacion[]) {
+      notificationBadge.hidden = notificaciones.length === 0;
+      notificationBadge.textContent = notificaciones.length > 99 ? "99+" : String(notificaciones.length);
+      notificationSummary.textContent = notificaciones.length === 1
+        ? "1 pendiente"
+        : `${notificaciones.length} pendientes`;
+      notificationList.replaceChildren();
+
+      if (notificaciones.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "notification-empty";
+        empty.textContent = "No hay órdenes ni solicitudes pendientes.";
+        notificationList.append(empty);
+        return;
+      }
+
+      notificaciones.forEach((item) => notificationList.append(crearNotificacion(item)));
+    }
+
+    async function cargarNotificaciones() {
+      try {
+        const response = await apiFetch<NotificacionesAdmin>("/api/admin/notificaciones");
+        const ordenes = (response.data?.ordenes ?? [])
+          .filter((orden) => orden.estado === "Pendiente")
+          .map((orden): Notificacion => ({
+            tipo: "orden",
+            id: orden.id_orden,
+            fecha: orden.fecha_apertura,
+            titulo: `Orden OT-${orden.id_orden} pendiente de asignar`,
+            detalle: `${orden.tipo_servicio} · ${orden.placa} · ${orden.propietario}`,
+          }));
+        const solicitudes = (response.data?.solicitudes ?? []).map(
+          (solicitud): Notificacion => ({
+            tipo: "repuesto",
+            id: solicitud.id_solicitud,
+            fecha: solicitud.fecha_solicitud,
+            titulo: `Pedido de repuesto · OT-${solicitud.id_orden}`,
+            detalle: `${solicitud.nombre_repuesto} (x${solicitud.cantidad}) · ${solicitud.mecanico} · ${solicitud.placa}`,
+          }),
+        );
+
+        mostrarNotificaciones(
+          [...ordenes, ...solicitudes].sort(
+            (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+          ),
+        );
+      } catch (error) {
+        console.error("No se pudieron cargar las notificaciones administrativas", error);
+        notificationList.replaceChildren();
+        const message = document.createElement("p");
+        message.className = "notification-empty notification-error";
+        message.textContent = "No se pudieron cargar las notificaciones.";
+        notificationList.append(message);
+      }
+    }
+
+    notificationButton.addEventListener("click", () => {
+      togglePanel(Boolean(notificationPanel.hidden));
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        !notificationPanel.contains(event.target as Node) &&
+        !notificationButton.contains(event.target as Node)
+      ) {
+        togglePanel(false);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") togglePanel(false);
+    });
+
+    void cargarNotificaciones();
+    window.setInterval(() => void cargarNotificaciones(), 20_000);
+  }
 </script>

@@ -5,6 +5,7 @@ import {
   PutActualizarMiPerfil,
   PutActualizarFotoPerfil,
   GetMisVehiculos,
+  GetMisOrdenes,
   PostRegistrarMiVehiculo,
   GetMisCitas,
   PostSolicitarCita,

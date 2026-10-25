@@ -32,6 +32,108 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
               Ver citas →
             </span>
           </a>
+    <div class="grid-2">
+      <a class="card summary-link" href="#vehiculos">
+        <h3>Vehiculos registrados</h3>
+        <strong id="vehiculosCount">0</strong>
+        <p>Ver los vehiculos asociados a tu cuenta.</p>
+        <span class="summary-action">Ver vehiculos →</span>
+      </a>
+
+      <a class="card summary-link" href="#ordenes">
+        <h3>Ordenes de servicio</h3>
+        <strong id="ordenesCount">0</strong>
+        <p>Consultar el estado de tus servicios.</p>
+        <span class="summary-action">Ver ordenes →</span>
+      </a>
+
+      <a class="card summary-link" href="/cliente/citas">
+        <h3>Citas programadas</h3>
+        <strong id="citasCount">0</strong>
+        <p>Revisar tus proximas visitas.</p>
+        <span class="summary-action">Ver citas →</span>
+      </a>
+
+      <a class="card summary-link" href="#pagos">
+        <h3>Pagos registrados</h3>
+        <strong id="pagosCount">0</strong>
+        <p>Consultar facturas y pagos.</p>
+        <span class="summary-action">Ver pagos →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div>
+      <section class="card" id="perfil">
+        <div class="panel-heading-row">
+          <div>
+            <h2>Mi perfil</h2>
+            <p>Actualiza tus datos de contacto.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnEditarPerfil" type="button">
+            Editar perfil
+          </button>
+        </div>
+
+        <div id="perfilEstado" class="loading">Cargando perfil...</div>
+
+        <div id="perfilDatos" hidden>
+          <p><strong>Nombre:</strong> <span id="perfilNombre"></span></p>
+          <p><strong>Correo:</strong> <span id="perfilCorreo"></span></p>
+          <p><strong>Telefono:</strong> <span id="perfilTelefono"></span></p>
+          <p><strong>Documento:</strong> <span id="perfilDocumento"></span></p>
+          <p><strong>Direccion:</strong> <span id="perfilDireccion">-</span></p>
+        </div>
+
+        <form id="formPerfil" class="vehicle-form" hidden>
+          <h3>Editar informacion</h3>
+
+          <div class="field">
+            <label for="perfilNombreInput">Nombre completo</label>
+            <input id="perfilNombreInput" name="nombre_completo" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="perfilCorreoInput">Correo</label>
+              <input id="perfilCorreoInput" name="correo" type="email" required />
+            </div>
+            <div class="field">
+              <label for="perfilTelefonoInput">Telefono</label>
+              <input id="perfilTelefonoInput" name="telefono" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="perfilDireccionInput">Direccion</label>
+            <input id="perfilDireccionInput" name="direccion" />
+          </div>
+
+          <div class="field">
+            <label for="perfilDocumentoInput">Documento</label>
+            <input id="perfilDocumentoInput" disabled />
+          </div>
+
+          <div id="perfilMensaje" class="alert" hidden></div>
+
+          <div class="vehicle-actions">
+            <button class="btn btn-outline" id="btnCancelarPerfil" type="button">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+
+        <div class="password-section">
+          <h3>Contraseña</h3>
+          <p>Recibiras un enlace de verificacion en tu correo.</p>
+          <button class="btn btn-outline btn-sm" id="btnCambiarContrasena" type="button">
+            Cambiar contraseña por correo
+          </button>
+          <div id="passwordMensaje" class="alert" hidden></div>
         </div>
       </section>
 
@@ -152,6 +254,13 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
           </div>
         </form>
       </section>
+
+      <section class="card" id="ordenes">
+        <h2>Ordenes de servicio</h2>
+        <p>Consulta el avance de los trabajos de tus vehículos.</p>
+        <div id="ordenesEstado" class="loading">Cargando tus órdenes...</div>
+        <div id="ordenesLista" class="orden-list"></div>
+      </section>
     </div>
 
     <aside class="dashboard-right">
@@ -219,6 +328,43 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 
           <div id="passwordMensaje" class="alert" hidden></div>
         </div>
+    <div>
+      <section class="card" id="citas">
+        <div class="panel-heading-row">
+          <div><h2>Mis citas</h2><p>Solicita una cita y espera la confirmación del taller.</p></div>
+          <a class="btn btn-primary btn-sm" href="/cliente/citas">Agendar cita</a>
+        </div>
+        <div id="citasEstado" class="loading">Cargando tus citas...</div>
+        <div id="citasLista" class="orden-list"></div>
+        <form id="formCita" class="vehicle-form" hidden>
+          <h3 id="tituloFormCita">Agendar cita</h3>
+          <div class="field">
+            <label for="citaVehiculo">Vehículo</label>
+            <select id="citaVehiculo" required></select>
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="citaFecha">Fecha</label><input id="citaFecha" type="date" required /></div>
+            <div class="field"><label for="citaHora">Horario disponible</label>
+              <select id="citaHora" required><option value="">Selecciona primero una fecha</option></select>
+            </div>
+          </div>
+          <div class="field"><label for="citaMotivo">Motivo (opcional)</label><textarea id="citaMotivo" rows="3" maxlength="300"></textarea></div>
+          <div id="citaMensaje" class="alert" hidden></div>
+          <div class="vehicle-actions">
+            <button id="btnCancelarFormularioCita" class="btn btn-outline" type="button">Cerrar</button>
+            <button class="btn btn-primary" type="submit">Solicitar cita</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" id="pagos">
+        <h2>Pagos y facturas</h2>
+        <div class="empty">No tienes pagos registrados.</div>
+      </section>
+
+      <section class="card" id="recordatorios">
+        <h2>Recordatorios</h2>
+        <div class="empty">No tienes recordatorios activos.</div>
       </section>
     </aside>
   </div>
@@ -299,6 +445,21 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     "formVehiculo",
   ) as HTMLFormElement | null;
 
+  const ordenesCount = document.getElementById("ordenesCount");
+  const citasCount = document.getElementById("citasCount");
+  const ordenesEstado = document.getElementById("ordenesEstado");
+  const ordenesLista = document.getElementById("ordenesLista");
+  const citasEstado = document.getElementById("citasEstado");
+  const citasLista = document.getElementById("citasLista");
+  const formCita = document.getElementById("formCita") as HTMLFormElement | null;
+  const citaVehiculo = document.getElementById("citaVehiculo") as HTMLSelectElement | null;
+  const citaFecha = document.getElementById("citaFecha") as HTMLInputElement | null;
+  const citaHora = document.getElementById("citaHora") as HTMLSelectElement | null;
+  const citaMotivo = document.getElementById("citaMotivo") as HTMLTextAreaElement | null;
+  const citaMensaje = document.getElementById("citaMensaje");
+  const tituloFormCita = document.getElementById("tituloFormCita");
+  let vehiculosDelCliente: Vehiculo[] = [];
+  let citaSugeridaActual: number | null = null;
   if (vehiculosLista) {
     autoAnimate(vehiculosLista, {
       duration: 180,
@@ -364,6 +525,7 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
       }
 
       vehiculos.forEach((vehiculo) => {
+      } else vehiculos.forEach((vehiculo) => {
         const article = document.createElement("article");
         article.className = "orden-row";
 
@@ -427,6 +589,213 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 
   btnEditarPerfil?.addEventListener("click", () => {
     window.location.href = "/cliente/perfil";
+  });
+
+  function fechaISOlocal(fecha: Date) {
+    const local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function fechaAmigable(valor: string | null) {
+    if (!valor) return "Horario por elegir";
+    const fecha = new Date(valor.replace(" ", "T"));
+    return Number.isNaN(fecha.getTime()) ? valor : fecha.toLocaleString("es-CO");
+  }
+
+  function mostrarMensajeCita(texto: string, ok = false) {
+    if (!citaMensaje) return;
+    citaMensaje.textContent = texto;
+    citaMensaje.className = ok ? "alert alert-ok" : "alert alert-error";
+    citaMensaje.removeAttribute("hidden");
+  }
+
+  function abrirFormularioCita(idCitaSugerida?: number, idVehiculo?: number, motivo?: string | null) {
+    if (!vehiculosDelCliente.length) {
+      if (citasEstado) {
+        citasEstado.textContent = "Primero registra un vehículo para agendar una cita.";
+        citasEstado.className = "empty";
+      }
+      document.getElementById("btnMostrarRegistro")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    formCita?.reset();
+    citaSugeridaActual = idCitaSugerida ?? null;
+    if (citaVehiculo) {
+      citaVehiculo.disabled = false;
+      if (idVehiculo) citaVehiculo.value = String(idVehiculo);
+    }
+    if (tituloFormCita) tituloFormCita.textContent = idCitaSugerida ? "Elegir horario para mantenimiento sugerido" : "Agendar cita";
+    if (citaMotivo && motivo) citaMotivo.value = motivo;
+    if (citaFecha) {
+      citaFecha.min = fechaISOlocal(new Date());
+      citaFecha.value = "";
+    }
+    if (citaHora) citaHora.innerHTML = '<option value="">Selecciona primero una fecha</option>';
+    citaMensaje?.setAttribute("hidden", "true");
+    formCita?.removeAttribute("hidden");
+    formCita?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function cargarDisponibilidad() {
+    if (!citaFecha?.value || !citaHora) return;
+    citaHora.innerHTML = '<option value="">Consultando horarios...</option>';
+    try {
+      const respuesta = await apiFetch<{ turnos: Array<{ hora: string; disponible: boolean }> }>(
+        "/api/citas/disponibilidad?fecha=" + encodeURIComponent(citaFecha.value),
+      );
+      const turnos = (respuesta.data?.turnos ?? []).filter((turno) => turno.disponible);
+      citaHora.replaceChildren();
+      if (!turnos.length) {
+        citaHora.innerHTML = '<option value="">No hay horarios disponibles ese día</option>';
+        return;
+      }
+      const inicial = document.createElement("option");
+      inicial.value = "";
+      inicial.textContent = "Elige un horario";
+      citaHora.appendChild(inicial);
+      turnos.forEach((turno) => {
+        const opcion = document.createElement("option");
+        opcion.value = turno.hora;
+        opcion.textContent = turno.hora;
+        citaHora.appendChild(opcion);
+      });
+    } catch (error) {
+      citaHora.innerHTML = '<option value="">No se pudo cargar la disponibilidad</option>';
+      mostrarMensajeCita(error instanceof Error ? error.message : "No se pudo consultar disponibilidad");
+    }
+  }
+
+  async function cargarCitas() {
+    if (!citasEstado || !citasLista) return;
+    try {
+      const respuesta = await apiFetch<Cita[]>("/api/citas/mias");
+      const citas = respuesta.data ?? [];
+      citasLista.replaceChildren();
+      if (citasCount) citasCount.textContent = String(citas.length);
+      citasEstado.textContent = citas.length ? "Tus solicitudes y próximas visitas" : "Aún no tienes citas programadas.";
+      citasEstado.className = citas.length ? "sub" : "empty";
+      citas.forEach((cita) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "orden-row";
+        const detalle = document.createElement("div");
+        const titulo = document.createElement("strong");
+        titulo.textContent = `${cita.placa ?? "Vehículo"} · ${cita.estado}`;
+        const subtitulo = document.createElement("div");
+        subtitulo.className = "sub";
+        subtitulo.textContent = `${fechaAmigable(cita.fecha_hora)}${cita.motivo ? ` · ${cita.motivo}` : ""}`;
+        detalle.append(titulo, subtitulo);
+        tarjeta.appendChild(detalle);
+
+        if (cita.estado === "Sugerida") {
+          const elegir = document.createElement("button");
+          elegir.type = "button";
+          elegir.className = "btn btn-outline btn-sm";
+          elegir.textContent = "Elegir horario";
+          elegir.addEventListener("click", () => abrirFormularioCita(cita.id_cita, cita.id_vehiculo, cita.motivo));
+          tarjeta.appendChild(elegir);
+        }
+        if (["Sugerida", "Pendiente", "Confirmada"].includes(cita.estado)) {
+          const cancelar = document.createElement("button");
+          cancelar.type = "button";
+          cancelar.className = "btn btn-outline btn-sm";
+          cancelar.textContent = "Cancelar";
+          cancelar.addEventListener("click", async () => {
+            cancelar.disabled = true;
+            try {
+              await apiFetch(`/api/citas/${cita.id_cita}/cancelar`, { method: "PATCH" });
+              await cargarCitas();
+            } catch (error) {
+              mostrarMensajeCita(error instanceof Error ? error.message : "No se pudo cancelar la cita");
+            } finally {
+              cancelar.disabled = false;
+            }
+          });
+          tarjeta.appendChild(cancelar);
+        }
+        citasLista.appendChild(tarjeta);
+      });
+    } catch (error) {
+      citasEstado.textContent = error instanceof Error ? error.message : "No se pudieron cargar tus citas.";
+      citasEstado.className = "alert alert-error";
+    }
+  }
+
+  async function cargarOrdenes() {
+    if (!ordenesEstado || !ordenesLista) return;
+    try {
+      const respuesta = await apiFetch<OrdenCliente[]>("/api/cliente/mis-ordenes");
+      const ordenes = respuesta.data ?? [];
+      ordenesLista.replaceChildren();
+      if (ordenesCount) ordenesCount.textContent = String(ordenes.length);
+      ordenesEstado.textContent = ordenes.length ? "Seguimiento de tus servicios" : "Las órdenes aparecerán aquí cuando el taller registre un servicio para tus vehículos.";
+      ordenesEstado.className = ordenes.length ? "sub" : "empty";
+      ordenes.forEach((orden) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "orden-row";
+        const detalle = document.createElement("div");
+        const titulo = document.createElement("strong");
+        titulo.textContent = `Orden #${orden.id_orden} · ${orden.estado}`;
+        const vehiculo = document.createElement("div");
+        vehiculo.className = "sub";
+        vehiculo.textContent = `${orden.placa} · ${orden.marca} ${orden.modelo} · ${orden.tipo_servicio}`;
+        const problema = document.createElement("p");
+        problema.textContent = orden.descripcion_problema;
+        detalle.append(titulo, vehiculo, problema);
+        if (orden.diagnostico) {
+          const diagnostico = document.createElement("p");
+          diagnostico.textContent = `Diagnóstico: ${orden.diagnostico}`;
+          detalle.appendChild(diagnostico);
+        }
+        const fechas = document.createElement("div");
+        fechas.className = "sub";
+        fechas.textContent = `Ingreso: ${fechaAmigable(orden.fecha_apertura)} · Entrega estimada: ${fechaAmigable(orden.fecha_entrega_estimada)}${orden.mecanico ? ` · Mecánico: ${orden.mecanico}` : ""}`;
+        detalle.appendChild(fechas);
+        tarjeta.appendChild(detalle);
+        ordenesLista.appendChild(tarjeta);
+      });
+    } catch (error) {
+      ordenesEstado.textContent = error instanceof Error ? error.message : "No se pudieron cargar tus órdenes.";
+      ordenesEstado.className = "alert alert-error";
+    }
+  }
+
+  document.getElementById("btnNuevaCita")?.addEventListener("click", () => abrirFormularioCita());
+  citaFecha?.addEventListener("change", () => void cargarDisponibilidad());
+  document.getElementById("btnCancelarFormularioCita")?.addEventListener("click", () => {
+    formCita?.reset();
+    formCita?.setAttribute("hidden", "true");
+    citaSugeridaActual = null;
+  });
+  formCita?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!formCita || !citaVehiculo || !citaFecha || !citaHora) return;
+    const boton = formCita.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    if (boton) { boton.disabled = true; boton.textContent = "Enviando..."; }
+    try {
+      const resultado = citaSugeridaActual
+        ? await apiFetch(`/api/citas/${citaSugeridaActual}/elegir-horario`, {
+            method: "PATCH",
+            body: JSON.stringify({ fecha: citaFecha.value, hora: citaHora.value }),
+          })
+        : await apiFetch("/api/citas", {
+            method: "POST",
+            body: JSON.stringify({
+              id_vehiculo: Number(citaVehiculo.value),
+              fecha: citaFecha.value,
+              hora: citaHora.value,
+              motivo: citaMotivo?.value.trim() || null,
+            }),
+          });
+      mostrarMensajeCita(resultado.message ?? "Solicitud enviada; queda pendiente de confirmación del taller.", true);
+      formCita.reset();
+      formCita.setAttribute("hidden", "true");
+      citaSugeridaActual = null;
+      await cargarCitas();
+    } catch (error) {
+      mostrarMensajeCita(error instanceof Error ? error.message : "No se pudo solicitar la cita");
+    } finally {
+      if (boton) { boton.disabled = false; boton.textContent = "Solicitar cita"; }
+    }
   });
 
   btnVerVehiculos?.addEventListener("click", () => {

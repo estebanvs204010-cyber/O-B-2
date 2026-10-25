@@ -1,5 +1,6 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import {
+    GetNotificacionesAdmin,
     PostCrearSolicitudRepuesto,
     GetSolicitudesMecanico,
     GetSolicitudesPorOrden,
@@ -10,6 +11,7 @@ import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
 
 const SolicitudRepuestoRouter = new Router();
 
+SolicitudRepuestoRouter.get("/api/admin/notificaciones", authMiddleware, permitirRoles("Admin"), GetNotificacionesAdmin);
 SolicitudRepuestoRouter.post("/api/mecanico/solicitudes-repuesto", authMiddleware, permitirRoles("Mecanico"), PostCrearSolicitudRepuesto);
 SolicitudRepuestoRouter.get("/api/mecanico/solicitudes-repuesto", authMiddleware, permitirRoles("Admin", "Mecanico"), GetSolicitudesMecanico);
 SolicitudRepuestoRouter.get("/api/mecanico/ordenes/:id/solicitudes-repuesto", authMiddleware, permitirRoles("Admin", "Mecanico"), GetSolicitudesPorOrden);

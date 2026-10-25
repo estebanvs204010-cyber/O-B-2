@@ -25,6 +25,36 @@ export const GetOrdenesAdmin = async (ctx: Context) => {
     }
 };
 
+// GET /api/admin/dashboard -> resumen y últimas órdenes, sin descargar las listas completas
+export const GetDashboardAdmin = async (ctx: Context) => {
+    const { response } = ctx;
+
+    try {
+        const dashboard = await new Orden().ObtenerResumenAdmin();
+        response.status = 200;
+        response.body = { success: true, data: dashboard };
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
+
+// GET /api/admin/ordenes-pendientes -> notificaciones de órdenes pendientes de asignar
+export const GetOrdenesPendientesAdmin = async (ctx: Context) => {
+    const { response } = ctx;
+
+    try {
+        const ordenes = await new Orden().ListarPendientesAdmin();
+        response.status = 200;
+        response.body = { success: true, data: ordenes };
+    } catch (error) {
+        console.error(error);
+        response.status = 500;
+        response.body = { success: false, message: "Error interno del servidor" };
+    }
+};
+
 // PUT /api/admin/ordenes/:id/asignar  body: { id_mecanico }
 export const PutAsignarMecanico = async (
     ctx: RouterContext<"/api/admin/ordenes/:id/asignar">,

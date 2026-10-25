@@ -7,7 +7,7 @@ export function isAuthenticatedSSR(
     get: (key: string) => { value: string } | undefined;
   },
 ): boolean {
-  const token = cookies.get("jwt_token")?.value;
+  const token = getTokenSRR(cookies);
 
   if (!token) return false;
 
@@ -46,7 +46,9 @@ export function getTokenSRR(
     get: (key: string) => { value: string } | undefined;
   },
 ): string | null {
-  return cookies.get("jwt_token")?.value ?? null;
+  return cookies.get("jwt_token")?.value ??
+    cookies.get("ob_token")?.value ??
+    null;
 }
 
 /**

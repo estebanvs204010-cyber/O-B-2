@@ -310,17 +310,17 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       pagination: true,
       paginationPageSize: 10,
       paginationPageSizeSelector: [10, 20, 50],
-      onGridReady: (params) => {
-        gridApi = params.api;
-        void cargarVehiculos();
-      },
+      
+      
     };
 
     const gridDiv = document.querySelector<HTMLElement>("#myGrid");
-    if (gridDiv) {
-      createGrid(gridDiv, gridOptions);
-    }
+    if (!gridDiv) {
+  throw new Error("No se encontró el contenedor de la tabla de vehículos.");
+}
 
+gridApi = createGrid(gridDiv, gridOptions);
+void cargarVehiculos();
     async function cargarVehiculos() {
       try {
         const respuesta = await apiFetch<VehiculoRow[]>(

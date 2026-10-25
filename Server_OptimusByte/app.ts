@@ -51,4 +51,5 @@ const PORT = 8002;
 console.log(
   `Servidor OptimusByte sistema corriendo en http://localhost:${PORT}`,
 );
+
 await app.listen({ port: PORT });
