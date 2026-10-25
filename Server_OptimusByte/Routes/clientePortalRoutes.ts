@@ -6,6 +6,8 @@ import {
   PutActualizarFotoPerfil,
   GetMisVehiculos,
   PostRegistrarMiVehiculo,
+  GetMisCitas,
+  PostSolicitarCita,
 } from "../Controller/clientePortalController.ts";
 
 import {
@@ -48,6 +50,20 @@ ClientePortalRouter.post(
   authMiddleware,
   permitirRoles("Cliente"),
   PostRegistrarMiVehiculo,
+);
+
+ClientePortalRouter.get(
+  "/api/cliente/citas",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisCitas,
+);
+
+ClientePortalRouter.post(
+  "/api/cliente/citas",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  PostSolicitarCita,
 );
 
 export { ClientePortalRouter };
