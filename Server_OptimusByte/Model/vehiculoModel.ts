@@ -27,12 +27,13 @@ export class Vehiculo {
     const placa = datos.placa.trim().toUpperCase();
     const vin = datos.vin?.trim().toUpperCase() ?? "";
 
-if (!placa) {
-  return {
-    success: false,
-    message: "La placa es obligatoria",
-  };
-}
+    if (!placa) {
+      return {
+        success: false,
+        message: "La placa es obligatoria",
+      };
+    }
+
     const [clienteExiste] = await conexion.query(
       `SELECT id_cliente
        FROM clientes

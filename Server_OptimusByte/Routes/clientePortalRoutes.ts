@@ -46,6 +46,13 @@ ClientePortalRouter.get(
   GetMisVehiculos,
 );
 
+ClientePortalRouter.get(
+  "/api/cliente/mis-ordenes",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisOrdenes,
+);
+
 ClientePortalRouter.post(
   "/api/cliente/mis-vehiculos",
   authMiddleware,

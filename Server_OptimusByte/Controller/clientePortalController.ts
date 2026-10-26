@@ -40,7 +40,7 @@ export const GetMiPerfilCliente = async (ctx: Context) => {
          telefono,
          correo,
          direccion,
-         foto_perfil,
+         foto_url AS foto_perfil,
          activo
        FROM clientes
        WHERE id_usuario = ?
@@ -266,7 +266,7 @@ export const PutActualizarFotoPerfil = async (ctx: Context) => {
 
     await conexion.execute(
       `UPDATE clientes
-       SET foto_perfil = ?
+       SET foto_url = ?
        WHERE id_cliente = ?`,
       [
         fotoPerfil,

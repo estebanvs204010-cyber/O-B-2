@@ -133,15 +133,21 @@ export const ESTADOS_ORDEN = [
   "Cancelado",
 ] as const;
 
-export function claseEstado(estado: string): string {
-  const mapa: Record<string, string> = {
-    Pendiente: "badge-pendiente",
-    "En Proceso": "badge-proceso",
-    "Esperando Repuestos": "badge-espera",
-    Finalizado: "badge-listo",
-    Entregado: "badge-listo",
-    Cancelado: "badge-cancelado",
-  };
-
-  return mapa[estado] ?? "badge-pendiente";
+/* Devuelve la clase CSS del badge según el estado de la orden. */
+export function claseEstado(estado?: string | null): string {
+  switch (estado) {
+    case "Pendiente":
+      return "badge-pendiente";
+    case "En Proceso":
+      return "badge-proceso";
+    case "Esperando Repuestos":
+      return "badge-espera";
+    case "Finalizado":
+    case "Entregado":
+      return "badge-listo";
+    case "Cancelado":
+      return "badge-cancelado";
+    default:
+      return "badge-pendiente";
+  }
 }
