@@ -2,564 +2,6 @@
 import ClienteLayout from "../../layouts/ClienteLayout.astro";
 ---
 
-<ClienteLayout title="Mis citas" active="citas">
-  <section class="citas-page">
-    <div class="page-heading">
-      <div>
-        <h2>Mis citas</h2>
-        <p>Consulta tus próximas visitas al taller.</p>
-      </div>
-
-      <button
-        id="btnSolicitarCita"
-        class="btn btn-primary"
-        type="button"
-      >
-        Solicitar cita
-      </button>
-    </div>
-
-    <div id="mensaje" class="alert" hidden></div>
-
-    <form id="formCita" class="appointment-form" hidden>
-      <h3>Solicitar una cita</h3>
-
-      <div class="field">
-        <label for="id_vehiculo">Vehículo</label>
-
-        <select id="id_vehiculo" name="id_vehiculo" required>
-          <option value="">Selecciona un vehículo</option>
-        </select>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="fecha_cita">Fecha</label>
-
-          <input
-            id="fecha_cita"
-            name="fecha_cita"
-            type="date"
-            required
-          />
-        </div>
-
-        <div class="field">
-          <label for="hora_cita">Hora</label>
-
-          <input
-            id="hora_cita"
-            name="hora_cita"
-            type="time"
-            required
-          />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="servicio">Servicio</label>
-
-        <select id="servicio" name="servicio" required>
-          <option value="">Selecciona un servicio</option>
-          <option value="Mantenimiento preventivo">
-            Mantenimiento preventivo
-          </option>
-          <option value="Cambio de aceite">
-            Cambio de aceite
-          </option>
-          <option value="Revisión general">
-            Revisión general
-          </option>
-          <option value="Diagnóstico">
-            Diagnóstico
-          </option>
-          <option value="Reparación">
-            Reparación
-          </option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label for="observaciones">Observaciones</label>
-
-        <textarea
-          id="observaciones"
-          name="observaciones"
-          rows="4"
-          maxlength="500"
-          placeholder="Describe brevemente lo que necesita tu vehículo"
-        ></textarea>
-      </div>
-
-      <div class="form-actions">
-        <button
-          id="btnCancelarCita"
-          class="btn btn-outline"
-          type="button"
-        >
-          Cancelar
-        </button>
-
-        <button
-          id="btnGuardarCita"
-          class="btn btn-primary"
-          type="submit"
-        >
-          Confirmar solicitud
-        </button>
-      </div>
-    </form>
-
-    <section class="appointments-section">
-      <h3>Citas programadas</h3>
-
-      <div id="estadoCitas" class="loading">
-        Cargando citas...
-      </div>
-
-      <div id="listaCitas" class="appointments-list"></div>
-    </section>
-  </section>
-</ClienteLayout>
-
-<script>
-  import { apiFetch } from "../../lib/api";
-
-  interface Vehiculo {
-    id_vehiculo: number;
-    placa?: string;
-    marca?: string;
-    modelo?: string;
-  }
-
-  interface Cita {
-    id_cita: number;
-    fecha_cita: string | Date;
-    hora_cita: string;
-    servicio: string;
-    observaciones?: string | null;
-    estado: string;
-    placa?: string;
-    marca?: string;
-    modelo?: string;
-  }
-
-  const btnSolicitarCita = document.getElementById(
-    "btnSolicitarCita",
-  ) as HTMLButtonElement;
-
-  const btnCancelarCita = document.getElementById(
-    "btnCancelarCita",
-  ) as HTMLButtonElement;
-
-  const btnGuardarCita = document.getElementById(
-    "btnGuardarCita",
-  ) as HTMLButtonElement;
-
-  const formCita = document.getElementById(
-    "formCita",
-  ) as HTMLFormElement;
-
-  const mensaje = document.getElementById(
-    "mensaje",
-  ) as HTMLDivElement;
-
-  const estadoCitas = document.getElementById(
-    "estadoCitas",
-  ) as HTMLDivElement;
-
-  const listaCitas = document.getElementById(
-    "listaCitas",
-  ) as HTMLDivElement;
-
-  const selectorVehiculo = document.getElementById(
-    "id_vehiculo",
-  ) as HTMLSelectElement;
-
-  const fechaCita = document.getElementById(
-    "fecha_cita",
-  ) as HTMLInputElement;
-
-  function mostrarMensaje(
-    texto: string,
-    tipo: "success" | "error",
-  ) {
-    mensaje.textContent = texto;
-    mensaje.className = `alert alert-${tipo}`;
-    mensaje.hidden = false;
-  }
-
-  function ocultarMensaje() {
-    mensaje.hidden = true;
-    mensaje.textContent = "";
-  }
-
-  function establecerFechaMinima() {
-    const hoy = new Date();
-    const anio = hoy.getFullYear();
-    const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-    const dia = String(hoy.getDate()).padStart(2, "0");
-
-    fechaCita.min = `${anio}-${mes}-${dia}`;
-  }
-
-  function formatearFecha(fecha: string | Date): string {
-    let textoFecha = "";
-
-    if (fecha instanceof Date) {
-      if (Number.isNaN(fecha.getTime())) {
-        return "Fecha no disponible";
-      }
-
-      textoFecha = fecha.toISOString().slice(0, 10);
-    } else {
-      textoFecha = String(fecha).slice(0, 10);
-    }
-
-    const partes = textoFecha.split("-");
-
-    if (partes.length !== 3) {
-      return "Fecha no disponible";
-    }
-
-    const anio = Number(partes[0]);
-    const mes = Number(partes[1]);
-    const dia = Number(partes[2]);
-
-    if (
-      !Number.isInteger(anio) ||
-      !Number.isInteger(mes) ||
-      !Number.isInteger(dia) ||
-      mes < 1 ||
-      mes > 12 ||
-      dia < 1 ||
-      dia > 31
-    ) {
-      return "Fecha no disponible";
-    }
-
-    const fechaValida = new Date(anio, mes - 1, dia);
-
-    if (Number.isNaN(fechaValida.getTime())) {
-      return "Fecha no disponible";
-    }
-
-    return new Intl.DateTimeFormat("es-CO", {
-      dateStyle: "long",
-    }).format(fechaValida);
-  }
-
-  function formatearHora(hora: string): string {
-    const textoHora = String(hora ?? "");
-
-    if (!textoHora) {
-      return "Hora no disponible";
-    }
-
-    return textoHora.slice(0, 5);
-  }
-
-  function pintarCitas(citas: Cita[]) {
-    listaCitas.replaceChildren();
-
-    if (citas.length === 0) {
-      estadoCitas.textContent =
-        "No tienes citas programadas.";
-
-      estadoCitas.className = "empty";
-      estadoCitas.hidden = false;
-      return;
-    }
-
-    estadoCitas.hidden = true;
-
-    citas.forEach((cita) => {
-      const article = document.createElement("article");
-      article.className = "appointment-card";
-
-      const encabezado = document.createElement("div");
-      encabezado.className = "appointment-header";
-
-      const servicio = document.createElement("h4");
-      servicio.textContent = cita.servicio;
-
-      const estado = document.createElement("span");
-      estado.className = "appointment-status";
-      estado.textContent = cita.estado;
-
-      encabezado.append(servicio, estado);
-
-      const vehiculo = document.createElement("p");
-      vehiculo.textContent =
-        `Vehículo: ${cita.placa ?? "No registrado"} ${
-          cita.marca ?? ""
-        } ${cita.modelo ?? ""}`.trim();
-
-      const fecha = document.createElement("p");
-      fecha.textContent =
-        `Fecha: ${formatearFecha(cita.fecha_cita)}`;
-
-      const hora = document.createElement("p");
-      hora.textContent =
-        `Hora: ${formatearHora(cita.hora_cita)}`;
-
-      article.append(
-        encabezado,
-        vehiculo,
-        fecha,
-        hora,
-      );
-
-      if (cita.observaciones) {
-        const observaciones = document.createElement("p");
-        observaciones.textContent =
-          `Observaciones: ${cita.observaciones}`;
-
-        article.appendChild(observaciones);
-      }
-
-      listaCitas.appendChild(article);
-    });
-  }
-
-  async function cargarVehiculos() {
-    const resultado = await apiFetch<Vehiculo[]>(
-      "/api/cliente/mis-vehiculos",
-    );
-
-    selectorVehiculo.replaceChildren();
-
-    const opcionInicial = document.createElement("option");
-    opcionInicial.value = "";
-    opcionInicial.textContent =
-      "Selecciona un vehículo";
-
-    selectorVehiculo.appendChild(opcionInicial);
-
-    for (const vehiculo of resultado.data ?? []) {
-      const opcion = document.createElement("option");
-
-      opcion.value = String(vehiculo.id_vehiculo);
-      opcion.textContent =
-        `${vehiculo.placa ?? "Sin placa"} - ${
-          vehiculo.marca ?? ""
-        } ${vehiculo.modelo ?? ""}`.trim();
-
-      selectorVehiculo.appendChild(opcion);
-    }
-  }
-
-  async function cargarCitas() {
-    try {
-      const resultado = await apiFetch<Cita[]>(
-        "/api/cliente/citas",
-      );
-
-      pintarCitas(resultado.data ?? []);
-    } catch (error) {
-      estadoCitas.textContent =
-        error instanceof Error
-          ? error.message
-          : "No se pudieron cargar las citas";
-
-      estadoCitas.className = "alert alert-error";
-      estadoCitas.hidden = false;
-    }
-  }
-
-  btnSolicitarCita.addEventListener("click", async () => {
-    ocultarMensaje();
-    formCita.hidden = false;
-
-    formCita.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-
-    try {
-      await cargarVehiculos();
-    } catch (error) {
-      mostrarMensaje(
-        error instanceof Error
-          ? error.message
-          : "No se pudieron cargar tus vehículos",
-        "error",
-      );
-    }
-  });
-
-  btnCancelarCita.addEventListener("click", () => {
-    formCita.reset();
-    formCita.hidden = true;
-    ocultarMensaje();
-  });
-
-  formCita.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    ocultarMensaje();
-
-    const datos = Object.fromEntries(
-      new FormData(formCita).entries(),
-    );
-
-    btnGuardarCita.disabled = true;
-    btnGuardarCita.textContent = "Enviando...";
-
-    try {
-      const resultado = await apiFetch(
-        "/api/cliente/citas",
-        {
-          method: "POST",
-          body: JSON.stringify(datos),
-        },
-      );
-
-      mostrarMensaje(
-        resultado.message ??
-          "Cita solicitada correctamente.",
-        "success",
-      );
-
-      formCita.reset();
-      formCita.hidden = true;
-
-      await cargarCitas();
-    } catch (error) {
-      mostrarMensaje(
-        error instanceof Error
-          ? error.message
-          : "No se pudo solicitar la cita.",
-        "error",
-      );
-    } finally {
-      btnGuardarCita.disabled = false;
-      btnGuardarCita.textContent = "Confirmar solicitud";
-    }
-  });
-
-  establecerFechaMinima();
-  cargarCitas();
-</script>
-
-<style>
-  .citas-page {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 32px;
-  }
-
-  .page-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 28px;
-  }
-
-  .page-heading h2 {
-    margin: 0 0 8px;
-    color: var(--navy-900);
-  }
-
-  .page-heading p {
-    margin: 0;
-    color: var(--muted);
-  }
-
-  .appointment-form {
-    max-width: 720px;
-    margin-bottom: 32px;
-    padding: 24px;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-
-  .appointment-form h3,
-  .appointments-section h3 {
-    margin-top: 0;
-    color: var(--navy-900);
-  }
-
-  .appointment-form input,
-  .appointment-form select,
-  .appointment-form textarea {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-  }
-
-  .appointments-list {
-    display: grid;
-    gap: 16px;
-  }
-
-  :global(.appointment-card) {
-    padding: 22px;
-    background: #ffffff;
-    border: 1px solid #dbe4ef;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(15, 45, 85, 0.07);
-  }
-
-  :global(.appointment-header) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid #e3eaf2;
-  }
-
-  :global(.appointment-header h4) {
-    margin: 0;
-    color: var(--navy-900);
-    font-size: 18px;
-  }
-
-  :global(.appointment-card p) {
-    margin: 12px 0 0;
-    color: var(--muted);
-  }
-
-  :global(.appointment-status) {
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: #eef5ff;
-    color: #1769e8;
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  @media (max-width: 700px) {
-    .citas-page {
-      padding: 24px 16px;
-    }
-
-    .page-heading {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .page-heading .btn {
-      width: 100%;
-    }
-
-    :global(.appointment-header) {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-  }
-</style>
----
-import ClienteLayout from "../../layouts/ClienteLayout.astro";
----
-
 <ClienteLayout title="Agendar cita" active="citas">
   <section class="appointment-hero">
     <a class="back-link" href="/cliente">← Volver al panel</a>
@@ -604,6 +46,11 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     <a class="aside-link" href="/cliente#citas">Ver mis citas y solicitudes <span>→</span></a>
   </aside>
   </div>
+  <section class="appointments-section" id="citas">
+    <div class="form-heading"><div class="form-icon">📅</div><div><h2>Mis citas</h2><p>Tus solicitudes y próximas visitas al taller.</p></div></div>
+    <div id="estadoCitas" class="notice">Cargando citas…</div>
+    <div id="listaCitas" class="appointments-list"></div>
+  </section>
 </ClienteLayout>
 
 <style>
@@ -659,6 +106,14 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
   .empty-state p { margin: 0 0 18px; color: #71839c; }
   @media (max-width: 900px) { .appointment-layout { grid-template-columns: 1fr; } .appointment-aside { grid-template-columns: 1fr 1fr; } .aside-link { grid-column: 1 / -1; } }
   @media (max-width: 650px) { .appointment-card { padding: 20px; } .appointment-aside { grid-template-columns: 1fr; } .aside-link { grid-column: auto; } .field-row { grid-template-columns: 1fr; } .form-footer { align-items: stretch; flex-direction: column; } .form-footer .btn { width: 100%; } }
+  .appointments-section { margin-top: 24px; padding: 30px; border: 1px solid #e2e9f2; border-radius: 16px; background: white; box-shadow: 0 12px 35px #16365c12; }
+  .appointments-list { display: grid; gap: 14px; margin-top: 18px; }
+  .cita-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border: 1px solid #dbe4ef; border-radius: 12px; background: #fff; }
+  .cita-item strong { color: #102b50; }
+  .cita-item .sub { margin-top: 4px; color: #71839c; font-size: 13px; }
+  .cita-estado { padding: 5px 10px; border-radius: 999px; background: #eef5ff; color: #1769e8; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .cita-acciones { display: flex; align-items: center; gap: 10px; }
+  @media (max-width: 650px) { .cita-item { align-items: flex-start; flex-direction: column; } .appointments-section { padding: 20px; } }
 </style>
 
 <script>
@@ -728,6 +183,7 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
       form.reset();
       fechaInput.min = new Date(hoy.getTime() - offset * 60_000).toISOString().slice(0, 10);
       horaSelect.innerHTML = '<option value="">Primero selecciona una fecha</option>';
+      void cargarCitas();
     } catch (error) {
       mensaje.textContent = error instanceof Error ? error.message : "No se pudo solicitar la cita.";
       mensaje.className = "notice error";
@@ -736,4 +192,66 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
   });
 
   void cargarVehiculos();
+
+  interface Cita { id_cita: number; fecha_hora: string | null; motivo: string | null; estado: string; placa?: string; marca?: string; modelo?: string; }
+  const estadoCitas = document.querySelector<HTMLElement>("#estadoCitas")!;
+  const listaCitas = document.querySelector<HTMLElement>("#listaCitas")!;
+
+  function fechaAmigable(valor: string | null) {
+    if (!valor) return "Horario por elegir";
+    const fecha = new Date(String(valor).replace(" ", "T"));
+    return Number.isNaN(fecha.getTime()) ? String(valor) : fecha.toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" });
+  }
+
+  async function cargarCitas() {
+    try {
+      const respuesta = await apiFetch<Cita[]>("/api/citas/mias");
+      const citas = respuesta.data ?? [];
+      listaCitas.replaceChildren();
+      estadoCitas.className = citas.length ? "notice" : "notice";
+      estadoCitas.textContent = citas.length ? "Tus solicitudes y próximas visitas" : "Aún no tienes citas programadas.";
+      citas.forEach((cita) => {
+        const fila = document.createElement("article");
+        fila.className = "cita-item";
+        const info = document.createElement("div");
+        const titulo = document.createElement("strong");
+        titulo.textContent = `${cita.placa ?? "Vehículo"} ${cita.marca ?? ""} ${cita.modelo ?? ""}`.trim();
+        const detalle = document.createElement("div");
+        detalle.className = "sub";
+        detalle.textContent = `${fechaAmigable(cita.fecha_hora)}${cita.motivo ? ` · ${cita.motivo}` : ""}`;
+        info.append(titulo, detalle);
+        const acciones = document.createElement("div");
+        acciones.className = "cita-acciones";
+        const estado = document.createElement("span");
+        estado.className = "cita-estado";
+        estado.textContent = cita.estado;
+        acciones.append(estado);
+        if (["Sugerida", "Pendiente", "Confirmada"].includes(cita.estado)) {
+          const cancelar = document.createElement("button");
+          cancelar.type = "button";
+          cancelar.className = "btn btn-outline btn-sm";
+          cancelar.textContent = "Cancelar";
+          cancelar.addEventListener("click", async () => {
+            cancelar.disabled = true;
+            try {
+              await apiFetch(`/api/citas/${cita.id_cita}/cancelar`, { method: "PATCH" });
+              await cargarCitas();
+            } catch (error) {
+              estadoCitas.textContent = error instanceof Error ? error.message : "No se pudo cancelar la cita.";
+              estadoCitas.className = "notice error";
+              cancelar.disabled = false;
+            }
+          });
+          acciones.append(cancelar);
+        }
+        fila.append(info, acciones);
+        listaCitas.append(fila);
+      });
+    } catch (error) {
+      estadoCitas.textContent = error instanceof Error ? error.message : "No se pudieron cargar tus citas.";
+      estadoCitas.className = "notice error";
+    }
+  }
+
+  void cargarCitas();
 </script>

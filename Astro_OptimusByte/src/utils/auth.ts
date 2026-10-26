@@ -46,9 +46,27 @@ export function getTokenSRR(
     get: (key: string) => { value: string } | undefined;
   },
 ): string | null {
-  return cookies.get("jwt_token")?.value ??
-    cookies.get("ob_token")?.value ??
-    null;
+  const candidatos = [
+    cookies.get("ob_token")?.value,
+    cookies.get("jwt_token")?.value,
+  ].filter((t): t is string => Boolean(t));
+
+  if (candidatos.length <= 1) return candidatos[0] ?? null;
+
+  // Si hay dos cookies (por ejemplo una sesión vieja de otro rol), se usa la
+  // que vence más tarde, es decir, la del inicio de sesión más reciente.
+  const expiracion = (token: string) => {
+    try {
+      const payload = JSON.parse(
+        atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+      );
+      return typeof payload.exp === "number" ? payload.exp : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  return candidatos.sort((a, b) => expiracion(b) - expiracion(a))[0];
 }
 
 /**

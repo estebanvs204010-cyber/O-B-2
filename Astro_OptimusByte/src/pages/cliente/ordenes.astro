@@ -11,8 +11,83 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
       </div>
     </div>
 
-    <div class="empty-state">
+    <div id="ordenesEstado" class="loading">Cargando tus órdenes...</div>
+    <div id="ordenesLista" class="orden-list"></div>
+
+    <div id="ordenesVacio" class="empty-state" hidden>
       <p>No tienes órdenes de servicio registradas.</p>
     </div>
   </section>
 </ClienteLayout>
+
+<script>
+  import { apiFetch, formatearFechaHora } from "../../lib/api";
+
+  type OrdenCliente = {
+    id_orden: number;
+    estado: string;
+    tipo_servicio: string;
+    descripcion_problema: string;
+    diagnostico: string | null;
+    fecha_apertura: string;
+    fecha_entrega_estimada: string | null;
+    placa: string;
+    marca: string;
+    modelo: string;
+    mecanico: string | null;
+  };
+
+  const estado = document.getElementById("ordenesEstado")!;
+  const lista = document.getElementById("ordenesLista")!;
+  const vacio = document.getElementById("ordenesVacio")!;
+
+  async function cargarOrdenes() {
+    try {
+      const respuesta = await apiFetch<OrdenCliente[]>("/api/cliente/mis-ordenes");
+      const ordenes = respuesta.data ?? [];
+      estado.hidden = true;
+      lista.replaceChildren();
+      vacio.hidden = ordenes.length > 0;
+
+      ordenes.forEach((orden) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "orden-row";
+        const detalle = document.createElement("div");
+
+        const titulo = document.createElement("strong");
+        titulo.textContent = `Orden #${orden.id_orden} · ${orden.estado}`;
+
+        const vehiculo = document.createElement("div");
+        vehiculo.className = "sub";
+        vehiculo.textContent = `${orden.placa} · ${orden.marca} ${orden.modelo} · ${orden.tipo_servicio}`;
+
+        const problema = document.createElement("p");
+        problema.textContent = orden.descripcion_problema;
+
+        detalle.append(titulo, vehiculo, problema);
+
+        if (orden.diagnostico) {
+          const diagnostico = document.createElement("p");
+          diagnostico.textContent = `Diagnóstico: ${orden.diagnostico}`;
+          detalle.append(diagnostico);
+        }
+
+        const fechas = document.createElement("div");
+        fechas.className = "sub";
+        fechas.textContent =
+          `Ingreso: ${formatearFechaHora(orden.fecha_apertura)} · Entrega estimada: ${formatearFechaHora(orden.fecha_entrega_estimada)}` +
+          (orden.mecanico ? ` · Mecánico: ${orden.mecanico}` : "");
+        detalle.append(fechas);
+
+        tarjeta.append(detalle);
+        lista.append(tarjeta);
+      });
+    } catch (error) {
+      estado.hidden = false;
+      estado.className = "alert alert-error";
+      estado.textContent = error instanceof Error ? error.message : "No se pudieron cargar tus órdenes.";
+    }
+  }
+
+  void cargarOrdenes();
+</script>

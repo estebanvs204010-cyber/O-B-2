@@ -29,10 +29,14 @@ export function guardarSesion(
 }
 
 export async function cerrarSesion(): Promise<void> {
-  await fetch(`${API_BASE_URL}/api/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-  }).catch(() => {});
+  // Cookie del backend Deno (ob_token) y cookies propias de Astro (jwt_token / ob_token).
+  await Promise.allSettled([
+    fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }),
+    fetch("/api/auth/logout", { method: "POST" }),
+  ]);
 }
 
 export async function apiFetch<T = unknown>(
@@ -51,12 +55,15 @@ export async function apiFetch<T = unknown>(
     credentials: "include",
   });
 
-  if (response.status === 401) {
+  const data = (await response.json().catch(() => ({}))) as ApiResponse<T>;
+
+  // Solo se expulsa a /login cuando la sesión expiró en una ruta protegida.
+  // En /api/auth/* (login, recuperación…) el 401 significa "credenciales
+  // incorrectas" y el mensaje debe mostrarse en el formulario.
+  if (response.status === 401 && !path.startsWith("/api/auth/")) {
     window.location.href = "/login";
     throw new Error("Sesión expirada");
   }
-
-  const data = (await response.json().catch(() => ({}))) as ApiResponse<T>;
 
   if (!response.ok) {
     throw new Error(data.message ?? `Error ${response.status}`);
@@ -66,21 +73,25 @@ export async function apiFetch<T = unknown>(
 }
 
 export function rutaSegunRol(rol: Usuario["rol"]): string {
-  const rolNormalizado = rol.trim().toLowerCase();
+  const rolNormalizado = String(rol ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 
-  if (rolNormalizado === "admin") {
+  if (rolNormalizado.startsWith("admin")) {
     return "/admin";
   }
 
-  if (rolNormalizado === "mecanico") {
+  if (rolNormalizado.startsWith("mec") || rolNormalizado.startsWith("tecn")) {
     return "/mecanico";
   }
 
-  if (rolNormalizado === "cliente") {
+  if (rolNormalizado.startsWith("cli")) {
     return "/cliente";
   }
 
-  return "/portal";
+  return "/login";
 }
 
 export function formatearFecha(

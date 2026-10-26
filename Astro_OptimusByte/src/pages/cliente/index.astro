@@ -23,6 +23,18 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 
           <a
             class="card summary-link"
+            href="/cliente/ordenes"
+          >
+            <h3>Órdenes de servicio</h3>
+            <strong id="ordenesCount">0</strong>
+            <p>Consultar el estado de tus servicios.</p>
+            <span class="summary-action">
+              Ver órdenes →
+            </span>
+          </a>
+
+          <a
+            class="card summary-link"
             href="/cliente/citas"
           >
             <h3>Citas programadas</h3>
@@ -30,6 +42,18 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
             <p>Revisar tus próximas visitas.</p>
             <span class="summary-action">
               Ver citas →
+            </span>
+          </a>
+
+          <a
+            class="card summary-link"
+            href="/cliente/pagos"
+          >
+            <h3>Pagos registrados</h3>
+            <strong id="pagosCount">0</strong>
+            <p>Consultar facturas y pagos.</p>
+            <span class="summary-action">
+              Ver pagos →
             </span>
           </a>
         </div>
@@ -514,7 +538,29 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     },
   );
 
+  async function cargarContadores() {
+    const poner = (id: string, total: number) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(total);
+    };
+
+    try {
+      const citas = await apiFetch<unknown[]>("/api/citas/mias");
+      poner("citasCount", citas.data?.length ?? 0);
+    } catch {
+      /* el contador se queda en 0 */
+    }
+
+    try {
+      const ordenes = await apiFetch<unknown[]>("/api/cliente/mis-ordenes");
+      poner("ordenesCount", ordenes.data?.length ?? 0);
+    } catch {
+      /* el contador se queda en 0 */
+    }
+  }
+
   void cargarPortal();
+  void cargarContadores();
 </script>
 
 <style>

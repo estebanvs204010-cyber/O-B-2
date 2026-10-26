@@ -17,12 +17,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const data = await denoResponse.json();
 
     if (denoResponse.ok && data.token && data.usuario) {
-      cookies.set("jwt_token", data.token, {
+      const opcionesCookie = {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "lax" as const,
         path: "/",
         maxAge: 60 * 60,
-      });
+      };
+      cookies.set("jwt_token", data.token, opcionesCookie);
+      // El backend Deno lee la sesión desde "ob_token"; sin esta cookie las
+      // llamadas directas a la API darían 401 tras entrar con Google.
+      cookies.set("ob_token", data.token, opcionesCookie);
       return Response.json({ success: true, usuario: data.usuario });
     }
 

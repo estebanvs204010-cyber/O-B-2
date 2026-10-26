@@ -40,7 +40,10 @@ export const GetMiPerfilCliente = async (ctx: Context) => {
          telefono,
          correo,
          direccion,
-         foto_url AS foto_perfil,
+         COALESCE(
+           foto_perfil,
+           CASE WHEN foto_url LIKE 'https://%' THEN foto_url END
+         ) AS foto_perfil,
          activo
        FROM clientes
        WHERE id_usuario = ?
@@ -266,7 +269,7 @@ export const PutActualizarFotoPerfil = async (ctx: Context) => {
 
     await conexion.execute(
       `UPDATE clientes
-       SET foto_url = ?
+       SET foto_perfil = ?
        WHERE id_cliente = ?`,
       [
         fotoPerfil,
@@ -512,12 +515,14 @@ export const GetMisCitas = async (ctx: Context) => {
          c.id_cita,
          c.id_cliente,
          c.id_vehiculo,
-         c.fecha_cita,
-         c.hora_cita,
-         c.servicio,
-         c.observaciones,
+         c.fecha_hora,
+         DATE(c.fecha_hora) AS fecha_cita,
+         TIME(c.fecha_hora) AS hora_cita,
+         c.motivo,
+         c.motivo AS servicio,
+         NULL AS observaciones,
          c.estado,
-         c.fecha_creacion,
+         c.fecha_solicitud AS fecha_creacion,
          v.placa,
          v.marca,
          v.modelo
@@ -525,7 +530,7 @@ export const GetMisCitas = async (ctx: Context) => {
        LEFT JOIN vehiculos v
          ON v.id_vehiculo = c.id_vehiculo
        WHERE c.id_cliente = ?
-       ORDER BY c.fecha_cita ASC, c.hora_cita ASC`,
+       ORDER BY c.fecha_hora ASC`,
       [Number(cliente.id_cliente)],
     );
 
@@ -629,6 +634,10 @@ export const PostSolicitarCita = async (ctx: Context) => {
     const fechaHora = new Date(
       `${fechaCita}T${horaCita}`,
     );
+    const horaNormalizada = horaCita.length === 5 ? `${horaCita}:00` : horaCita;
+    const fechaHoraSql = `${fechaCita} ${horaNormalizada}`;
+    const motivoCita = (observaciones ? `${servicio} - ${observaciones}` : servicio)
+      .slice(0, 300);
 
     if (Number.isNaN(fechaHora.getTime())) {
       response.status = 400;
@@ -651,10 +660,9 @@ export const PostSolicitarCita = async (ctx: Context) => {
     const [citaExistente] = await conexion.query(
       `SELECT id_cita
        FROM citas
-       WHERE fecha_cita = ?
-         AND hora_cita = ?
+       WHERE fecha_hora = ?
          AND estado NOT IN ('Cancelada', 'Rechazada')`,
-      [fechaCita, horaCita],
+      [fechaHoraSql],
     );
 
     if (citaExistente) {
@@ -670,20 +678,16 @@ export const PostSolicitarCita = async (ctx: Context) => {
       `INSERT INTO citas (
          id_cliente,
          id_vehiculo,
-         fecha_cita,
-         hora_cita,
-         servicio,
-         observaciones,
+         fecha_hora,
+         motivo,
          estado
        )
-       VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')`,
+       VALUES (?, ?, ?, ?, 'Pendiente')`,
       [
         idCliente,
         idVehiculo,
-        fechaCita,
-        horaCita,
-        servicio,
-        observaciones,
+        fechaHoraSql,
+        motivoCita,
       ],
     );
 
