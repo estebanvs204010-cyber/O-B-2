@@ -13,6 +13,7 @@ import { MecanicoPanelRouter } from "./Routes/mecanicoPanelRoutes.ts";
 import { UploadRouter } from "./Routes/uploadRoutes.ts";
 import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
 import { AdminOrdenRouter } from "./Routes/adminOrdenRoutes.ts";
+import { PedidoRepuestoRouter } from "./Routes/pedidoRepuestoRoutes.ts";
 
 const app = new Application();
 
@@ -38,6 +39,7 @@ const routes = [
   UploadRouter,
   RepuestoRouter,
   AdminOrdenRouter,
+  PedidoRepuestoRouter,
 ];
 
 routes.forEach((router) => {

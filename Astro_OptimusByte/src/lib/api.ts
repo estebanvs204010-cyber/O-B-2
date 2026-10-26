@@ -1,5 +1,4 @@
-export const API_BASE_URL =
-  import.meta.env.PUBLIC_API_URL ?? "http://localhost:8002";
+export const API_BASE_URL = "";
 
 export interface Usuario {
   id_usuario: number;
@@ -29,7 +28,7 @@ export function guardarSesion(
 }
 
 export async function cerrarSesion(): Promise<void> {
-  await fetch(`${API_BASE_URL}/api/auth/logout`, {
+  await fetch("/api/auth/logout", {
     method: "POST",
     credentials: "include",
   }).catch(() => {});
@@ -45,7 +44,7 @@ export async function apiFetch<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(path, {
     ...options,
     headers,
     credentials: "include",
@@ -123,4 +122,26 @@ export function formatearFechaHora(
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export const ESTADOS_ORDEN = [
+  "Pendiente",
+  "En Proceso",
+  "Esperando Repuestos",
+  "Finalizado",
+  "Entregado",
+  "Cancelado",
+] as const;
+
+export function claseEstado(estado: string): string {
+  const mapa: Record<string, string> = {
+    Pendiente: "badge-pendiente",
+    "En Proceso": "badge-proceso",
+    "Esperando Repuestos": "badge-espera",
+    Finalizado: "badge-listo",
+    Entregado: "badge-listo",
+    Cancelado: "badge-cancelado",
+  };
+
+  return mapa[estado] ?? "badge-pendiente";
 }

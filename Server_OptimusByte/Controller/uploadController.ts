@@ -4,10 +4,16 @@ import { esCarpetaValida, firmarSubida } from "../Helpers/cloudinary.ts";
 export const GetFirmaSubida = async (ctx: Context) => {
   try {
     const tipo = ctx.request.url.searchParams.get("tipo") ?? "";
+    const usuario = ctx.state.user as { rol?: string } | undefined;
 
     if (!esCarpetaValida(tipo)) {
       ctx.response.status = 400;
       ctx.response.body = { success: false, message: "Tipo de imagen inválido" };
+      return;
+    }
+    if (usuario?.rol === "Cliente" && tipo !== "solicitudes") {
+      ctx.response.status = 403;
+      ctx.response.body = { success: false, message: "No tienes permiso para subir imágenes a esta carpeta" };
       return;
     }
 

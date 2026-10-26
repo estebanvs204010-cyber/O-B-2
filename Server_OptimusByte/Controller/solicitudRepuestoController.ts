@@ -1,5 +1,6 @@
 import { Context, RouterContext } from "../Dependencies/dependencias.ts";
 import { SolicitudRepuesto } from "../Model/solicitudRepuestoModel.ts";
+import { SolicitudRepuestoCliente } from "../Model/solicitudRepuestoClienteModel.ts";
 import { Orden } from "../Model/ordenModel.ts";
 
 // GET /api/admin/notificaciones -> órdenes y pedidos de repuestos pendientes
@@ -7,12 +8,11 @@ export const GetNotificacionesAdmin = async (ctx: Context) => {
     const { response } = ctx;
 
     try {
-        const [ordenes, solicitudes] = await Promise.all([
-            new Orden().ListarPendientesAdmin(),
-            new SolicitudRepuesto().ListarPendientesAdmin(),
-        ]);
+        const ordenes = await new Orden().ListarPendientesAdmin();
+        const solicitudes = await new SolicitudRepuesto().ListarPendientesAdmin();
+        const solicitudesClientes = await new SolicitudRepuestoCliente().ListarPendientesAdmin();
         response.status = 200;
-        response.body = { success: true, data: { ordenes, solicitudes } };
+        response.body = { success: true, data: { ordenes, solicitudes, solicitudesClientes } };
     } catch (error) {
         console.error(error);
         response.status = 500;

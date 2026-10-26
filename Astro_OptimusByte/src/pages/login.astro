@@ -68,7 +68,8 @@ const GOOGLE_CLIENT_ID = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
     function destinoDeLogin(rol: string) {
       const esDestinoCliente = destinoSolicitado.startsWith("/cliente") && !destinoSolicitado.startsWith("//");
-      return rol === "Cliente" && esDestinoCliente ? destinoSolicitado : rutaSegunRol(rol as "Admin" | "Mecanico" | "Cliente");
+      const esDestinoPublico = destinoSolicitado === "/" || destinoSolicitado === "/repuestos" || destinoSolicitado.startsWith("/repuestos#");
+      return rol === "Cliente" && (esDestinoCliente || esDestinoPublico) ? destinoSolicitado : rutaSegunRol(rol as "Admin" | "Mecanico" | "Cliente");
     }
 
     async function cargarBotonGoogle() {

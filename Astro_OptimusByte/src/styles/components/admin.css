@@ -214,6 +214,16 @@
 .notification-item strong { color: var(--ink); font-size: 13px; }
 .notification-item span { color: var(--muted); font-size: 12px; }
 .notification-item time { color: var(--muted); font-size: 11px; }
+.notification-image-link {
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 11px;
+  text-decoration: none;
+}
+.notification-image-link:hover { background: var(--bg); }
 .notification-attend {
   flex-shrink: 0;
   padding: 6px 8px;

@@ -1,5 +1,5 @@
 // Carpetas permitidas: el cliente NO puede inventar carpetas
-const CARPETAS_PERMITIDAS = ["clientes", "repuestos"] as const;
+const CARPETAS_PERMITIDAS = ["clientes", "repuestos", "solicitudes"] as const;
 export type CarpetaImagen = typeof CARPETAS_PERMITIDAS[number];
 
 export function esCarpetaValida(valor: string): valor is CarpetaImagen {

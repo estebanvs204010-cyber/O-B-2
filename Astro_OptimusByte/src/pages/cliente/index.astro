@@ -3,57 +3,27 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 ---
 
 <ClienteLayout title="Panel del Cliente" active="inicio">
-  <div class="client-dashboard">
-    <div class="dashboard-left">
-      <section class="card summary-panel">
-        <h2>Resumen de tu cuenta</h2>
-
-        <div class="summary-grid">
-          <a
-            class="card summary-link"
-            href="/cliente/vehiculos"
-          >
-            <h3>Vehículos registrados</h3>
-            <strong id="vehiculosCount">0</strong>
-            <p>Ver los vehículos asociados a tu cuenta.</p>
-            <span class="summary-action">
-              Ver vehículos →
-            </span>
-          </a>
-
-          <a
-            class="card summary-link"
-            href="/cliente/citas"
-          >
-            <h3>Citas programadas</h3>
-            <strong id="citasCount">0</strong>
-            <p>Revisar tus próximas visitas.</p>
-            <span class="summary-action">
-              Ver citas →
-            </span>
-          </a>
+  <section class="card summary-panel">
+    <h2>Resumen de tu cuenta</h2>
     <div class="grid-2">
       <a class="card summary-link" href="#vehiculos">
-        <h3>Vehiculos registrados</h3>
+        <h3>Vehículos registrados</h3>
         <strong id="vehiculosCount">0</strong>
-        <p>Ver los vehiculos asociados a tu cuenta.</p>
-        <span class="summary-action">Ver vehiculos →</span>
+        <p>Ver los vehículos asociados a tu cuenta.</p>
+        <span class="summary-action">Ver vehículos →</span>
       </a>
-
       <a class="card summary-link" href="#ordenes">
-        <h3>Ordenes de servicio</h3>
+        <h3>Órdenes de servicio</h3>
         <strong id="ordenesCount">0</strong>
         <p>Consultar el estado de tus servicios.</p>
-        <span class="summary-action">Ver ordenes →</span>
+        <span class="summary-action">Ver órdenes →</span>
       </a>
-
       <a class="card summary-link" href="/cliente/citas">
         <h3>Citas programadas</h3>
         <strong id="citasCount">0</strong>
-        <p>Revisar tus proximas visitas.</p>
+        <p>Revisar tus próximas visitas.</p>
         <span class="summary-action">Ver citas →</span>
       </a>
-
       <a class="card summary-link" href="#pagos">
         <h3>Pagos registrados</h3>
         <strong id="pagosCount">0</strong>
@@ -264,71 +234,6 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     </div>
 
     <aside class="dashboard-right">
-      <section class="card" id="perfil">
-        <div class="panel-heading-row">
-          <div>
-            <h2>Mi perfil</h2>
-            <p>Actualiza tus datos de contacto.</p>
-          </div>
-
-          <button
-            class="btn btn-outline btn-sm"
-            id="btnEditarPerfil"
-            type="button"
-          >
-            Editar perfil
-          </button>
-        </div>
-
-        <div id="perfilEstado" class="loading">
-          Cargando perfil...
-        </div>
-
-        <div id="perfilDatos" hidden>
-          <p>
-            <strong>Nombre:</strong>
-            <span id="perfilNombre"></span>
-          </p>
-
-          <p>
-            <strong>Correo:</strong>
-            <span id="perfilCorreo"></span>
-          </p>
-
-          <p>
-            <strong>Teléfono:</strong>
-            <span id="perfilTelefono"></span>
-          </p>
-
-          <p>
-            <strong>Documento:</strong>
-            <span id="perfilDocumento"></span>
-          </p>
-
-          <p>
-            <strong>Dirección:</strong>
-            <span id="perfilDireccion">-</span>
-          </p>
-        </div>
-
-        <div class="password-section">
-          <h3>Contraseña</h3>
-
-          <p>
-            Recibirás un enlace de verificación en tu correo.
-          </p>
-
-          <button
-            class="btn btn-outline btn-sm"
-            id="btnCambiarContrasena"
-            type="button"
-          >
-            Cambiar contraseña por correo
-          </button>
-
-          <div id="passwordMensaje" class="alert" hidden></div>
-        </div>
-    <div>
       <section class="card" id="citas">
         <div class="panel-heading-row">
           <div><h2>Mis citas</h2><p>Solicita una cita y espera la confirmación del taller.</p></div>
@@ -367,7 +272,7 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
         <div class="empty">No tienes recordatorios activos.</div>
       </section>
     </aside>
-  </div>
+  </section>
 </ClienteLayout>
 
 <script>
@@ -535,7 +440,6 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
       }
 
       vehiculos.forEach((vehiculo) => {
-      } else vehiculos.forEach((vehiculo) => {
         const article = document.createElement("article");
         article.className = "orden-row";
 
