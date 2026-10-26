@@ -7,7 +7,7 @@ const UploadRouter = new Router();
 UploadRouter.get(
   "/api/uploads/firma",
   authMiddleware,
-  permitirRoles("Admin", "Mecanico"),
+  permitirRoles("Admin", "Mecanico", "Cliente"),
   GetFirmaSubida,
 );
 

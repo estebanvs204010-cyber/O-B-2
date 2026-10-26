@@ -131,6 +131,38 @@ const fechaLarga = (iso: string) =>
           </a>
         ))}
       </div>
+      <div class="hm-stock-preview">
+        <div class="hm-stock-heading">
+          <h3>Repuestos disponibles</h3>
+          <a href="/repuestos">Ver tienda y comprar →</a>
+        </div>
+        <div id="homeRepuestos" class="hm-stock-grid" aria-live="polite">
+          <p class="hm-stock-message">Consultando inventario…</p>
+        </div>
+        <div class="hm-home-cart">
+          <div class="hm-stock-heading">
+            <div>
+              <h3>Tu carrito</h3>
+              <p id="homeCartCount">0 productos</p>
+            </div>
+            <strong id="homeCartTotal">$0</strong>
+          </div>
+          <div id="homeCartItems" class="hm-home-cart-items">
+            <p class="hm-stock-message">Agrega repuestos para comenzar.</p>
+          </div>
+          <form id="homeCheckout" class="hm-home-checkout">
+            <label for="homePayment">Método de pago</label>
+            <select id="homePayment" name="metodo_pago">
+              <option value="Pago en taller">Pago en el taller</option>
+              <option value="Transferencia">Transferencia</option>
+            </select>
+            <label for="homeNotes">Observaciones (opcional)</label>
+            <textarea id="homeNotes" name="observaciones" rows="2" maxlength="300"></textarea>
+            <button id="homeCheckoutButton" class="hm-btn hm-btn--blue" type="submit" disabled>Confirmar pedido</button>
+            <p id="homeShopMessage" class="hm-stock-message" role="status">Confirma tu pedido con tu cuenta de cliente.</p>
+          </form>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -192,3 +224,259 @@ const fechaLarga = (iso: string) =>
     </div>
   </section>
 </PublicLayout>
+
+<script>
+  interface RepuestoCatalogo {
+    id_repuesto: number;
+    nombre: string;
+    categoria?: string | null;
+    precio_unitario: number | string;
+    stock_actual: number | string;
+    imagen_url?: string | null;
+  }
+
+  const grid = document.getElementById("homeRepuestos");
+  const moneda = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+  const carrito = new Map<number, number>();
+  let repuestosDisponibles: RepuestoCatalogo[] = [];
+
+  function renderCarrito() {
+    const items = document.getElementById("homeCartItems");
+    const cantidad = document.getElementById("homeCartCount");
+    const totalElemento = document.getElementById("homeCartTotal");
+    const confirmar = document.getElementById("homeCheckoutButton") as HTMLButtonElement | null;
+    if (!items || !cantidad || !totalElemento || !confirmar) return;
+
+    items.replaceChildren();
+    let unidades = 0;
+    let total = 0;
+    carrito.forEach((cuantas, id) => {
+      const repuesto = repuestosDisponibles.find((item) => item.id_repuesto === id);
+      if (!repuesto) return;
+      unidades += cuantas;
+      total += Number(repuesto.precio_unitario) * cuantas;
+      const fila = document.createElement("div");
+      fila.className = "hm-home-cart-row";
+      const nombre = document.createElement("span");
+      nombre.textContent = `${repuesto.nombre} × ${cuantas}`;
+      const subtotal = document.createElement("strong");
+      subtotal.textContent = moneda.format(Number(repuesto.precio_unitario) * cuantas);
+      const quitar = document.createElement("button");
+      quitar.type = "button";
+      quitar.dataset.removeId = String(id);
+      quitar.textContent = "Quitar";
+      fila.append(nombre, subtotal, quitar);
+      items.append(fila);
+    });
+    if (!unidades) {
+      const vacio = document.createElement("p");
+      vacio.className = "hm-stock-message";
+      vacio.textContent = "Agrega repuestos para comenzar.";
+      items.append(vacio);
+    }
+    cantidad.textContent = `${unidades} producto${unidades === 1 ? "" : "s"}`;
+    totalElemento.textContent = moneda.format(total);
+    confirmar.disabled = unidades === 0;
+    grid?.querySelectorAll<HTMLButtonElement>("button[data-add-id]").forEach((boton) => {
+      const id = Number(boton.dataset.addId);
+      const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
+      boton.disabled = !item || (carrito.get(id) ?? 0) >= Math.min(Number(item.stock_actual), 50);
+    });
+    sessionStorage.setItem("optimusbyte-repuestos-home-carrito", JSON.stringify([...carrito]));
+  }
+
+  async function cargarRepuestos() {
+    if (!grid) return;
+    try {
+      const respuesta = await fetch("/api/repuestos");
+      if (!respuesta.ok) throw new Error(`Error ${respuesta.status}`);
+      const resultado = await respuesta.json();
+      if (!resultado.success || !Array.isArray(resultado.data)) {
+        throw new Error("No se recibió el catálogo de repuestos.");
+      }
+
+      const disponibles = (resultado.data as RepuestoCatalogo[])
+        .filter((item) => Number(item.stock_actual) > 0)
+        .slice(0, 4);
+      repuestosDisponibles = disponibles;
+      const carritoGuardado = sessionStorage.getItem("optimusbyte-repuestos-home-carrito");
+      if (carritoGuardado) {
+        try {
+          const guardados: [number, number][] = JSON.parse(carritoGuardado);
+          guardados.forEach(([id, cantidad]) => {
+            const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
+            if (item && Number.isInteger(cantidad) && cantidad > 0) {
+              carrito.set(id, Math.min(cantidad, Number(item.stock_actual), 50));
+            }
+          });
+        } catch {
+          sessionStorage.removeItem("optimusbyte-repuestos-home-carrito");
+        }
+      }
+      grid.replaceChildren();
+      if (!disponibles.length) {
+        const vacio = document.createElement("p");
+        vacio.className = "hm-stock-message";
+        vacio.textContent = "No hay repuestos disponibles en este momento.";
+        grid.append(vacio);
+        return;
+      }
+
+      disponibles.forEach((item) => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "hm-stock-card";
+        if (item.imagen_url) {
+          const imagen = document.createElement("img");
+          imagen.src = item.imagen_url;
+          imagen.alt = item.nombre;
+          imagen.loading = "lazy";
+          imagen.addEventListener("error", () => imagen.remove());
+          tarjeta.append(imagen);
+        }
+
+        const categoria = document.createElement("small");
+        categoria.textContent = item.categoria || "Repuesto";
+        const nombre = document.createElement("strong");
+        nombre.textContent = item.nombre;
+        const precio = document.createElement("span");
+        precio.textContent = moneda.format(Number(item.precio_unitario));
+        tarjeta.append(categoria, nombre, precio);
+        const agregar = document.createElement("button");
+        agregar.type = "button";
+        agregar.className = "hm-home-add";
+        agregar.dataset.addId = String(item.id_repuesto);
+        agregar.textContent = "Agregar al carrito";
+        agregar.disabled = (carrito.get(item.id_repuesto) ?? 0) >= Math.min(Number(item.stock_actual), 50);
+        tarjeta.append(agregar);
+        grid.append(tarjeta);
+      });
+      renderCarrito();
+    } catch (errorCarga) {
+      console.error("No se pudo cargar el inventario en la página principal:", errorCarga);
+      const mensajeError = document.createElement("p");
+      mensajeError.className = "hm-stock-message";
+      mensajeError.textContent = "No se pudo cargar el inventario. Intenta nuevamente más tarde.";
+      grid.replaceChildren(mensajeError);
+    }
+  }
+
+  grid?.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-add-id]");
+    if (!boton) return;
+    const id = Number(boton.dataset.addId);
+    const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
+    if (!item) return;
+    carrito.set(id, Math.min((carrito.get(id) ?? 0) + 1, Number(item.stock_actual), 50));
+    renderCarrito();
+  });
+
+  document.getElementById("homeCartItems")?.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-remove-id]");
+    if (!boton) return;
+    carrito.delete(Number(boton.dataset.removeId));
+    renderCarrito();
+  });
+
+  document.getElementById("homeCheckout")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!carrito.size) return;
+    const boton = document.getElementById("homeCheckoutButton") as HTMLButtonElement;
+    const mensaje = document.getElementById("homeShopMessage")!;
+    boton.disabled = true;
+    boton.textContent = "Confirmando…";
+    const form = event.currentTarget as HTMLFormElement;
+    const datos = new FormData(form);
+    try {
+      const respuesta = await fetch("/api/cliente/pedidos", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [...carrito].map(([id_repuesto, cantidad]) => ({ id_repuesto, cantidad })),
+          metodo_pago: datos.get("metodo_pago"),
+          observaciones: datos.get("observaciones"),
+        }),
+      });
+      const resultado = await respuesta.json();
+      if (respuesta.status === 401) {
+        window.location.href = "/login?next=%2F";
+        return;
+      }
+      if (!respuesta.ok || !resultado.success) throw new Error(resultado.message ?? "No se pudo registrar el pedido.");
+      carrito.clear();
+      sessionStorage.removeItem("optimusbyte-repuestos-home-carrito");
+      form.reset();
+      mensaje.className = "hm-stock-message hm-shop-success";
+      mensaje.textContent = resultado.message ?? "Pedido registrado correctamente.";
+      await cargarRepuestos();
+    } catch (error) {
+      console.error("No se pudo confirmar el pedido de repuestos:", error);
+      mensaje.className = "hm-stock-message hm-shop-error";
+      mensaje.textContent = error instanceof Error ? error.message : "No se pudo confirmar el pedido.";
+    } finally {
+      boton.textContent = "Confirmar pedido";
+      boton.disabled = carrito.size === 0;
+    }
+  });
+
+  void cargarRepuestos();
+</script>
+
+<style is:global>
+  .hm .hm-stock-preview {
+    margin-top: 34px;
+    padding: 24px;
+    border: 1px solid #dce5ef;
+    border-radius: 16px;
+    background: #fff;
+  }
+
+  .hm .hm-stock-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .hm .hm-stock-heading h3 { margin: 0; color: #142b49; }
+  .hm .hm-stock-heading a { color: #1769d2; font-weight: 700; }
+  .hm .hm-stock-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .hm .hm-stock-card { min-width: 0; display: grid; align-content: start; gap: 7px; padding: 14px; border: 1px solid #e1e8f0; border-radius: 12px; color: #142b49; }
+  .hm .hm-stock-card img { display: block; width: 100%; max-width: 100%; height: 110px; max-height: 110px; object-fit: contain; }
+  .hm .hm-stock-card small { color: #60748b; }
+  .hm .hm-stock-card strong { font-size: 14px; }
+  .hm .hm-stock-card span { color: #1769d2; font-weight: 700; }
+  .hm .hm-home-add { padding: 8px 10px; border: 0; border-radius: 7px; background: #1769d2; color: white; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+  .hm .hm-home-add:disabled { opacity: .55; cursor: not-allowed; }
+  .hm .hm-stock-message { grid-column: 1 / -1; margin: 0; color: #60748b; text-align: center; }
+  .hm .hm-home-cart { margin-top: 18px; padding: 18px; border: 1px solid #e1e8f0; border-radius: 12px; background: #f8fafc; }
+  .hm .hm-home-cart .hm-stock-heading { margin-bottom: 12px; }
+  .hm .hm-home-cart .hm-stock-heading p { margin: 4px 0 0; color: #60748b; font-size: 13px; }
+  .hm .hm-home-cart-items { display: grid; gap: 8px; }
+  .hm .hm-home-cart-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #e1e8f0; color: #142b49; font-size: 13px; }
+  .hm .hm-home-cart-row strong { margin-left: auto; }
+  .hm .hm-home-cart-row button { border: 0; background: transparent; color: #b42318; cursor: pointer; font: inherit; font-size: 12px; }
+  .hm .hm-home-checkout { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 10px; margin-top: 14px; }
+  .hm .hm-home-checkout label { display: grid; gap: 5px; color: #142b49; font-size: 12px; font-weight: 600; }
+  .hm .hm-home-checkout select, .hm .hm-home-checkout textarea { width: 100%; min-height: 40px; padding: 8px; border: 1px solid #d7e0eb; border-radius: 7px; background: white; color: #142b49; font: inherit; }
+  .hm .hm-home-checkout textarea { resize: vertical; }
+  .hm .hm-home-checkout .hm-stock-message { grid-column: 1 / -1; text-align: left; }
+  .hm .hm-home-checkout button:disabled { opacity: .55; cursor: not-allowed; }
+  .hm .hm-shop-success { color: #16703d; }
+  .hm .hm-shop-error { color: #b42318; }
+
+  @media (max-width: 800px) {
+    .hm .hm-stock-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .hm .hm-stock-preview { padding: 16px; }
+    .hm .hm-stock-heading { align-items: flex-start; flex-direction: column; }
+    .hm .hm-stock-grid { grid-template-columns: 1fr; }
+    .hm .hm-home-checkout { grid-template-columns: 1fr; }
+  }
+</style>

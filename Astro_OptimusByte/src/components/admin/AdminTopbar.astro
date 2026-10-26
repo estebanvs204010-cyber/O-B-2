@@ -55,6 +55,17 @@ const { title } = Astro.props;
     mecanico: string;
   }
 
+  interface SolicitudClientePendiente {
+    id_solicitud_cliente: number;
+    nombre_repuesto: string;
+    referencia: string | null;
+    cantidad: number;
+    descripcion: string | null;
+    imagen_url: string | null;
+    fecha_solicitud: string;
+    cliente: string;
+  }
+
   interface NotificacionesAdmin {
     ordenes: Array<{
       id_orden: number;
@@ -65,11 +76,13 @@ const { title } = Astro.props;
       propietario: string;
     }>;
     solicitudes: SolicitudPendiente[];
+    solicitudesClientes: SolicitudClientePendiente[];
   }
 
   type Notificacion =
     | { tipo: "orden"; id: number; fecha: string; titulo: string; detalle: string }
-    | { tipo: "repuesto"; id: number; fecha: string; titulo: string; detalle: string };
+    | { tipo: "repuesto"; id: number; fecha: string; titulo: string; detalle: string }
+    | { tipo: "solicitud-cliente"; id: number; fecha: string; titulo: string; detalle: string; imagenUrl: string | null };
 
   const button = document.getElementById("admin-notifications") as HTMLButtonElement | null;
   const panel = document.getElementById("admin-notification-panel") as HTMLElement | null;
@@ -95,7 +108,7 @@ const { title } = Astro.props;
 
       const link = document.createElement("a");
       link.className = "notification-item";
-      link.href = "/admin/ordenes";
+      link.href = item.tipo === "solicitud-cliente" ? "/admin/repuestos" : "/admin/ordenes";
 
       const title = document.createElement("strong");
       title.textContent = item.titulo;
@@ -106,7 +119,18 @@ const { title } = Astro.props;
       link.append(title, detail, date);
       card.append(link);
 
-      if (item.tipo === "repuesto") {
+      if (item.tipo === "solicitud-cliente" && item.imagenUrl) {
+        const imageLink = document.createElement("a");
+        imageLink.className = "notification-image-link";
+        imageLink.href = item.imagenUrl;
+        imageLink.target = "_blank";
+        imageLink.rel = "noopener noreferrer";
+        imageLink.textContent = "Ver imagen";
+        imageLink.setAttribute("aria-label", `Ver imagen de referencia de ${item.titulo}`);
+        card.append(imageLink);
+      }
+
+      if (item.tipo === "repuesto" || item.tipo === "solicitud-cliente") {
         const attendButton = document.createElement("button");
         attendButton.className = "notification-attend";
         attendButton.type = "button";
@@ -114,7 +138,10 @@ const { title } = Astro.props;
         attendButton.addEventListener("click", async () => {
           attendButton.disabled = true;
           try {
-            await apiFetch(`/api/mecanico/solicitudes-repuesto/${item.id}/atender`, {
+            const ruta = item.tipo === "solicitud-cliente"
+              ? `/api/admin/solicitudes-repuesto-cliente/${item.id}/atender`
+              : `/api/mecanico/solicitudes-repuesto/${item.id}/atender`;
+            await apiFetch(ruta, {
               method: "PUT",
             });
             notificarExito("Solicitud marcada como atendida");
@@ -143,7 +170,7 @@ const { title } = Astro.props;
       if (notificaciones.length === 0) {
         const empty = document.createElement("p");
         empty.className = "notification-empty";
-        empty.textContent = "No hay órdenes ni solicitudes pendientes.";
+        empty.textContent = "No hay órdenes ni solicitudes de repuestos pendientes.";
         notificationList.append(empty);
         return;
       }
@@ -172,9 +199,19 @@ const { title } = Astro.props;
             detalle: `${solicitud.nombre_repuesto} (x${solicitud.cantidad}) · ${solicitud.mecanico} · ${solicitud.placa}`,
           }),
         );
+        const solicitudesClientes = (response.data?.solicitudesClientes ?? []).map(
+          (solicitud): Notificacion => ({
+            tipo: "solicitud-cliente",
+            id: solicitud.id_solicitud_cliente,
+            fecha: solicitud.fecha_solicitud,
+            titulo: `Repuesto solicitado · ${solicitud.nombre_repuesto}`,
+            detalle: `${solicitud.cliente} · ${solicitud.cantidad} unidad${solicitud.cantidad === 1 ? "" : "es"}${solicitud.referencia ? ` · Ref. ${solicitud.referencia}` : ""}${solicitud.descripcion ? ` · ${solicitud.descripcion}` : ""}`,
+            imagenUrl: solicitud.imagen_url,
+          }),
+        );
 
         mostrarNotificaciones(
-          [...ordenes, ...solicitudes].sort(
+          [...ordenes, ...solicitudes, ...solicitudesClientes].sort(
             (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
           ),
         );

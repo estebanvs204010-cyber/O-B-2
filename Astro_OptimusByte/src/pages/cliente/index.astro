@@ -3,59 +3,107 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
 ---
 
 <ClienteLayout title="Panel del Cliente" active="inicio">
-  <div class="client-dashboard">
-    <div class="dashboard-left">
-      <section class="card summary-panel">
-        <h2>Resumen de tu cuenta</h2>
+  <section class="card summary-panel">
+    <h2>Resumen de tu cuenta</h2>
+    <div class="grid-2">
+      <a class="card summary-link" href="#vehiculos">
+        <h3>Vehículos registrados</h3>
+        <strong id="vehiculosCount">0</strong>
+        <p>Ver los vehículos asociados a tu cuenta.</p>
+        <span class="summary-action">Ver vehículos →</span>
+      </a>
+      <a class="card summary-link" href="#ordenes">
+        <h3>Órdenes de servicio</h3>
+        <strong id="ordenesCount">0</strong>
+        <p>Consultar el estado de tus servicios.</p>
+        <span class="summary-action">Ver órdenes →</span>
+      </a>
+      <a class="card summary-link" href="/cliente/citas">
+        <h3>Citas programadas</h3>
+        <strong id="citasCount">0</strong>
+        <p>Revisar tus próximas visitas.</p>
+        <span class="summary-action">Ver citas →</span>
+      </a>
+      <a class="card summary-link" href="#pagos">
+        <h3>Pagos registrados</h3>
+        <strong id="pagosCount">0</strong>
+        <p>Consultar facturas y pagos.</p>
+        <span class="summary-action">Ver pagos →</span>
+      </a>
+    </div>
+  </section>
 
-        <div class="summary-grid">
-          <a
-            class="card summary-link"
-            href="/cliente/vehiculos"
-          >
-            <h3>Vehículos registrados</h3>
-            <strong id="vehiculosCount">0</strong>
-            <p>Ver los vehículos asociados a tu cuenta.</p>
-            <span class="summary-action">
-              Ver vehículos →
-            </span>
-          </a>
+  <section class="grid-2">
+    <div>
+      <section class="card" id="perfil">
+        <div class="panel-heading-row">
+          <div>
+            <h2>Mi perfil</h2>
+            <p>Actualiza tus datos de contacto.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnEditarPerfil" type="button">
+            Editar perfil
+          </button>
+        </div>
 
-          <a
-            class="card summary-link"
-            href="/cliente/ordenes"
-          >
-            <h3>Órdenes de servicio</h3>
-            <strong id="ordenesCount">0</strong>
-            <p>Consultar el estado de tus servicios.</p>
-            <span class="summary-action">
-              Ver órdenes →
-            </span>
-          </a>
+        <div id="perfilEstado" class="loading">Cargando perfil...</div>
 
-          <a
-            class="card summary-link"
-            href="/cliente/citas"
-          >
-            <h3>Citas programadas</h3>
-            <strong id="citasCount">0</strong>
-            <p>Revisar tus próximas visitas.</p>
-            <span class="summary-action">
-              Ver citas →
-            </span>
-          </a>
+        <div id="perfilDatos" hidden>
+          <p><strong>Nombre:</strong> <span id="perfilNombre"></span></p>
+          <p><strong>Correo:</strong> <span id="perfilCorreo"></span></p>
+          <p><strong>Telefono:</strong> <span id="perfilTelefono"></span></p>
+          <p><strong>Documento:</strong> <span id="perfilDocumento"></span></p>
+          <p><strong>Direccion:</strong> <span id="perfilDireccion">-</span></p>
+        </div>
 
-          <a
-            class="card summary-link"
-            href="/cliente/pagos"
-          >
-            <h3>Pagos registrados</h3>
-            <strong id="pagosCount">0</strong>
-            <p>Consultar facturas y pagos.</p>
-            <span class="summary-action">
-              Ver pagos →
-            </span>
-          </a>
+        <form id="formPerfil" class="vehicle-form" hidden>
+          <h3>Editar informacion</h3>
+
+          <div class="field">
+            <label for="perfilNombreInput">Nombre completo</label>
+            <input id="perfilNombreInput" name="nombre_completo" required />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="perfilCorreoInput">Correo</label>
+              <input id="perfilCorreoInput" name="correo" type="email" required />
+            </div>
+            <div class="field">
+              <label for="perfilTelefonoInput">Telefono</label>
+              <input id="perfilTelefonoInput" name="telefono" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="perfilDireccionInput">Direccion</label>
+            <input id="perfilDireccionInput" name="direccion" />
+          </div>
+
+          <div class="field">
+            <label for="perfilDocumentoInput">Documento</label>
+            <input id="perfilDocumentoInput" disabled />
+          </div>
+
+          <div id="perfilMensaje" class="alert" hidden></div>
+
+          <div class="vehicle-actions">
+            <button class="btn btn-outline" id="btnCancelarPerfil" type="button">
+              Cancelar
+            </button>
+            <button class="btn btn-primary" type="submit">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+
+        <div class="password-section">
+          <h3>Contraseña</h3>
+          <p>Recibiras un enlace de verificacion en tu correo.</p>
+          <button class="btn btn-outline btn-sm" id="btnCambiarContrasena" type="button">
+            Cambiar contraseña por correo
+          </button>
+          <div id="passwordMensaje" class="alert" hidden></div>
         </div>
       </section>
 
@@ -179,73 +227,45 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     </div>
 
     <aside class="dashboard-right">
-      <section class="card" id="perfil">
+      <section class="card" id="citas">
         <div class="panel-heading-row">
-          <div>
-            <h2>Mi perfil</h2>
-            <p>Actualiza tus datos de contacto.</p>
+          <div><h2>Mis citas</h2><p>Solicita una cita y espera la confirmación del taller.</p></div>
+          <a class="btn btn-primary btn-sm" href="/cliente/citas">Agendar cita</a>
+        </div>
+        <div id="citasEstado" class="loading">Cargando tus citas...</div>
+        <div id="citasLista" class="orden-list"></div>
+        <form id="formCita" class="vehicle-form" hidden>
+          <h3 id="tituloFormCita">Agendar cita</h3>
+          <div class="field">
+            <label for="citaVehiculo">Vehículo</label>
+            <select id="citaVehiculo" required></select>
           </div>
+          <div class="field-row">
+            <div class="field"><label for="citaFecha">Fecha</label><input id="citaFecha" type="date" required /></div>
+            <div class="field"><label for="citaHora">Horario disponible</label>
+              <select id="citaHora" required><option value="">Selecciona primero una fecha</option></select>
+            </div>
+          </div>
+          <div class="field"><label for="citaMotivo">Motivo (opcional)</label><textarea id="citaMotivo" rows="3" maxlength="300"></textarea></div>
+          <div id="citaMensaje" class="alert" hidden></div>
+          <div class="vehicle-actions">
+            <button id="btnCancelarFormularioCita" class="btn btn-outline" type="button">Cerrar</button>
+            <button class="btn btn-primary" type="submit">Solicitar cita</button>
+          </div>
+        </form>
+      </section>
 
-          <button
-            class="btn btn-outline btn-sm"
-            id="btnEditarPerfil"
-            type="button"
-          >
-            Editar perfil
-          </button>
-        </div>
+      <section class="card" id="pagos">
+        <h2>Pagos y facturas</h2>
+        <div class="empty">No tienes pagos registrados.</div>
+      </section>
 
-        <div id="perfilEstado" class="loading">
-          Cargando perfil...
-        </div>
-
-        <div id="perfilDatos" hidden>
-          <p>
-            <strong>Nombre:</strong>
-            <span id="perfilNombre"></span>
-          </p>
-
-          <p>
-            <strong>Correo:</strong>
-            <span id="perfilCorreo"></span>
-          </p>
-
-          <p>
-            <strong>Teléfono:</strong>
-            <span id="perfilTelefono"></span>
-          </p>
-
-          <p>
-            <strong>Documento:</strong>
-            <span id="perfilDocumento"></span>
-          </p>
-
-          <p>
-            <strong>Dirección:</strong>
-            <span id="perfilDireccion">-</span>
-          </p>
-        </div>
-
-        <div class="password-section">
-          <h3>Contraseña</h3>
-
-          <p>
-            Recibirás un enlace de verificación en tu correo.
-          </p>
-
-          <button
-            class="btn btn-outline btn-sm"
-            id="btnCambiarContrasena"
-            type="button"
-          >
-            Cambiar contraseña por correo
-          </button>
-
-          <div id="passwordMensaje" class="alert" hidden></div>
-        </div>
+      <section class="card" id="recordatorios">
+        <h2>Recordatorios</h2>
+        <div class="empty">No tienes recordatorios activos.</div>
       </section>
     </aside>
-  </div>
+  </section>
 </ClienteLayout>
 
 <script>

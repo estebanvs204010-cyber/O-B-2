@@ -15,34 +15,32 @@ const ESTADOS_QUE_CIERRAN_ORDEN = ["Finalizado", "Entregado", "Cancelado"];
 export class Orden {
     // ---------- Resumen para el dashboard administrativo ----------
     public async ObtenerResumenAdmin() {
-        const [[resumen], ordenesRecientes] = await Promise.all([
-            conexion.query(
-                `SELECT COUNT(*) AS total_ordenes,
-                        COALESCE(SUM(estado = 'Pendiente'), 0) AS ordenes_pendientes,
-                        COALESCE(SUM(estado NOT IN ('Finalizado', 'Entregado', 'Cancelado')), 0) AS ordenes_activas,
-                        COALESCE(SUM(estado = 'En Proceso'), 0) AS ordenes_en_proceso,
-                        COALESCE(SUM(estado = 'Esperando Repuestos'), 0) AS ordenes_esperando_repuestos,
-                        COALESCE(SUM(estado = 'Finalizado'), 0) AS ordenes_finalizadas,
-                        COALESCE(SUM(estado = 'Entregado'), 0) AS ordenes_entregadas,
-                        COALESCE(SUM(estado = 'Cancelado'), 0) AS ordenes_canceladas,
-                        (SELECT COUNT(*) FROM clientes WHERE activo = 1) AS clientes_activos,
-                        (SELECT COUNT(*) FROM vehiculos WHERE activo = 1) AS vehiculos_activos,
-                        (SELECT COUNT(*)
-                         FROM usuarios u
-                         INNER JOIN roles r ON r.id_rol = u.id_rol
-                         WHERE r.nombre = 'Mecanico' AND u.activo = 1) AS mecanicos_activos
-                 FROM ordenestrabajo`,
-            ),
-            conexion.query(
-                `SELECT o.id_orden, o.estado, o.tipo_servicio, o.fecha_apertura,
-                        v.placa, v.marca, v.modelo, c.nombre_completo AS propietario
-                 FROM ordenestrabajo o
-                 INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
-                 INNER JOIN clientes c ON c.id_cliente = v.id_cliente
-                 ORDER BY o.fecha_apertura DESC
-                 LIMIT 6`,
-            ),
-        ]);
+        const [resumen] = await conexion.query(
+            `SELECT COUNT(*) AS total_ordenes,
+                    COALESCE(SUM(estado = 'Pendiente'), 0) AS ordenes_pendientes,
+                    COALESCE(SUM(estado NOT IN ('Finalizado', 'Entregado', 'Cancelado')), 0) AS ordenes_activas,
+                    COALESCE(SUM(estado = 'En Proceso'), 0) AS ordenes_en_proceso,
+                    COALESCE(SUM(estado = 'Esperando Repuestos'), 0) AS ordenes_esperando_repuestos,
+                    COALESCE(SUM(estado = 'Finalizado'), 0) AS ordenes_finalizadas,
+                    COALESCE(SUM(estado = 'Entregado'), 0) AS ordenes_entregadas,
+                    COALESCE(SUM(estado = 'Cancelado'), 0) AS ordenes_canceladas,
+                    (SELECT COUNT(*) FROM clientes WHERE activo = 1) AS clientes_activos,
+                    (SELECT COUNT(*) FROM vehiculos WHERE activo = 1) AS vehiculos_activos,
+                    (SELECT COUNT(*)
+                     FROM usuarios u
+                     INNER JOIN roles r ON r.id_rol = u.id_rol
+                     WHERE r.nombre = 'Mecanico' AND u.activo = 1) AS mecanicos_activos
+             FROM ordenestrabajo`,
+        );
+        const ordenesRecientes = await conexion.query(
+            `SELECT o.id_orden, o.estado, o.tipo_servicio, o.fecha_apertura,
+                    v.placa, v.marca, v.modelo, c.nombre_completo AS propietario
+             FROM ordenestrabajo o
+             INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
+             INNER JOIN clientes c ON c.id_cliente = v.id_cliente
+             ORDER BY o.fecha_apertura DESC
+             LIMIT 6`,
+        );
 
         return { resumen, ordenes_recientes: ordenesRecientes };
     }

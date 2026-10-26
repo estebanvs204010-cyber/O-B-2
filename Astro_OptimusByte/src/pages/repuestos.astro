@@ -1,78 +1,714 @@
 ---
-import PublicLayout from '../layouts/PublicLayout.astro';
-import PageBanner from '../components/PageBanner.astro';
-import Icon from '../components/Icon.astro';
-import { TALLER, repuestos, pasos } from '../data/taller';
+import PublicLayout from "../layouts/PublicLayout.astro";
+import PageBanner from "../components/PageBanner.astro";
+import { ShoppingCart, X } from "lucide-astro";
+import { getRolSSR, isAuthenticatedSSR } from "../utils/auth";
 
-const wa = (cat: string) =>
-  `https://wa.me/${TALLER.whatsapp}?text=${encodeURIComponent(`Hola, necesito cotizar repuestos de ${cat} para mi vehículo.`)}`;
-
-const ventajas = [
-  { icono: 'check', titulo: 'Compatibilidad verificada', texto: 'Confirmamos la referencia exacta para tu marca, modelo y año.' },
-  { icono: 'wrench', titulo: 'Instalación en el taller', texto: 'Si lo prefieres, lo instalamos nosotros con garantía de servicio.' },
-  { icono: 'zap', titulo: 'Cotización rápida', texto: 'Escríbenos por WhatsApp y te respondemos con precio y disponibilidad.' },
-];
+const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
+  getRolSSR(Astro.cookies) === "Cliente";
 ---
-<PublicLayout title="Repuestos | Taller Mecánico OptimusByte" description="Repuestos y accesorios para tu vehículo: frenos, motor, suspensión, dirección, carrocería y más. Cotiza por WhatsApp.">
+
+<PublicLayout
+  title="Tienda de repuestos | Taller Mecánico OptimusByte"
+  description="Consulta el inventario de repuestos OptimusByte y realiza tu pedido en línea."
+>
   <PageBanner
     eyebrow="Tienda de repuestos"
-    titulo="Repuestos"
-    texto="Encuentra los repuestos y accesorios que tu vehículo necesita, con asesoría de nuestros técnicos."
+    titulo="Compra tus repuestos"
+    texto="Consulta existencias y precios actualizados. Los pedidos se confirman con tu cuenta de cliente."
   />
 
-  <section class="hm-section">
+  <section class="hm-section hm-shop-section">
     <div class="hm-wrap">
-      <div class="hm-section-head center" data-reveal>
-        <p class="hm-eyebrow">Categorías</p>
-        <h2>¿Qué estás buscando?</h2>
-        <p>Elige una categoría y cotízala por WhatsApp con tu vehículo.</p>
+      <div id="shopMessage" class="hm-shop-message" role="status" hidden></div>
+      <section class="hm-shop-catalog" aria-labelledby="catalogTitle">
+          <div class="hm-shop-heading">
+            <div>
+              <p class="hm-eyebrow">Inventario del taller</p>
+              <h2 id="catalogTitle">Catálogo</h2>
+              <p id="catalogCount">Cargando repuestos…</p>
+            </div>
+            <div class="hm-shop-filters">
+              <label class="hm-shop-sr-only" for="catalogSearch">Buscar repuesto</label>
+              <input id="catalogSearch" type="search" placeholder="Buscar repuesto…" />
+              <label class="hm-shop-sr-only" for="catalogCategory">Categoría</label>
+              <select id="catalogCategory">
+                <option value="">Todas las categorías</option>
+              </select>
+            </div>
+          </div>
+          <div id="catalogGrid" class="hm-shop-products" aria-live="polite">
+            <p class="hm-shop-empty">Consultando inventario…</p>
+          </div>
+      </section>
+    </div>
+  </section>
+
+  <button id="cartToggle" class="hm-shop-cart-toggle" type="button" aria-label="Abrir carrito" aria-expanded="false" aria-controls="cartDialog">
+    <ShoppingCart aria-hidden="true" />
+    <span id="cartBadge" class="hm-shop-cart-badge" hidden>0</span>
+  </button>
+
+  <div id="cartOverlay" class="hm-shop-cart-overlay" hidden>
+    <button id="cartBackdrop" class="hm-shop-cart-backdrop" type="button" aria-label="Cerrar carrito"></button>
+    <aside id="cartDialog" class="hm-shop-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle" tabindex="-1">
+      <div class="hm-shop-cart-header">
+        <div>
+          <p class="hm-eyebrow">Tu selección</p>
+          <h2 id="cartTitle">Carrito</h2>
+          <p id="cartCount" class="hm-shop-muted">0 productos</p>
+        </div>
+        <button id="cartClose" class="hm-shop-cart-close" type="button" aria-label="Cerrar carrito"><X aria-hidden="true" /></button>
       </div>
-      <div class="hm-cards hm-cards--3">
-        {repuestos.map((r, i) => (
-          <article class="hm-card" data-reveal style={`transition-delay:${i * 0.06}s`}>
-            <div class="hm-card-icon"><Icon name={r.icono} /></div>
-            <h3>{r.nombre}</h3>
-            <p>{r.texto}</p>
-            <a href={wa(r.nombre)} target="_blank" rel="noopener" class="hm-card-link">Cotizar por WhatsApp →</a>
-          </article>
-        ))}
+      <div id="cartItems" class="hm-shop-cart-items">
+        <p class="hm-shop-empty">Agrega repuestos para comenzar.</p>
       </div>
+      <div class="hm-shop-total">
+        <span>Total estimado</span>
+        <strong id="cartTotal">$0</strong>
+      </div>
+      <form id="checkoutForm" class="hm-shop-checkout">
+        <label for="paymentMethod">Método de pago</label>
+        <select id="paymentMethod" name="metodo_pago" required>
+          <option value="Pago en taller">Pago en el taller</option>
+          <option value="Transferencia">Transferencia</option>
+        </select>
+        <small>El pago se coordina con el taller; no se procesa en línea.</small>
+        <label for="orderNotes">Observaciones <span>(opcional)</span></label>
+        <textarea id="orderNotes" name="observaciones" rows="3" maxlength="300" placeholder="Escribe una nota para el taller"></textarea>
+        <button id="checkoutButton" class="hm-btn hm-btn--blue" type="submit" disabled>
+          Confirmar pedido
+        </button>
+        <small>Para confirmar el pedido debes iniciar sesión como cliente.</small>
+      </form>
+    </aside>
+  </div>
+
+  <section class="hm-section hm-section--gray" id="mis-pedidos">
+    <div class="hm-wrap">
+      <div class="hm-shop-heading hm-shop-account-heading">
+        <div>
+          <p class="hm-eyebrow">Tu cuenta</p>
+          <h2>{mostrarAreaCliente ? "Pedidos y solicitudes" : "Solicita tu repuesto"}</h2>
+          <p>{mostrarAreaCliente
+            ? "Solicita una pieza que no encuentras en el inventario y consulta tus pedidos."
+            : "¿No encuentras la pieza que necesitas? Inicia sesión para solicitarla al taller."}</p>
+        </div>
+      </div>
+      <section class="hm-shop-request" aria-labelledby="requestTitle">
+        <div class="hm-shop-request-heading">
+          <p class="hm-eyebrow">{mostrarAreaCliente ? "¿No está en el catálogo?" : "Solicitudes al taller"}</p>
+          <h3 id="requestTitle">{mostrarAreaCliente ? "Solicitar un repuesto" : "Pide el repuesto que necesitas"}</h3>
+          <p>{mostrarAreaCliente
+            ? "Cuéntanos cuál necesitas. El taller recibirá tu solicitud y revisará la referencia."
+            : "Inicia sesión como cliente para abrir el formulario de solicitud."}</p>
+        </div>
+        {mostrarAreaCliente
+          ? <>
+            <div id="requestMessage" class="hm-shop-message" role="status" hidden></div>
+            <form id="partRequestForm" class="hm-shop-request-form">
+              <label for="requestName">Nombre del repuesto <span>obligatorio</span></label>
+              <input id="requestName" name="nombre_repuesto" type="text" maxlength="160" required placeholder="Ej. Espejo retrovisor derecho" />
+              <div class="hm-shop-request-fields">
+                <div>
+                  <label for="requestReference">Referencia <span>opcional</span></label>
+                  <input id="requestReference" name="referencia" type="text" maxlength="120" placeholder="Código o referencia de la pieza" />
+                </div>
+                <div>
+                  <label for="requestQuantity">Cantidad</label>
+                  <input id="requestQuantity" name="cantidad" type="number" min="1" max="50" value="1" required />
+                </div>
+              </div>
+              <label for="requestDescription">Detalles del repuesto <span>opcional</span></label>
+              <textarea id="requestDescription" name="descripcion" rows="3" maxlength="1000" placeholder="Marca, modelo del vehículo u otra información para identificarlo"></textarea>
+              <label for="requestImage">Imagen de referencia <span>opcional · JPG, PNG o WebP, máximo 5 MB</span></label>
+              <input id="requestImage" name="imagen" type="file" accept="image/jpeg,image/png,image/webp" />
+              <div id="requestImagePreview" class="hm-shop-request-preview" hidden>
+                <img id="requestPreviewImage" alt="Vista previa de la imagen de referencia" />
+                <button id="removeRequestImage" class="hm-btn hm-btn--ghost hm-btn--sm" type="button">Quitar imagen</button>
+              </div>
+              <button id="submitPartRequest" class="hm-btn hm-btn--blue" type="submit">Enviar solicitud al taller</button>
+            </form>
+          </>
+          : <div class="hm-shop-login-prompt">
+            <a class="hm-btn hm-btn--blue hm-shop-login-button" href="/login?next=%2Frepuestos%23mis-pedidos">Iniciar sesión</a>
+          </div>}
+      </section>
+      {mostrarAreaCliente && <>
+        <div class="hm-shop-load-orders">
+          <button id="loadOrders" class="hm-btn hm-btn--ghost hm-btn--sm" type="button">Cargar mis pedidos</button>
+        </div>
+        <div id="ordersList" class="hm-shop-orders" aria-live="polite">
+          <p class="hm-shop-empty">Pulsa «Cargar mis pedidos» para consultar tu historial.</p>
+        </div>
+      </>}
     </div>
   </section>
 
   <section class="hm-values">
-    <div class="hm-wrap hm-values-grid">
-      {ventajas.map((v) => (
-        <div class="hm-value" data-reveal>
-          <Icon name={v.icono} />
-          <div><strong>{v.titulo}</strong><small>{v.texto}</small></div>
-        </div>
-      ))}
-    </div>
-  </section>
-
-  <section class="hm-section hm-section--gray">
     <div class="hm-wrap">
-      <div class="hm-section-head center" data-reveal>
-        <p class="hm-eyebrow">¿Cómo pedirlos?</p>
-        <h2>Fácil y sin vueltas</h2>
+      <div class="hm-values-grid">
+        <div class="hm-value"><strong>Stock actualizado</strong><small>Las existencias se consultan directamente del inventario.</small></div>
+        <div class="hm-value"><strong>Precio confirmado</strong><small>El precio final se calcula desde la base de datos al realizar el pedido.</small></div>
+        <div class="hm-value"><strong>Asesoría del taller</strong><small>Podemos verificar la compatibilidad con tu vehículo.</small></div>
       </div>
-      <div class="hm-steps">
-        {pasos.map((p, i) => (
-          <div class="hm-step" data-reveal style={`transition-delay:${i * 0.1}s`}>
-            <h3>{p.titulo}</h3>
-            <p>{p.texto}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <section class="hm-cta">
-    <div class="hm-wrap" data-reveal>
-      <h2>¿No encuentras tu repuesto?</h2>
-      <p>Escríbenos con la marca, modelo y año de tu vehículo y lo conseguimos.</p>
-      <a href={`https://wa.me/${TALLER.whatsapp}`} target="_blank" rel="noopener" class="hm-btn hm-btn--light">Escribir por WhatsApp</a>
     </div>
   </section>
 </PublicLayout>
+
+<script>
+  interface Repuesto {
+    id_repuesto: number;
+    referencia: string;
+    nombre: string;
+    descripcion?: string | null;
+    categoria?: string | null;
+    precio_unitario: number | string;
+    stock_actual: number | string;
+    marca?: string | null;
+    modelo?: string | null;
+    imagen_url?: string | null;
+  }
+
+  interface ItemPedido {
+    cantidad: number;
+    subtotal: number | string;
+    nombre: string;
+  }
+
+  interface Pedido {
+    id_pedido: number;
+    estado: string;
+    metodo_pago: string;
+    total: number | string;
+    fecha_pedido: string;
+    items: ItemPedido[];
+  }
+
+  const catalogo = document.getElementById("catalogGrid")!;
+  const cantidadCatalogo = document.getElementById("catalogCount")!;
+  const buscarInput = document.getElementById("catalogSearch") as HTMLInputElement;
+  const categoriaSelect = document.getElementById("catalogCategory") as HTMLSelectElement;
+  const carritoLista = document.getElementById("cartItems")!;
+  const cantidadCarrito = document.getElementById("cartCount")!;
+  const totalCarrito = document.getElementById("cartTotal")!;
+  const formulario = document.getElementById("checkoutForm") as HTMLFormElement;
+  const botonPedido = document.getElementById("checkoutButton") as HTMLButtonElement;
+  const pedidosLista = document.getElementById("ordersList")!;
+  const mensaje = document.getElementById("shopMessage")!;
+  const formularioSolicitud = document.getElementById("partRequestForm") as HTMLFormElement;
+  const solicitudMensaje = document.getElementById("requestMessage")!;
+  const archivoSolicitud = document.getElementById("requestImage") as HTMLInputElement;
+  const vistaPreviaSolicitud = document.getElementById("requestImagePreview")!;
+  const imagenPreviaSolicitud = document.getElementById("requestPreviewImage") as HTMLImageElement;
+  const botonQuitarImagen = document.getElementById("removeRequestImage") as HTMLButtonElement;
+  const botonEnviarSolicitud = document.getElementById("submitPartRequest") as HTMLButtonElement;
+  const cartOverlay = document.getElementById("cartOverlay")!;
+  const cartToggle = document.getElementById("cartToggle") as HTMLButtonElement;
+  const cartBadge = document.getElementById("cartBadge")!;
+  const cartDialog = document.getElementById("cartDialog")!;
+  const moneda = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+  const carrito = new Map<number, number>();
+  let repuestos: Repuesto[] = [];
+  let urlPreviaSolicitud: string | null = null;
+
+  function crearElemento<K extends keyof HTMLElementTagNameMap>(
+    tipo: K,
+    texto?: string,
+    clase?: string,
+  ): HTMLElementTagNameMap[K] {
+    const nodo = document.createElement(tipo);
+    if (texto !== undefined) nodo.textContent = texto;
+    if (clase) nodo.className = clase;
+    return nodo;
+  }
+
+  function crearBoton(texto: string, accion: string, id: number) {
+    const boton = crearElemento("button", texto, "hm-shop-quantity-button");
+    boton.type = "button";
+    boton.dataset.action = accion;
+    boton.dataset.id = String(id);
+    return boton;
+  }
+
+  function mostrarMensaje(texto: string, tipo: "error" | "success") {
+    mensaje.textContent = texto;
+    mensaje.className = `hm-shop-message ${tipo}`;
+    mensaje.hidden = false;
+  }
+
+  function setCartOpen(open: boolean) {
+    cartOverlay.hidden = !open;
+    cartToggle.setAttribute("aria-expanded", String(open));
+    cartToggle.setAttribute("aria-label", open ? "Cerrar carrito" : "Abrir carrito");
+    document.body.classList.toggle("hm-shop-cart-open", open);
+    if (open) cartDialog.focus();
+    else cartToggle.focus();
+  }
+
+  function renderCatalogo() {
+    const busqueda = buscarInput.value.trim().toLocaleLowerCase("es");
+    const categoria = categoriaSelect.value;
+    const filtrados = repuestos.filter((item) => {
+      const texto = `${item.nombre} ${item.referencia} ${item.marca ?? ""} ${item.modelo ?? ""} ${item.descripcion ?? ""}`.toLocaleLowerCase("es");
+      return (!categoria || (item.categoria || "General") === categoria) && texto.includes(busqueda);
+    });
+    cantidadCatalogo.textContent = `${filtrados.length} repuesto${filtrados.length === 1 ? "" : "s"} encontrado${filtrados.length === 1 ? "" : "s"}`;
+    catalogo.replaceChildren();
+
+    if (!filtrados.length) {
+      catalogo.append(crearElemento("p", repuestos.length ? "No hay repuestos que coincidan con tu búsqueda." : "No hay repuestos disponibles por ahora.", "hm-shop-empty"));
+      return;
+    }
+
+    filtrados.forEach((item) => {
+      const tarjeta = crearElemento("article", undefined, "hm-shop-product");
+      const imagenWrap = crearElemento("div", undefined, "hm-shop-product-image");
+      imagenWrap.append(crearElemento("span", "⚙", "hm-shop-product-fallback"));
+      if (item.imagen_url) {
+        const imagen = crearElemento("img");
+        imagen.src = item.imagen_url;
+        imagen.alt = item.nombre;
+        imagen.loading = "lazy";
+        imagen.addEventListener("error", () => imagen.remove());
+        imagenWrap.append(imagen);
+      }
+      const contenido = crearElemento("div", undefined, "hm-shop-product-content");
+      contenido.append(crearElemento("small", item.categoria || "Repuesto", "hm-shop-category"));
+      contenido.append(crearElemento("h3", item.nombre));
+      contenido.append(crearElemento("p", item.descripcion || `${item.marca ?? ""} ${item.modelo ?? ""} · Ref. ${item.referencia}`.trim(), "hm-shop-product-description"));
+      const pie = crearElemento("div", undefined, "hm-shop-product-footer");
+      const precio = crearElemento("strong", moneda.format(Number(item.precio_unitario)));
+      const stock = Number(item.stock_actual);
+      const disponible = crearElemento("small", stock > 0 ? `${stock} disponible${stock === 1 ? "" : "s"}` : "Agotado", stock > 0 ? "hm-shop-stock" : "hm-shop-stock out");
+      const agregar = crearElemento("button", "Agregar al carrito", "hm-btn hm-btn--blue hm-btn--sm hm-shop-add-button");
+      agregar.type = "button";
+      agregar.dataset.action = "add";
+      agregar.dataset.id = String(item.id_repuesto);
+      agregar.disabled = stock < 1 || (carrito.get(item.id_repuesto) ?? 0) >= Math.min(stock, 50);
+      const precioYStock = crearElemento("div", undefined, "hm-shop-price-stock");
+      precioYStock.append(precio, disponible);
+      pie.append(precioYStock, agregar);
+      contenido.append(pie);
+      tarjeta.append(imagenWrap, contenido);
+      catalogo.append(tarjeta);
+    });
+  }
+
+  function guardarCarrito() {
+    sessionStorage.setItem("optimusbyte-repuestos-carrito", JSON.stringify([...carrito]));
+  }
+
+  function renderCarrito() {
+    carritoLista.replaceChildren();
+    let unidades = 0;
+    let total = 0;
+    for (const [id, cantidad] of carrito) {
+      const item = repuestos.find((repuesto) => repuesto.id_repuesto === id);
+      if (!item) continue;
+      unidades += cantidad;
+      total += Number(item.precio_unitario) * cantidad;
+      const fila = crearElemento("div", undefined, "hm-shop-cart-row");
+      const texto = crearElemento("div", undefined, "hm-shop-cart-info");
+      texto.append(crearElemento("strong", item.nombre));
+      texto.append(crearElemento("small", moneda.format(Number(item.precio_unitario))));
+      const controles = crearElemento("div", undefined, "hm-shop-cart-controls");
+      controles.append(crearBoton("−", "decrease", id));
+      controles.append(crearElemento("span", String(cantidad)));
+      controles.append(crearBoton("+", "increase", id));
+      controles.append(crearBoton("Quitar", "remove", id));
+      fila.append(texto, controles);
+      carritoLista.append(fila);
+    }
+    if (!unidades) carritoLista.append(crearElemento("p", "Agrega repuestos para comenzar.", "hm-shop-empty"));
+    cantidadCarrito.textContent = `${unidades} producto${unidades === 1 ? "" : "s"}`;
+    totalCarrito.textContent = moneda.format(total);
+    botonPedido.disabled = unidades === 0;
+    cartBadge.textContent = String(unidades);
+    cartBadge.hidden = unidades === 0;
+    cartToggle.setAttribute("aria-label", `Abrir carrito, ${unidades} producto${unidades === 1 ? "" : "s"}`);
+    guardarCarrito();
+    renderCatalogo();
+  }
+
+  function renderPedidos(pedidos: Pedido[]) {
+    pedidosLista.replaceChildren();
+    if (!pedidos.length) {
+      pedidosLista.append(crearElemento("p", "Todavía no tienes pedidos de repuestos.", "hm-shop-empty"));
+      return;
+    }
+    pedidos.forEach((pedido) => {
+      const tarjeta = crearElemento("article", undefined, "hm-shop-order");
+      const cabecera = crearElemento("div", undefined, "hm-shop-order-header");
+      const titulo = crearElemento("strong", `Pedido #${pedido.id_pedido}`);
+      const estado = crearElemento("span", pedido.estado);
+      cabecera.append(titulo, estado);
+      const detalles = crearElemento("ul");
+      (pedido.items ?? []).forEach((item) => {
+        detalles.append(crearElemento("li", `${item.cantidad} × ${item.nombre} — ${moneda.format(Number(item.subtotal))}`));
+      });
+      const fecha = new Date(pedido.fecha_pedido.replace(" ", "T"));
+      const fechaTexto = Number.isNaN(fecha.getTime()) ? pedido.fecha_pedido : fecha.toLocaleString("es-CO");
+      tarjeta.append(cabecera, crearElemento("p", fechaTexto), detalles);
+      tarjeta.append(crearElemento("strong", `Total: ${moneda.format(Number(pedido.total))}`));
+      pedidosLista.append(tarjeta);
+    });
+  }
+
+  async function cargarCatalogo() {
+    const respuesta = await fetch("/api/repuestos");
+    if (!respuesta.ok) throw new Error(`No se pudo cargar el catálogo (HTTP ${respuesta.status}).`);
+    const resultado = await respuesta.json();
+    if (!resultado.success || !Array.isArray(resultado.data)) throw new Error("El servidor devolvió un catálogo inválido.");
+    repuestos = resultado.data;
+
+    const categorias = [...new Set(repuestos.map((item) => item.categoria || "General"))].sort((a, b) => a.localeCompare(b, "es"));
+    categoriaSelect.replaceChildren(new Option("Todas las categorías", ""));
+    categorias.forEach((categoria) => categoriaSelect.add(new Option(categoria, categoria)));
+
+    const guardado = sessionStorage.getItem("optimusbyte-repuestos-carrito");
+    if (guardado) {
+      try {
+        const items: [number, number][] = JSON.parse(guardado);
+        items.forEach(([id, cantidad]) => {
+          const item = repuestos.find((repuesto) => repuesto.id_repuesto === id);
+          if (item && Number.isInteger(cantidad) && cantidad > 0) {
+            carrito.set(id, Math.min(cantidad, Number(item.stock_actual), 50));
+          }
+        });
+      } catch {
+        sessionStorage.removeItem("optimusbyte-repuestos-carrito");
+      }
+    }
+    renderCarrito();
+  }
+
+  async function cargarPedidos() {
+    pedidosLista.replaceChildren(crearElemento("p", "Cargando pedidos…", "hm-shop-empty"));
+    const respuesta = await fetch("/api/cliente/pedidos", { credentials: "include" });
+    if (respuesta.status === 401) {
+      pedidosLista.replaceChildren();
+      const aviso = crearElemento("p", "Inicia sesión como cliente para consultar tus pedidos.", "hm-shop-empty");
+      const acceso = crearElemento("a", "Iniciar sesión", "hm-btn hm-btn--ghost hm-btn--sm");
+      acceso.href = "/login?next=%2Frepuestos%23mis-pedidos";
+      const fila = crearElemento("div", undefined, "hm-shop-login-prompt");
+      fila.append(aviso, acceso);
+      pedidosLista.append(fila);
+      return;
+    }
+    if (!respuesta.ok) throw new Error(`No se pudieron cargar tus pedidos (HTTP ${respuesta.status}).`);
+    const resultado = await respuesta.json();
+    if (!resultado.success || !Array.isArray(resultado.data)) throw new Error("El servidor devolvió un historial inválido.");
+    renderPedidos(resultado.data);
+  }
+
+  function mostrarMensajeSolicitud(texto: string, tipo: "error" | "success") {
+    solicitudMensaje.textContent = texto;
+    solicitudMensaje.className = `hm-shop-message ${tipo}`;
+    solicitudMensaje.hidden = false;
+  }
+
+  function limpiarImagenSolicitud() {
+    if (urlPreviaSolicitud) URL.revokeObjectURL(urlPreviaSolicitud);
+    urlPreviaSolicitud = null;
+    archivoSolicitud.value = "";
+    vistaPreviaSolicitud.hidden = true;
+    imagenPreviaSolicitud.removeAttribute("src");
+  }
+
+  if (formularioSolicitud) {
+    archivoSolicitud.addEventListener("change", () => {
+      solicitudMensaje.hidden = true;
+      const archivo = archivoSolicitud.files?.[0];
+      if (!archivo) {
+        limpiarImagenSolicitud();
+        return;
+      }
+      if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) {
+        limpiarImagenSolicitud();
+        mostrarMensajeSolicitud("Elige una imagen JPG, PNG o WebP de máximo 5 MB.", "error");
+        return;
+      }
+      if (urlPreviaSolicitud) URL.revokeObjectURL(urlPreviaSolicitud);
+      urlPreviaSolicitud = URL.createObjectURL(archivo);
+      imagenPreviaSolicitud.src = urlPreviaSolicitud;
+      vistaPreviaSolicitud.hidden = false;
+    });
+
+    botonQuitarImagen.addEventListener("click", limpiarImagenSolicitud);
+
+    formularioSolicitud.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!botonEnviarSolicitud) return;
+    const archivo = archivoSolicitud.files?.[0];
+    if (archivo && (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type) || archivo.size > 5 * 1024 * 1024)) {
+      mostrarMensajeSolicitud("Elige una imagen JPG, PNG o WebP de máximo 5 MB.", "error");
+      return;
+    }
+
+    botonEnviarSolicitud.disabled = true;
+    botonEnviarSolicitud.textContent = archivo ? "Subiendo imagen…" : "Enviando solicitud…";
+    solicitudMensaje.hidden = true;
+    try {
+      let imagenUrl: string | null = null;
+      if (archivo) {
+        const respuestaFirma = await fetch("/api/uploads/firma?tipo=solicitudes", {
+          credentials: "include",
+        });
+        const firmaResultado = await respuestaFirma.json();
+        if (respuestaFirma.status === 401) {
+          window.location.href = "/login?next=%2Frepuestos%23mis-pedidos";
+          return;
+        }
+        if (!respuestaFirma.ok || !firmaResultado.success || !firmaResultado.data) {
+          throw new Error(firmaResultado.message ?? "No se pudo preparar la subida de la imagen.");
+        }
+
+        const firma = firmaResultado.data as {
+          cloudName: string;
+          apiKey: string;
+          timestamp: number;
+          folder: string;
+          signature: string;
+        };
+        const datosImagen = new FormData();
+        datosImagen.append("file", archivo);
+        datosImagen.append("api_key", firma.apiKey);
+        datosImagen.append("timestamp", String(firma.timestamp));
+        datosImagen.append("folder", firma.folder);
+        datosImagen.append("signature", firma.signature);
+
+        botonEnviarSolicitud.textContent = "Subiendo imagen…";
+        const respuestaImagen = await fetch(
+          `https://api.cloudinary.com/v1_1/${encodeURIComponent(firma.cloudName)}/image/upload`,
+          { method: "POST", body: datosImagen },
+        );
+        const resultadoImagen = await respuestaImagen.json();
+        if (!respuestaImagen.ok || typeof resultadoImagen.secure_url !== "string") {
+          throw new Error(resultadoImagen.error?.message ?? "No se pudo subir la imagen de referencia.");
+        }
+        imagenUrl = resultadoImagen.secure_url;
+      }
+
+      botonEnviarSolicitud.textContent = "Enviando solicitud…";
+      const datos = new FormData(formularioSolicitud);
+      const respuesta = await fetch("/api/cliente/solicitudes-repuesto", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre_repuesto: datos.get("nombre_repuesto"),
+          referencia: datos.get("referencia"),
+          cantidad: datos.get("cantidad"),
+          descripcion: datos.get("descripcion"),
+          imagen_url: imagenUrl,
+        }),
+      });
+      const resultado = await respuesta.json();
+      if (respuesta.status === 401) {
+        window.location.href = "/login?next=%2Frepuestos%23mis-pedidos";
+        return;
+      }
+      if (!respuesta.ok || !resultado.success) {
+        throw new Error(resultado.message ?? "No se pudo enviar la solicitud.");
+      }
+
+      formularioSolicitud.reset();
+      limpiarImagenSolicitud();
+      mostrarMensajeSolicitud(resultado.message ?? "Tu solicitud fue enviada al taller.", "success");
+    } catch (error) {
+      mostrarMensajeSolicitud(
+        error instanceof Error ? error.message : "No se pudo enviar la solicitud.",
+        "error",
+      );
+    } finally {
+      botonEnviarSolicitud.disabled = false;
+      botonEnviarSolicitud.textContent = "Enviar solicitud al taller";
+    }
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (urlPreviaSolicitud) URL.revokeObjectURL(urlPreviaSolicitud);
+    });
+
+    document.getElementById("loadOrders")?.addEventListener("click", () => {
+      cargarPedidos().catch((error) => {
+        pedidosLista.replaceChildren(crearElemento(
+          "p",
+          error instanceof Error ? error.message : "No se pudieron cargar tus pedidos.",
+          "hm-shop-empty",
+        ));
+      });
+    });
+  }
+
+  catalogo.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-action='add']");
+    if (!boton || boton.disabled) return;
+    const id = Number(boton.dataset.id);
+    const item = repuestos.find((repuesto) => repuesto.id_repuesto === id);
+    if (!item) return;
+    carrito.set(id, Math.min((carrito.get(id) ?? 0) + 1, Number(item.stock_actual), 50));
+    renderCarrito();
+  });
+
+  carritoLista.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-action]");
+    if (!boton) return;
+    const id = Number(boton.dataset.id);
+    const cantidad = carrito.get(id) ?? 0;
+    if (boton.dataset.action === "remove" || (boton.dataset.action === "decrease" && cantidad <= 1)) carrito.delete(id);
+    else if (boton.dataset.action === "decrease") carrito.set(id, cantidad - 1);
+    else if (boton.dataset.action === "increase") {
+      const item = repuestos.find((repuesto) => repuesto.id_repuesto === id);
+      if (item) carrito.set(id, Math.min(cantidad + 1, Number(item.stock_actual), 50));
+    }
+    renderCarrito();
+  });
+
+  buscarInput.addEventListener("input", renderCatalogo);
+  categoriaSelect.addEventListener("change", renderCatalogo);
+  cartToggle.addEventListener("click", () => setCartOpen(true));
+  document.getElementById("cartClose")?.addEventListener("click", () => setCartOpen(false));
+  document.getElementById("cartBackdrop")?.addEventListener("click", () => setCartOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !cartOverlay.hidden) setCartOpen(false);
+  });
+
+  formulario.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!carrito.size) return;
+    botonPedido.disabled = true;
+    botonPedido.textContent = "Confirmando…";
+    mensaje.hidden = true;
+    guardarCarrito();
+    const datos = new FormData(formulario);
+    try {
+      const respuesta = await fetch("/api/cliente/pedidos", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [...carrito].map(([id_repuesto, cantidad]) => ({ id_repuesto, cantidad })),
+          metodo_pago: datos.get("metodo_pago"),
+          observaciones: datos.get("observaciones"),
+        }),
+      });
+      const resultado = await respuesta.json();
+      if (respuesta.status === 401) {
+        window.location.href = "/login?next=%2Frepuestos";
+        return;
+      }
+      if (!respuesta.ok || !resultado.success) throw new Error(resultado.message ?? "No se pudo registrar el pedido.");
+      carrito.clear();
+      sessionStorage.removeItem("optimusbyte-repuestos-carrito");
+      formulario.reset();
+      mostrarMensaje(resultado.message ?? "Pedido registrado correctamente.", "success");
+      await Promise.all([cargarCatalogo(), cargarPedidos()]);
+    } catch (error) {
+      mostrarMensaje(error instanceof Error ? error.message : "No se pudo registrar el pedido.", "error");
+    } finally {
+      botonPedido.textContent = "Confirmar pedido";
+      botonPedido.disabled = carrito.size === 0;
+    }
+  });
+
+  cargarCatalogo().catch((error) => {
+    catalogo.replaceChildren(crearElemento("p", error instanceof Error ? error.message : "No se pudo cargar el catálogo.", "hm-shop-empty"));
+    cantidadCatalogo.textContent = "Error al cargar";
+  });
+</script>
+
+<style is:global>
+  .hm .hm-shop-section { background: #f6f8fb; }
+  .hm .hm-shop-catalog { padding: 22px; border: 1px solid #dfe7f0; border-radius: 16px; background: #fff; }
+  .hm .hm-shop-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+  .hm .hm-shop-heading h2, .hm .hm-shop-cart-drawer h2 { margin: 0 0 5px; color: #142b49; }
+  .hm .hm-shop-heading p:not(.hm-eyebrow) { margin: 0; color: #64748b; font-size: 13px; }
+  .hm .hm-shop-filters { display: flex; gap: 8px; }
+  .hm .hm-shop-filters input, .hm .hm-shop-filters select, .hm .hm-shop-checkout select, .hm .hm-shop-checkout textarea { min-height: 42px; padding: 9px 11px; border: 1px solid #d7e0eb; border-radius: 8px; background: #fff; color: #142b49; font: inherit; }
+  .hm .hm-shop-filters input { width: 210px; }
+  .hm .hm-shop-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .hm .hm-shop-product { min-width: 0; overflow: hidden; border: 1px solid #e1e8f0; border-radius: 12px; background: #fff; }
+  .hm .hm-shop-product-image { position: relative; display: grid; place-items: center; width: 100%; height: 150px; overflow: hidden; background: #f1f5f9; }
+  .hm .hm-shop-product-image img { position: absolute; inset: 0; display: block; width: 100%; max-width: 100%; height: 100%; max-height: 100%; object-fit: contain; }
+  .hm .hm-shop-product-fallback { color: #8294a9; font-size: 42px; }
+  .hm .hm-shop-product-content { min-width: 0; padding: 14px; }
+  .hm .hm-shop-category { color: #1769d2; font-size: 11px; }
+  .hm .hm-shop-product-content h3 { margin: 5px 0; color: #142b49; font-size: 16px; }
+  .hm .hm-shop-product-description { min-height: 36px; margin: 0 0 13px; color: #64748b; font-size: 12px; }
+  .hm .hm-shop-product-footer, .hm .hm-shop-price-stock { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .hm .hm-shop-add-button { min-height: 36px; padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+  .hm .hm-shop-price-stock { align-items: flex-start; flex-direction: column; gap: 3px; color: #142b49; }
+  .hm .hm-shop-stock { color: #16834b; font-size: 11px; }
+  .hm .hm-shop-stock.out { color: #b42318; }
+  .hm .hm-shop-muted, .hm .hm-shop-checkout small { color: #64748b; font-size: 12px; }
+  .hm .hm-shop-cart-items { display: grid; gap: 12px; max-height: min(32vh, 300px); overflow: auto; }
+  .hm .hm-shop-cart-row { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #e1e8f0; }
+  .hm .hm-shop-cart-info { display: flex; justify-content: space-between; gap: 8px; color: #142b49; font-size: 13px; }
+  .hm .hm-shop-cart-info small { color: #64748b; }
+  .hm .hm-shop-cart-controls { display: flex; align-items: center; gap: 8px; }
+  .hm .hm-shop-quantity-button { padding: 4px 8px; border: 1px solid #d7e0eb; border-radius: 6px; background: white; color: #142b49; cursor: pointer; }
+  .hm .hm-shop-total { display: flex; justify-content: space-between; margin: 16px 0; padding-top: 14px; border-top: 1px solid #e1e8f0; color: #142b49; }
+  .hm .hm-shop-checkout { display: grid; gap: 8px; }
+  .hm .hm-shop-checkout label { margin-top: 5px; color: #142b49; font-size: 13px; font-weight: 700; }
+  .hm .hm-shop-checkout label span { color: #64748b; font-weight: 400; }
+  .hm .hm-shop-checkout textarea { resize: vertical; }
+  .hm .hm-shop-checkout .hm-btn { width: 100%; margin-top: 8px; }
+  .hm .hm-shop-checkout .hm-btn:disabled { opacity: .55; cursor: not-allowed; }
+  .hm .hm-shop-empty { grid-column: 1 / -1; margin: 0; padding: 18px 10px; color: #64748b; text-align: center; }
+  .hm .hm-shop-orders { display: grid; gap: 12px; }
+  .hm .hm-shop-request { margin-bottom: 24px; padding: 22px; border: 1px solid #dfe7f0; border-radius: 16px; background: #fff; }
+  .hm .hm-shop-request-heading h3 { margin: 0 0 5px; color: #142b49; font-size: 19px; }
+  .hm .hm-shop-request-heading p:not(.hm-eyebrow) { margin: 0 0 16px; color: #64748b; font-size: 13px; }
+  .hm .hm-shop-request-form { display: grid; gap: 9px; max-width: 720px; }
+  .hm .hm-shop-request-form label { margin-top: 5px; color: #142b49; font-size: 13px; font-weight: 700; }
+  .hm .hm-shop-request-form label span { color: #64748b; font-size: 12px; font-weight: 400; }
+  .hm .hm-shop-request-form input:not([type="file"]), .hm .hm-shop-request-form textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #d7e0eb; border-radius: 8px; background: #fff; color: #142b49; font: inherit; }
+  .hm .hm-shop-request-form input[type="file"] { max-width: 100%; color: #64748b; font: inherit; }
+  .hm .hm-shop-request-form textarea { resize: vertical; }
+  .hm .hm-shop-request-fields { display: grid; grid-template-columns: 1fr 140px; gap: 14px; }
+  .hm .hm-shop-request-fields > div { display: grid; gap: 9px; }
+  .hm .hm-shop-request-preview { display: flex; align-items: center; gap: 12px; }
+  .hm .hm-shop-request-preview[hidden] { display: none; }
+  .hm .hm-shop-request-preview img { width: 112px; height: 84px; border: 1px solid #dfe7f0; border-radius: 8px; object-fit: contain; background: #f1f5f9; }
+  .hm .hm-shop-request-form > small { color: #64748b; font-size: 12px; }
+  .hm .hm-shop-order { padding: 16px; border: 1px solid #dfe7f0; border-radius: 12px; background: #fff; }
+  .hm .hm-shop-order-header { display: flex; justify-content: space-between; gap: 12px; color: #142b49; }
+  .hm .hm-shop-order p, .hm .hm-shop-order ul { color: #64748b; font-size: 13px; }
+  .hm .hm-shop-order ul { padding-left: 20px; }
+  .hm .hm-shop-login-prompt { display: grid; justify-items: center; gap: 10px; }
+  .hm .hm-shop-account-heading { justify-content: center; text-align: center; }
+  .hm .hm-shop-request { width: min(100%, 760px); margin: 0 auto 24px; }
+  .hm .hm-shop-request-heading { text-align: center; }
+  .hm .hm-shop-request-form { margin: 0 auto; }
+  .hm .hm-shop-load-orders { display: flex; justify-content: center; margin: 0 auto 18px; }
+  .hm .hm-shop-login-button { justify-content: center; text-decoration: none; }
+  .hm .hm-shop-message { margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; }
+  .hm .hm-shop-message.error { background: #fee4e2; color: #b42318; }
+  .hm .hm-shop-message.success { background: #dcf5e7; color: #16703d; }
+  .hm .hm-shop-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+  .hm .hm-shop-cart-toggle { position: fixed; right: 24px; bottom: 24px; z-index: 950; display: grid; place-items: center; width: 60px; height: 60px; border: 0; border-radius: 50%; background: #2f6fed; color: white; box-shadow: 0 8px 24px rgb(13 21 38 / 24%); cursor: pointer; transition: transform .18s ease, background .18s ease; }
+  .hm .hm-shop-cart-toggle:hover { transform: translateY(-2px); background: #1d4fd8; }
+  .hm .hm-shop-cart-toggle svg { width: 25px; height: 25px; }
+  .hm .hm-shop-cart-badge { position: absolute; top: -4px; right: -4px; display: grid; place-items: center; min-width: 23px; height: 23px; padding: 0 5px; border: 2px solid white; border-radius: 999px; background: #e5484d; color: white; font-size: 11px; font-weight: 700; }
+  .hm .hm-shop-cart-overlay { position: fixed; inset: 0; z-index: 1100; display: flex; justify-content: flex-end; }
+  .hm .hm-shop-cart-overlay[hidden] { display: none; }
+  .hm .hm-shop-cart-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgb(13 21 38 / 58%); cursor: pointer; }
+  .hm .hm-shop-cart-drawer { position: relative; z-index: 1; display: flex; flex-direction: column; width: min(440px, 100%); height: 100%; padding: 28px; overflow-y: auto; border-radius: 16px 0 0 16px; background: white; box-shadow: -12px 0 36px rgb(13 21 38 / 18%); animation: hm-cart-enter .2s ease-out; }
+  .hm .hm-shop-cart-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  .hm .hm-shop-cart-header .hm-eyebrow { margin-bottom: 6px; }
+  .hm .hm-shop-cart-header .hm-shop-muted { margin: 0; }
+  .hm .hm-shop-cart-close { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #dfe7f0; border-radius: 50%; background: white; color: #142b49; cursor: pointer; }
+  .hm .hm-shop-cart-close svg { width: 20px; height: 20px; }
+  .hm .hm-shop-cart-drawer .hm-shop-total { margin-top: auto; padding-top: 18px; }
+  .hm-shop-cart-open { overflow: hidden; }
+  @keyframes hm-cart-enter { from { transform: translateX(24px); opacity: .7; } to { transform: translateX(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .hm .hm-shop-cart-drawer { animation: none; } }
+  @media (max-width: 620px) { .hm .hm-shop-heading { align-items: flex-start; flex-direction: column; } .hm .hm-shop-filters { width: 100%; flex-direction: column; } .hm .hm-shop-filters input { width: 100%; } .hm .hm-shop-products { grid-template-columns: 1fr; } .hm .hm-shop-request-fields { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .hm .hm-shop-cart-toggle { right: 16px; bottom: 16px; width: 54px; height: 54px; } .hm .hm-shop-cart-drawer { padding: 22px 18px; border-radius: 0; } }
+</style>

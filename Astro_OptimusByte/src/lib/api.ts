@@ -1,5 +1,4 @@
-export const API_BASE_URL =
-  import.meta.env.PUBLIC_API_URL ?? "http://localhost:8002";
+export const API_BASE_URL = "";
 
 export interface Usuario {
   id_usuario: number;
@@ -49,7 +48,7 @@ export async function apiFetch<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(path, {
     ...options,
     headers,
     credentials: "include",
