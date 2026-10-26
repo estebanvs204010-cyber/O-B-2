@@ -17,7 +17,6 @@ export const PostCrearVehiculo = async (ctx: Context) => {
             "marca",
             "modelo",
             "anio",
-            "vin",
         ];
         for (const campo of camposObligatorios) {
             if (
