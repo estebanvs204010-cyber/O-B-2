@@ -142,7 +142,7 @@ const fechaLarga = (iso: string) =>
         <div class="hm-home-cart">
           <div class="hm-stock-heading">
             <div>
-              <h3>Tu carrito</h3>
+              <h3>Tu Carrito</h3>
               <p id="homeCartCount">0 productos</p>
             </div>
             <strong id="homeCartTotal">$0</strong>
@@ -150,17 +150,12 @@ const fechaLarga = (iso: string) =>
           <div id="homeCartItems" class="hm-home-cart-items">
             <p class="hm-stock-message">Agrega repuestos para comenzar.</p>
           </div>
-          <form id="homeCheckout" class="hm-home-checkout">
-            <label for="homePayment">Método de pago</label>
-            <select id="homePayment" name="metodo_pago">
-              <option value="Pago en taller">Pago en el taller</option>
-              <option value="Transferencia">Transferencia</option>
-            </select>
-            <label for="homeNotes">Observaciones (opcional)</label>
-            <textarea id="homeNotes" name="observaciones" rows="2" maxlength="300"></textarea>
-            <button id="homeCheckoutButton" class="hm-btn hm-btn--blue" type="submit" disabled>Confirmar pedido</button>
-            <p id="homeShopMessage" class="hm-stock-message" role="status">Confirma tu pedido con tu cuenta de cliente.</p>
-          </form>
+          <div class="hm-home-checkout">
+            <button id="homeOpenDrawerBtn" class="hm-btn hm-btn--blue" type="button" style="width:100%;">
+              Ver carrito y pagar con Wompi
+            </button>
+            <p class="hm-stock-message" style="margin-top:8px;">Pagos 100% seguros con pasarela Wompi Colombia (Bancolombia, Tarjetas, Nequi, PSE).</p>
+          </div>
         </div>
       </div>
     </div>
@@ -226,9 +221,19 @@ const fechaLarga = (iso: string) =>
 </PublicLayout>
 
 <script>
+  import {
+    obtenerCarrito,
+    agregarAlCarrito,
+    eliminarDelCarrito,
+    calcularTotalCarrito,
+    contarItemsCarrito,
+    formatoMonedaCOP,
+  } from "../lib/cart";
+
   interface RepuestoCatalogo {
     id_repuesto: number;
     nombre: string;
+    referencia?: string;
     categoria?: string | null;
     precio_unitario: number | string;
     stock_actual: number | string;
@@ -236,58 +241,59 @@ const fechaLarga = (iso: string) =>
   }
 
   const grid = document.getElementById("homeRepuestos");
-  const moneda = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  });
-  const carrito = new Map<number, number>();
   let repuestosDisponibles: RepuestoCatalogo[] = [];
 
-  function renderCarrito() {
+  function renderCarritoHome() {
     const items = document.getElementById("homeCartItems");
     const cantidad = document.getElementById("homeCartCount");
     const totalElemento = document.getElementById("homeCartTotal");
-    const confirmar = document.getElementById("homeCheckoutButton") as HTMLButtonElement | null;
-    if (!items || !cantidad || !totalElemento || !confirmar) return;
+    const pagarBtn = document.getElementById("homeOpenDrawerBtn") as HTMLButtonElement | null;
+    if (!items || !cantidad || !totalElemento) return;
+
+    const carrito = obtenerCarrito();
+    const conteo = contarItemsCarrito();
+    const total = calcularTotalCarrito();
 
     items.replaceChildren();
-    let unidades = 0;
-    let total = 0;
-    carrito.forEach((cuantas, id) => {
-      const repuesto = repuestosDisponibles.find((item) => item.id_repuesto === id);
-      if (!repuesto) return;
-      unidades += cuantas;
-      total += Number(repuesto.precio_unitario) * cuantas;
+
+    carrito.forEach((item) => {
       const fila = document.createElement("div");
       fila.className = "hm-home-cart-row";
       const nombre = document.createElement("span");
-      nombre.textContent = `${repuesto.nombre} × ${cuantas}`;
+      nombre.textContent = `${item.nombre} × ${item.cantidad}`;
       const subtotal = document.createElement("strong");
-      subtotal.textContent = moneda.format(Number(repuesto.precio_unitario) * cuantas);
+      subtotal.textContent = formatoMonedaCOP.format(item.precio_unitario * item.cantidad);
       const quitar = document.createElement("button");
       quitar.type = "button";
-      quitar.dataset.removeId = String(id);
+      quitar.dataset.removeId = String(item.id_repuesto);
       quitar.textContent = "Quitar";
       fila.append(nombre, subtotal, quitar);
       items.append(fila);
     });
-    if (!unidades) {
+
+    if (!conteo) {
       const vacio = document.createElement("p");
       vacio.className = "hm-stock-message";
       vacio.textContent = "Agrega repuestos para comenzar.";
       items.append(vacio);
     }
-    cantidad.textContent = `${unidades} producto${unidades === 1 ? "" : "s"}`;
-    totalElemento.textContent = moneda.format(total);
-    confirmar.disabled = unidades === 0;
-    grid?.querySelectorAll<HTMLButtonElement>("button[data-add-id]").forEach((boton) => {
-      const id = Number(boton.dataset.addId);
-      const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
-      boton.disabled = !item || (carrito.get(id) ?? 0) >= Math.min(Number(item.stock_actual), 50);
-    });
-    sessionStorage.setItem("optimusbyte-repuestos-home-carrito", JSON.stringify([...carrito]));
+
+    cantidad.textContent = `${conteo} producto${conteo === 1 ? "" : "s"}`;
+    totalElemento.textContent = formatoMonedaCOP.format(total);
+    if (pagarBtn) pagarBtn.disabled = conteo === 0;
   }
+
+  window.addEventListener("optimusbyte:cart_updated", renderCarritoHome);
+
+  document.getElementById("homeOpenDrawerBtn")?.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("optimusbyte:open_cart"));
+  });
+
+  document.getElementById("homeCartItems")?.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-remove-id]");
+    if (!boton) return;
+    eliminarDelCarrito(Number(boton.dataset.removeId));
+  });
 
   async function cargarRepuestos() {
     if (!grid) return;
@@ -303,20 +309,7 @@ const fechaLarga = (iso: string) =>
         .filter((item) => Number(item.stock_actual) > 0)
         .slice(0, 4);
       repuestosDisponibles = disponibles;
-      const carritoGuardado = sessionStorage.getItem("optimusbyte-repuestos-home-carrito");
-      if (carritoGuardado) {
-        try {
-          const guardados: [number, number][] = JSON.parse(carritoGuardado);
-          guardados.forEach(([id, cantidad]) => {
-            const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
-            if (item && Number.isInteger(cantidad) && cantidad > 0) {
-              carrito.set(id, Math.min(cantidad, Number(item.stock_actual), 50));
-            }
-          });
-        } catch {
-          sessionStorage.removeItem("optimusbyte-repuestos-home-carrito");
-        }
-      }
+
       grid.replaceChildren();
       if (!disponibles.length) {
         const vacio = document.createElement("p");
@@ -343,18 +336,17 @@ const fechaLarga = (iso: string) =>
         const nombre = document.createElement("strong");
         nombre.textContent = item.nombre;
         const precio = document.createElement("span");
-        precio.textContent = moneda.format(Number(item.precio_unitario));
+        precio.textContent = formatoMonedaCOP.format(Number(item.precio_unitario));
         tarjeta.append(categoria, nombre, precio);
         const agregar = document.createElement("button");
         agregar.type = "button";
         agregar.className = "hm-home-add";
         agregar.dataset.addId = String(item.id_repuesto);
         agregar.textContent = "Agregar al carrito";
-        agregar.disabled = (carrito.get(item.id_repuesto) ?? 0) >= Math.min(Number(item.stock_actual), 50);
         tarjeta.append(agregar);
         grid.append(tarjeta);
       });
-      renderCarrito();
+      renderCarritoHome();
     } catch (errorCarga) {
       console.error("No se pudo cargar el inventario en la página principal:", errorCarga);
       const mensajeError = document.createElement("p");
@@ -370,57 +362,18 @@ const fechaLarga = (iso: string) =>
     const id = Number(boton.dataset.addId);
     const item = repuestosDisponibles.find((repuesto) => repuesto.id_repuesto === id);
     if (!item) return;
-    carrito.set(id, Math.min((carrito.get(id) ?? 0) + 1, Number(item.stock_actual), 50));
-    renderCarrito();
-  });
 
-  document.getElementById("homeCartItems")?.addEventListener("click", (event) => {
-    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-remove-id]");
-    if (!boton) return;
-    carrito.delete(Number(boton.dataset.removeId));
-    renderCarrito();
-  });
+    agregarAlCarrito({
+      id_repuesto: item.id_repuesto,
+      nombre: item.nombre,
+      referencia: item.referencia || String(item.id_repuesto),
+      categoria: item.categoria || "Repuesto",
+      precio_unitario: Number(item.precio_unitario),
+      stock_actual: Number(item.stock_actual),
+      imagen_url: item.imagen_url,
+    }, 1);
 
-  document.getElementById("homeCheckout")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!carrito.size) return;
-    const boton = document.getElementById("homeCheckoutButton") as HTMLButtonElement;
-    const mensaje = document.getElementById("homeShopMessage")!;
-    boton.disabled = true;
-    boton.textContent = "Confirmando…";
-    const form = event.currentTarget as HTMLFormElement;
-    const datos = new FormData(form);
-    try {
-      const respuesta = await fetch("/api/cliente/pedidos", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [...carrito].map(([id_repuesto, cantidad]) => ({ id_repuesto, cantidad })),
-          metodo_pago: datos.get("metodo_pago"),
-          observaciones: datos.get("observaciones"),
-        }),
-      });
-      const resultado = await respuesta.json();
-      if (respuesta.status === 401) {
-        window.location.href = "/login?next=%2F";
-        return;
-      }
-      if (!respuesta.ok || !resultado.success) throw new Error(resultado.message ?? "No se pudo registrar el pedido.");
-      carrito.clear();
-      sessionStorage.removeItem("optimusbyte-repuestos-home-carrito");
-      form.reset();
-      mensaje.className = "hm-stock-message hm-shop-success";
-      mensaje.textContent = resultado.message ?? "Pedido registrado correctamente.";
-      await cargarRepuestos();
-    } catch (error) {
-      console.error("No se pudo confirmar el pedido de repuestos:", error);
-      mensaje.className = "hm-stock-message hm-shop-error";
-      mensaje.textContent = error instanceof Error ? error.message : "No se pudo confirmar el pedido.";
-    } finally {
-      boton.textContent = "Confirmar pedido";
-      boton.disabled = carrito.size === 0;
-    }
+    window.dispatchEvent(new CustomEvent("optimusbyte:open_cart"));
   });
 
   void cargarRepuestos();

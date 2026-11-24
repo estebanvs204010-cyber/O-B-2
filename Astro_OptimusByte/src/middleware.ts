@@ -41,6 +41,8 @@ export const onRequest = defineMiddleware(
     const rol = getRolSSR(cookies);
 
     if (esRutaCliente && rol !== "Cliente") {
+      if (rol === "Mecanico") return redirect("/mecanico");
+      if (rol === "Admin") return redirect("/admin");
       return redirect("/login");
     }
 
@@ -49,10 +51,13 @@ export const onRequest = defineMiddleware(
       rol !== "Mecanico" &&
       rol !== "Admin"
     ) {
+      if (rol === "Cliente") return redirect("/cliente");
       return redirect("/login");
     }
 
     if (esRutaAdmin && rol !== "Admin") {
+      if (rol === "Cliente") return redirect("/cliente");
+      if (rol === "Mecanico") return redirect("/mecanico");
       return redirect("/login");
     }
 

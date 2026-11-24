@@ -1,5 +1,13 @@
 ---
 import AuthLayout from "../layouts/AuthLayout.astro";
+import { isAuthenticatedSSR, getRolSSR } from "../utils/auth";
+
+if (isAuthenticatedSSR(Astro.cookies)) {
+  const rol = getRolSSR(Astro.cookies);
+  if (rol === "Cliente") return Astro.redirect("/cliente");
+  if (rol === "Mecanico") return Astro.redirect("/mecanico");
+  if (rol === "Admin") return Astro.redirect("/admin");
+}
 ---
 
 <AuthLayout title="Crear cuenta" wide>

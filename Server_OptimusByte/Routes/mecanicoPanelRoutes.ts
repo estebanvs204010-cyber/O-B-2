@@ -12,43 +12,53 @@ import {
 import { authMiddleware, permitirRoles } from "../Middlewares/validarJWT.ts";
 
 const MecanicoPanelRouter = new Router();
-const mecanico = [authMiddleware, permitirRoles("Mecanico")];
-const mecanicoYAdmin = [authMiddleware, permitirRoles("Admin", "Mecanico")];
 
 MecanicoPanelRouter.get(
   "/api/mecanico/dashboard",
-  ...mecanico,
+  authMiddleware,
+  permitirRoles("Mecanico"),
   GetDashboardMecanico,
 );
-MecanicoPanelRouter.get("/api/mecanico/perfil", ...mecanico, GetPerfilMecanico);
+MecanicoPanelRouter.get(
+  "/api/mecanico/perfil",
+  authMiddleware,
+  permitirRoles("Mecanico"),
+  GetPerfilMecanico,
+);
 MecanicoPanelRouter.get(
   "/api/mecanico/repuestos-disponibles",
-  ...mecanico,
+  authMiddleware,
+  permitirRoles("Mecanico"),
   GetRepuestosDisponibles,
 );
 MecanicoPanelRouter.get(
   "/api/mecanico/ordenes/:id/historial",
-  ...mecanicoYAdmin,
+  authMiddleware,
+  permitirRoles("Admin", "Mecanico"),
   GetHistorialOrden,
 );
 MecanicoPanelRouter.put(
   "/api/mecanico/ordenes/:id/informe",
-  ...mecanico,
+  authMiddleware,
+  permitirRoles("Mecanico"),
   PutInformeOrden,
 );
 MecanicoPanelRouter.get(
   "/api/mecanico/ordenes/:id/evidencias",
-  ...mecanicoYAdmin,
+  authMiddleware,
+  permitirRoles("Admin", "Mecanico"),
   GetEvidenciasOrden,
 );
 MecanicoPanelRouter.post(
   "/api/mecanico/ordenes/:id/evidencias",
-  ...mecanico,
+  authMiddleware,
+  permitirRoles("Mecanico"),
   PostEvidenciaOrden,
 );
 MecanicoPanelRouter.post(
   "/api/mecanico/ordenes/:id/repuestos",
-  ...mecanico,
+  authMiddleware,
+  permitirRoles("Mecanico"),
   PostRepuestoUsado,
 );
 

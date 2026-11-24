@@ -47,45 +47,11 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
     </div>
   </section>
 
-  <button id="cartToggle" class="hm-shop-cart-toggle" type="button" aria-label="Abrir carrito" aria-expanded="false" aria-controls="cartDialog">
+  <!-- Botón del carrito sincronizado con el drawer global -->
+  <button id="cartToggle" class="hm-shop-cart-toggle" type="button" aria-label="Abrir carrito de compras">
     <ShoppingCart aria-hidden="true" />
-    <span id="cartBadge" class="hm-shop-cart-badge" hidden>0</span>
+    <span id="cartBadge" class="hm-shop-cart-badge ob-nav-cart-badge" style="display:none;">0</span>
   </button>
-
-  <div id="cartOverlay" class="hm-shop-cart-overlay" hidden>
-    <button id="cartBackdrop" class="hm-shop-cart-backdrop" type="button" aria-label="Cerrar carrito"></button>
-    <aside id="cartDialog" class="hm-shop-cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle" tabindex="-1">
-      <div class="hm-shop-cart-header">
-        <div>
-          <p class="hm-eyebrow">Tu selección</p>
-          <h2 id="cartTitle">Carrito</h2>
-          <p id="cartCount" class="hm-shop-muted">0 productos</p>
-        </div>
-        <button id="cartClose" class="hm-shop-cart-close" type="button" aria-label="Cerrar carrito"><X aria-hidden="true" /></button>
-      </div>
-      <div id="cartItems" class="hm-shop-cart-items">
-        <p class="hm-shop-empty">Agrega repuestos para comenzar.</p>
-      </div>
-      <div class="hm-shop-total">
-        <span>Total estimado</span>
-        <strong id="cartTotal">$0</strong>
-      </div>
-      <form id="checkoutForm" class="hm-shop-checkout">
-        <label for="paymentMethod">Método de pago</label>
-        <select id="paymentMethod" name="metodo_pago" required>
-          <option value="Pago en taller">Pago en el taller</option>
-          <option value="Transferencia">Transferencia</option>
-        </select>
-        <small>El pago se coordina con el taller; no se procesa en línea.</small>
-        <label for="orderNotes">Observaciones <span>(opcional)</span></label>
-        <textarea id="orderNotes" name="observaciones" rows="3" maxlength="300" placeholder="Escribe una nota para el taller"></textarea>
-        <button id="checkoutButton" class="hm-btn hm-btn--blue" type="submit" disabled>
-          Confirmar pedido
-        </button>
-        <small>Para confirmar el pedido debes iniciar sesión como cliente.</small>
-      </form>
-    </aside>
-  </div>
 
   <section class="hm-section hm-section--gray" id="mis-pedidos">
     <div class="hm-wrap">
@@ -160,6 +126,7 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
 </PublicLayout>
 
 <script>
+  import { agregarAlCarrito } from "../lib/cart";
   interface Repuesto {
     id_repuesto: number;
     referencia: string;
@@ -204,11 +171,6 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
   const cantidadCatalogo = document.getElementById("catalogCount")!;
   const buscarInput = document.getElementById("catalogSearch") as HTMLInputElement;
   const categoriaSelect = document.getElementById("catalogCategory") as HTMLSelectElement;
-  const carritoLista = document.getElementById("cartItems")!;
-  const cantidadCarrito = document.getElementById("cartCount")!;
-  const totalCarrito = document.getElementById("cartTotal")!;
-  const formulario = document.getElementById("checkoutForm") as HTMLFormElement;
-  const botonPedido = document.getElementById("checkoutButton") as HTMLButtonElement;
   const pedidosLista = document.getElementById("ordersList")!;
   const mensaje = document.getElementById("shopMessage")!;
   const formularioSolicitud = document.getElementById("partRequestForm") as HTMLFormElement;
@@ -218,10 +180,8 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
   const imagenPreviaSolicitud = document.getElementById("requestPreviewImage") as HTMLImageElement;
   const botonQuitarImagen = document.getElementById("removeRequestImage") as HTMLButtonElement;
   const botonEnviarSolicitud = document.getElementById("submitPartRequest") as HTMLButtonElement;
-  const cartOverlay = document.getElementById("cartOverlay")!;
   const cartToggle = document.getElementById("cartToggle") as HTMLButtonElement;
   const cartBadge = document.getElementById("cartBadge")!;
-  const cartDialog = document.getElementById("cartDialog")!;
   const moneda = new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
@@ -264,12 +224,9 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
   }
 
   function setCartOpen(open: boolean) {
-    cartOverlay.hidden = !open;
     cartToggle.setAttribute("aria-expanded", String(open));
     cartToggle.setAttribute("aria-label", open ? "Cerrar carrito" : "Abrir carrito");
     document.body.classList.toggle("hm-shop-cart-open", open);
-    if (open) cartDialog.focus();
-    else cartToggle.focus();
   }
 
   function crearTarjetaRepuesto(item: Repuesto) {
@@ -310,32 +267,13 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
   }
 
   function renderCarrito() {
-    carritoLista.replaceChildren();
     let unidades = 0;
-    let total = 0;
-    for (const [id, cantidad] of carrito) {
-      const item = repuestos.get(id);
-      if (!item) continue;
+    for (const [, cantidad] of carrito) {
       unidades += cantidad;
-      total += Number(item.precio_unitario) * cantidad;
-      const fila = crearElemento("div", undefined, "hm-shop-cart-row");
-      const texto = crearElemento("div", undefined, "hm-shop-cart-info");
-      texto.append(crearElemento("strong", item.nombre));
-      texto.append(crearElemento("small", moneda.format(Number(item.precio_unitario))));
-      const controles = crearElemento("div", undefined, "hm-shop-cart-controls");
-      controles.append(crearBoton("−", "decrease", id));
-      controles.append(crearElemento("span", String(cantidad)));
-      controles.append(crearBoton("+", "increase", id));
-      controles.append(crearBoton("Quitar", "remove", id));
-      fila.append(texto, controles);
-      carritoLista.append(fila);
     }
-    if (!unidades) carritoLista.append(crearElemento("p", "Agrega repuestos para comenzar.", "hm-shop-empty"));
-    cantidadCarrito.textContent = `${unidades} producto${unidades === 1 ? "" : "s"}`;
-    totalCarrito.textContent = moneda.format(total);
-    botonPedido.disabled = unidades === 0;
     cartBadge.textContent = String(unidades);
     cartBadge.hidden = unidades === 0;
+    cartBadge.style.display = unidades === 0 ? "none" : "";
     cartToggle.setAttribute("aria-label", `Abrir carrito, ${unidades} producto${unidades === 1 ? "" : "s"}`);
     guardarCarrito();
     catalogo.querySelectorAll<HTMLButtonElement>("button[data-action='add']").forEach((boton) => {
@@ -646,76 +584,23 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
     const id = Number(boton.dataset.id);
     const item = repuestos.get(id);
     if (!item) return;
-    carrito.set(id, Math.min((carrito.get(id) ?? 0) + 1, Number(item.stock_actual), 50));
-    renderCarrito();
+
+    agregarAlCarrito({
+      id_repuesto: item.id_repuesto,
+      nombre: item.nombre,
+      referencia: item.referencia,
+      categoria: item.categoria || "General",
+      precio_unitario: Number(item.precio_unitario),
+      stock_actual: Number(item.stock_actual),
+      imagen_url: item.imagen_url,
+    }, 1);
+
+    window.dispatchEvent(new CustomEvent("optimusbyte:open_cart"));
   });
 
-  carritoLista.addEventListener("click", (event) => {
-    const boton = (event.target as HTMLElement).closest<HTMLButtonElement>("button[data-action]");
-    if (!boton) return;
-    const id = Number(boton.dataset.id);
-    const cantidad = carrito.get(id) ?? 0;
-    if (boton.dataset.action === "remove" || (boton.dataset.action === "decrease" && cantidad <= 1)) carrito.delete(id);
-    else if (boton.dataset.action === "decrease") carrito.set(id, cantidad - 1);
-    else if (boton.dataset.action === "increase") {
-      const item = repuestos.get(id);
-      if (item) carrito.set(id, Math.min(cantidad + 1, Number(item.stock_actual), 50));
-    }
-    renderCarrito();
-  });
-
-  function buscarCatalogo() {
-    if (temporizadorBusqueda) clearTimeout(temporizadorBusqueda);
-    temporizadorBusqueda = setTimeout(() => void cargarCatalogo(), 250);
-  }
-
-  buscarInput.addEventListener("input", buscarCatalogo);
-  categoriaSelect.addEventListener("change", () => void cargarCatalogo());
-  botonMasCatalogo.addEventListener("click", () => void cargarCatalogo(false));
-  cartToggle.addEventListener("click", () => setCartOpen(true));
-  document.getElementById("cartClose")?.addEventListener("click", () => setCartOpen(false));
-  document.getElementById("cartBackdrop")?.addEventListener("click", () => setCartOpen(false));
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !cartOverlay.hidden) setCartOpen(false);
-  });
-
-  formulario.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!carrito.size) return;
-    botonPedido.disabled = true;
-    botonPedido.textContent = "Confirmando…";
-    mensaje.hidden = true;
-    guardarCarrito();
-    const datos = new FormData(formulario);
-    try {
-      const respuesta = await fetch("/api/cliente/pedidos", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: [...carrito].map(([id_repuesto, cantidad]) => ({ id_repuesto, cantidad })),
-          metodo_pago: datos.get("metodo_pago"),
-          observaciones: datos.get("observaciones"),
-        }),
-      });
-      const resultado = await respuesta.json();
-      if (respuesta.status === 401) {
-        window.location.href = "/login?next=%2Frepuestos";
-        return;
-      }
-      if (!respuesta.ok || !resultado.success) throw new Error(resultado.message ?? "No se pudo registrar el pedido.");
-      carrito.clear();
-      sessionStorage.removeItem("optimusbyte-repuestos-carrito");
-      formulario.reset();
-      mostrarMensaje(resultado.message ?? "Pedido registrado correctamente.", "success");
-      await Promise.all([cargarCatalogo(), cargarPedidos()]);
-    } catch (error) {
-      mostrarMensaje(error instanceof Error ? error.message : "No se pudo registrar el pedido.", "error");
-    } finally {
-      botonPedido.textContent = "Confirmar pedido";
-      botonPedido.disabled = carrito.size === 0;
-    }
-  });
+  buscarInput.addEventListener("input", renderCatalogo);
+  categoriaSelect.addEventListener("change", renderCatalogo);
+  cartToggle?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("optimusbyte:open_cart")));
 
   void cargarCatalogo();
 </script>

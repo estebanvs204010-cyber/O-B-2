@@ -24,9 +24,8 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
   <body>
     <div class="admin-shell mecanico-shell">
       <aside class="admin-sidebar">
-        <a class="admin-brand" href="/mecanico">
-          <span class="brand-icon"><i class="bi bi-wrench-adjustable-circle-fill"></i></span>
-          <span>Optimus<span class="brand-accent">Byte</span></span>
+        <a class="admin-brand" href="/mecanico" title="OptimusByte Panel Mecánico">
+          <img src="/images/logo.png" alt="OptimusByte" class="sidebar-logo-img" />
         </a>
 
         <nav class="admin-nav">
@@ -44,6 +43,9 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
           <a href="/mecanico/perfil" class:list={["admin-nav-link mecanico-nav-link", { active: active === "perfil" }]}>
             <i class="bi bi-person-circle"></i><span>Mi perfil</span>
           </a>
+          <a href="/" class="admin-nav-link" style="margin-top:12px; border:1px dashed #2f6fed; color:#93c5fd;">
+            <i class="bi bi-shop"></i><span>Ir a la Tienda / Sitio</span>
+          </a>
         </nav>
 
         <div class="admin-user">
@@ -58,7 +60,11 @@ const rol = getRolSSR(Astro.cookies) ?? "Mecanico";
       <div class="admin-content">
         <header class="admin-topbar mecanico-topbar">
           <h1>{title}</h1>
-          <div class="topbar-actions">
+          <div class="topbar-actions" style="display:flex; align-items:center; gap:12px;">
+            <a href="/" class="btn btn-outline btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+              <i class="bi bi-house"></i>
+              <span>Volver a la tienda</span>
+            </a>
             <span class="topbar-username">{rol}</span>
           </div>
         </header>

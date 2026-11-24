@@ -89,6 +89,53 @@ button { font-family: inherit; }
   gap: 12px;
   padding-right: 24px;
 }
+.hm-logo-img {
+  height: 68px;
+  width: auto;
+  max-width: 280px;
+  object-fit: contain;
+  display: block;
+}
+.hm-nav-cart-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: var(--hm-navy);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.hm-nav-cart-btn:hover {
+  background: var(--hm-blue-soft);
+  border-color: var(--hm-blue);
+  color: var(--hm-blue);
+}
+.hm-nav-cart-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.ob-nav-cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hm-blue);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid #fff;
+}
 .hm-logo-mark {
   width: 46px;
   height: 46px;

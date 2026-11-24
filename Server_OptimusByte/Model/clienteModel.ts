@@ -16,6 +16,7 @@ interface DatosEdicionCliente {
   telefono: string;
   correo: string;
   direccion?: string;
+  foto_url?: string | null;
 }
 
 export class Cliente {

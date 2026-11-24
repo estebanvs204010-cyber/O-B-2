@@ -558,7 +558,29 @@ import ClienteLayout from "../../layouts/ClienteLayout.astro";
     },
   );
 
+  async function cargarContadores() {
+    const poner = (id: string, total: number) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(total);
+    };
+
+    try {
+      const citas = await apiFetch<unknown[]>("/api/citas/mias");
+      poner("citasCount", citas.data?.length ?? 0);
+    } catch {
+      /* el contador se queda en 0 */
+    }
+
+    try {
+      const ordenes = await apiFetch<unknown[]>("/api/cliente/mis-ordenes");
+      poner("ordenesCount", ordenes.data?.length ?? 0);
+    } catch {
+      /* el contador se queda en 0 */
+    }
+  }
+
   void cargarPortal();
+  void cargarContadores();
 </script>
 
 <style>

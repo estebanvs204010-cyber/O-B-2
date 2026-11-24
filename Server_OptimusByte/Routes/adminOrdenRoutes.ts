@@ -7,10 +7,24 @@ import {
 } from "../Controller/adminOrdenController.ts";
 
 const AdminOrdenRouter = new Router();
-const soloAdmin = [authMiddleware, permitirRoles("Admin")];
 
-AdminOrdenRouter.get("/api/admin/ordenes", ...soloAdmin, GetOrdenesAdmin);
-AdminOrdenRouter.post("/api/admin/ordenes", ...soloAdmin, PostCrearOrdenAdmin);
-AdminOrdenRouter.patch("/api/admin/ordenes/:id/asignacion", ...soloAdmin, PatchAsignarMecanicoOrden);
+AdminOrdenRouter.get(
+  "/api/admin/ordenes",
+  authMiddleware,
+  permitirRoles("Admin"),
+  GetOrdenesAdmin,
+);
+AdminOrdenRouter.post(
+  "/api/admin/ordenes",
+  authMiddleware,
+  permitirRoles("Admin"),
+  PostCrearOrdenAdmin,
+);
+AdminOrdenRouter.patch(
+  "/api/admin/ordenes/:id/asignacion",
+  authMiddleware,
+  permitirRoles("Admin"),
+  PatchAsignarMecanicoOrden,
+);
 
 export { AdminOrdenRouter };
