@@ -175,6 +175,18 @@ button { font-family: inherit; }
 }
 .hm-nav > a:not(.hm-btn):hover::after { transform: scaleX(1); }
 .hm-nav-cta { display: flex; gap: 10px; margin-left: 14px; }
+.hm-nav-cta .hm-nav-account {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #d7e0eb;
+  border-radius: 50%;
+  color: var(--hm-blue);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.hm-nav-cta .hm-nav-account:hover { background: var(--hm-blue); color: #fff; }
+.hm-nav-cta .hm-nav-account svg { width: 24px; height: 24px; }
 
 .hm-burger {
   display: none;

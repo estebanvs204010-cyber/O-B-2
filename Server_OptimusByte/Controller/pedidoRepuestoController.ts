@@ -26,6 +26,51 @@ function obtenerIdUsuario(ctx: Context): number | null {
 export const GetCatalogoRepuestos = async (ctx: Context) => {
     const { response } = ctx;
     try {
+        const paginaParam = ctx.request.url.searchParams.get("pagina");
+        if (paginaParam !== null) {
+            const pagina = Number(paginaParam);
+            const limite = Number(ctx.request.url.searchParams.get("limite") ?? 24);
+            const busqueda = ctx.request.url.searchParams.get("q")?.trim() ?? "";
+            const categoria = ctx.request.url.searchParams.get("categoria")?.trim() ?? "";
+            const idsParam = ctx.request.url.searchParams.get("ids") ?? "";
+            const idsCarrito = idsParam
+                ? idsParam.split(",").map(Number)
+                : [];
+
+            if (
+                !Number.isSafeInteger(pagina) || pagina < 1 ||
+                !Number.isInteger(limite) || limite < 1 || limite > 48 ||
+                busqueda.length > 100 || categoria.length > 100 ||
+                idsCarrito.length > 30 ||
+                idsCarrito.some((id) => !Number.isSafeInteger(id) || id < 1)
+            ) {
+                response.status = 400;
+                response.body = { success: false, message: "Parámetros de catálogo inválidos" };
+                return;
+            }
+
+            const resultado = await new PedidoRepuesto().ListarCatalogoPaginado({
+                pagina,
+                limite,
+                busqueda,
+                categoria,
+                idsCarrito: [...new Set(idsCarrito)],
+            });
+            response.status = 200;
+            response.body = {
+                success: true,
+                data: resultado.data,
+                pagination: {
+                    pagina,
+                    limite,
+                    hasMore: resultado.hasMore,
+                    categorias: resultado.categorias,
+                    productosCarrito: resultado.productosCarrito,
+                },
+            };
+            return;
+        }
+
         const repuestos = await new PedidoRepuesto().ListarCatalogo();
         response.status = 200;
         response.body = { success: true, data: repuestos };

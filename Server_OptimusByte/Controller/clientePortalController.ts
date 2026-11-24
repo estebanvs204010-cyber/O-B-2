@@ -1,6 +1,11 @@
 import { Context } from "../Dependencies/dependencias.ts";
 import { conexion } from "../Model/conexion.ts";
 import { Vehiculo } from "../Model/vehiculoModel.ts";
+import { CitaModel } from "../Model/citaModel.ts";
+import { combinarFechaHora } from "../Helpers/horarioAtencion.ts";
+
+const citaModel = new CitaModel();
+const SEPARADOR_OBSERVACIONES_CITA = "\nObservaciones: ";
 
 interface UsuarioJwt {
   sub?: string;
@@ -512,12 +517,24 @@ export const GetMisCitas = async (ctx: Context) => {
          c.id_cita,
          c.id_cliente,
          c.id_vehiculo,
-         c.fecha_cita,
-         c.hora_cita,
-         c.servicio,
-         c.observaciones,
+         DATE_FORMAT(c.fecha_hora, '%Y-%m-%d') AS fecha_cita,
+         DATE_FORMAT(c.fecha_hora, '%H:%i') AS hora_cita,
+         CASE
+           WHEN LOCATE(CHAR(10), c.motivo) > 0
+             THEN SUBSTRING_INDEX(c.motivo, CHAR(10), 1)
+           ELSE c.motivo
+         END AS servicio,
+         CASE
+           WHEN LOCATE(CONCAT(CHAR(10), 'Observaciones: '), c.motivo) > 0
+             THEN SUBSTRING(
+               c.motivo,
+               LOCATE(CONCAT(CHAR(10), 'Observaciones: '), c.motivo) +
+                 CHAR_LENGTH(CONCAT(CHAR(10), 'Observaciones: '))
+             )
+           ELSE NULL
+         END AS observaciones,
          c.estado,
-         c.fecha_creacion,
+         c.fecha_solicitud AS fecha_creacion,
          v.placa,
          v.marca,
          v.modelo
@@ -525,7 +542,7 @@ export const GetMisCitas = async (ctx: Context) => {
        LEFT JOIN vehiculos v
          ON v.id_vehiculo = c.id_vehiculo
        WHERE c.id_cliente = ?
-       ORDER BY c.fecha_cita ASC, c.hora_cita ASC`,
+       ORDER BY (c.fecha_hora IS NULL), c.fecha_hora ASC, c.fecha_solicitud DESC`,
       [Number(cliente.id_cliente)],
     );
 
@@ -561,6 +578,11 @@ export const PostSolicitarCita = async (ctx: Context) => {
 
   try {
     const body = await request.body.json();
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      response.status = 400;
+      response.body = { success: false, message: "Los datos de la cita no son válidos" };
+      return;
+    }
 
     for (const campo of [
       "id_vehiculo",
@@ -604,9 +626,21 @@ export const PostSolicitarCita = async (ctx: Context) => {
     const fechaCita = String(body.fecha_cita);
     const horaCita = String(body.hora_cita);
     const servicio = String(body.servicio).trim();
-    const observaciones = body.observaciones
-      ? String(body.observaciones).trim()
-      : null;
+    const observaciones = typeof body.observaciones === "string"
+      ? body.observaciones.trim()
+      : "";
+
+    if (
+      !Number.isSafeInteger(idVehiculo) || idVehiculo < 1 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(fechaCita) ||
+      !/^\d{2}:\d{2}$/.test(horaCita) ||
+      !servicio || servicio.length > 160 ||
+      observaciones.length > 1000
+    ) {
+      response.status = 400;
+      response.body = { success: false, message: "Los datos de la cita no son válidos" };
+      return;
+    }
 
     const [vehiculo] = await conexion.query(
       `SELECT id_vehiculo
@@ -626,11 +660,16 @@ export const PostSolicitarCita = async (ctx: Context) => {
       return;
     }
 
-    const fechaHora = new Date(
-      `${fechaCita}T${horaCita}`,
-    );
+    const fechaHora = combinarFechaHora(fechaCita, horaCita);
 
-    if (Number.isNaN(fechaHora.getTime())) {
+    if (
+      Number.isNaN(fechaHora.getTime()) ||
+      fechaHora.getFullYear() !== Number(fechaCita.slice(0, 4)) ||
+      fechaHora.getMonth() + 1 !== Number(fechaCita.slice(5, 7)) ||
+      fechaHora.getDate() !== Number(fechaCita.slice(8, 10)) ||
+      fechaHora.getHours() !== Number(horaCita.slice(0, 2)) ||
+      fechaHora.getMinutes() !== Number(horaCita.slice(3, 5))
+    ) {
       response.status = 400;
       response.body = {
         success: false,
@@ -639,60 +678,28 @@ export const PostSolicitarCita = async (ctx: Context) => {
       return;
     }
 
-    if (fechaHora.getTime() < Date.now()) {
-      response.status = 400;
-      response.body = {
-        success: false,
-        message: "La cita debe ser futura",
-      };
-      return;
-    }
-
-    const [citaExistente] = await conexion.query(
-      `SELECT id_cita
-       FROM citas
-       WHERE fecha_cita = ?
-         AND hora_cita = ?
-         AND estado NOT IN ('Cancelada', 'Rechazada')`,
-      [fechaCita, horaCita],
+    const motivo = observaciones
+      ? `${servicio}${SEPARADOR_OBSERVACIONES_CITA}${observaciones}`
+      : servicio;
+    const resultado = await citaModel.Crear(
+      idCliente,
+      idVehiculo,
+      fechaHora,
+      motivo,
     );
 
-    if (citaExistente) {
+    if (!resultado.success) {
       response.status = 400;
-      response.body = {
-        success: false,
-        message: "Ese horario ya está ocupado",
-      };
+      response.body = resultado;
       return;
     }
-
-    const resultado = await conexion.execute(
-      `INSERT INTO citas (
-         id_cliente,
-         id_vehiculo,
-         fecha_cita,
-         hora_cita,
-         servicio,
-         observaciones,
-         estado
-       )
-       VALUES (?, ?, ?, ?, ?, ?, 'Pendiente')`,
-      [
-        idCliente,
-        idVehiculo,
-        fechaCita,
-        horaCita,
-        servicio,
-        observaciones,
-      ],
-    );
 
     response.status = 201;
     response.body = {
       success: true,
-      message: "Cita solicitada correctamente",
+      message: resultado.message,
       data: {
-        id_cita: resultado.lastInsertId,
+        id_cita: resultado.id_cita,
       },
     };
   } catch (error) {

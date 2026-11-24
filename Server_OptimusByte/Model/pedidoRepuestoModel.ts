@@ -11,6 +11,14 @@ export interface DatosPedido {
     observaciones?: string | null;
 }
 
+interface OpcionesCatalogo {
+    pagina: number;
+    limite: number;
+    busqueda: string;
+    categoria: string;
+    idsCarrito: number[];
+}
+
 export class PedidoRepuesto {
     // ---------- Catálogo que ve el cliente (solo repuestos activos) ----------
     public async ListarCatalogo() {
@@ -21,6 +29,63 @@ export class PedidoRepuesto {
              WHERE activo = 1
              ORDER BY categoria, nombre`,
         );
+    }
+
+    public async ListarCatalogoPaginado(opciones: OpcionesCatalogo) {
+        const condiciones = ["activo = 1"];
+        const parametros: (string | number)[] = [];
+
+        if (opciones.categoria) {
+            if (opciones.categoria === "General") {
+                condiciones.push("(categoria = ? OR categoria IS NULL OR categoria = '')");
+            } else {
+                condiciones.push("categoria = ?");
+            }
+            parametros.push(opciones.categoria);
+        }
+
+        if (opciones.busqueda) {
+            condiciones.push(
+                "CONCAT_WS(' ', nombre, referencia, marca, modelo, descripcion) LIKE ?",
+            );
+            parametros.push(`%${opciones.busqueda}%`);
+        }
+
+        const where = condiciones.join(" AND ");
+        const filas = await conexion.query(
+            `SELECT id_repuesto, referencia, nombre, descripcion, categoria,
+                    precio_unitario, stock_actual, marca, modelo, imagen_url
+             FROM repuestos
+             WHERE ${where}
+             ORDER BY categoria, nombre, id_repuesto
+             LIMIT ? OFFSET ?`,
+            [...parametros, opciones.limite + 1, (opciones.pagina - 1) * opciones.limite],
+        );
+        const categorias = opciones.pagina === 1
+            ? await conexion.query(
+                `SELECT DISTINCT COALESCE(NULLIF(categoria, ''), 'General') AS categoria
+                 FROM repuestos
+                 WHERE activo = 1
+                 ORDER BY categoria`,
+            )
+            : undefined;
+        const productosCarrito = opciones.idsCarrito.length
+            ? await conexion.query(
+                `SELECT id_repuesto, referencia, nombre, descripcion, categoria,
+                        precio_unitario, stock_actual, marca, modelo, imagen_url
+                 FROM repuestos
+                 WHERE activo = 1
+                   AND id_repuesto IN (${opciones.idsCarrito.map(() => "?").join(", ")})`,
+                opciones.idsCarrito,
+            )
+            : [];
+
+        return {
+            data: filas.slice(0, opciones.limite),
+            hasMore: filas.length > opciones.limite,
+            categorias,
+            productosCarrito,
+        };
     }
 
     // ---------- De usuario (token) a cliente ----------

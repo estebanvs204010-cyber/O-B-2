@@ -44,6 +44,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
 
   <script>
     import { apiFetch, formatearFechaHora } from "../../lib/api";
+    import { confirmarAccion } from "../../lib/confirmar";
+    import { notificarError, notificarExito } from "../../lib/toast";
 
     interface CitaRow {
       id_cita: number;
@@ -190,21 +192,31 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     }
 
     async function confirmarCita(cita: CitaRow) {
-      if (!window.confirm(`¿Confirmar la cita de ${cita.nombre_completo}?`)) return;
+      const confirmado = await confirmarAccion(
+        "¿Confirmar cita?",
+        `Deseas confirmar la cita de ${cita.nombre_completo}?`,
+        "Sí, confirmar",
+      );
+      if (!confirmado) return;
       try {
         const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/confirmar`, { method: "PATCH" });
-        window.alert(respuesta.message ?? "Cita confirmada.");
+        notificarExito(respuesta.message ?? "Cita confirmada.");
         await cargarCitas();
-      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo confirmar la cita."); }
+      } catch (error) { notificarError(error instanceof Error ? error.message : "No se pudo confirmar la cita."); }
     }
 
     async function completarCita(cita: CitaRow) {
-      if (!window.confirm(`¿Marcar como completada la cita de ${cita.nombre_completo}?`)) return;
+      const confirmado = await confirmarAccion(
+        "¿Completar cita?",
+        `Deseas marcar como completada la cita de ${cita.nombre_completo}?`,
+        "Sí, completar",
+      );
+      if (!confirmado) return;
       try {
         const respuesta = await apiFetch(`/api/citas/${cita.id_cita}/completar`, { method: "PATCH" });
-        window.alert(respuesta.message ?? "Cita marcada como completada.");
+        notificarExito(respuesta.message ?? "Cita marcada como completada.");
         await cargarCitas();
-      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo completar la cita."); }
+      } catch (error) { notificarError(error instanceof Error ? error.message : "No se pudo completar la cita."); }
     }
 
     function abrirModalRechazo(cita: CitaRow) {
@@ -240,9 +252,9 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       try {
         const respuesta = await apiFetch(`/api/citas/${id}/rechazar`, { method: "PATCH", body: JSON.stringify({ motivo }) });
         modalRechazo.close();
-        window.alert(respuesta.message ?? "Cita rechazada.");
+        notificarExito(respuesta.message ?? "Cita rechazada.");
         await cargarCitas();
-      } catch (error) { window.alert(error instanceof Error ? error.message : "No se pudo rechazar la cita."); }
+      } catch (error) { notificarError(error instanceof Error ? error.message : "No se pudo rechazar la cita."); }
       finally { boton.disabled = false; boton.textContent = "Rechazar cita"; }
     });
 

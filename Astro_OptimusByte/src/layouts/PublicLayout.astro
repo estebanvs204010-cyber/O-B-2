@@ -2,6 +2,7 @@
 import '../styles/components/home.css';
 import { TALLER, NAV, iconoWhatsApp } from '../data/taller';
 import Icon from '../components/Icon.astro';
+import { getRolSSR, isAuthenticatedSSR } from '../utils/auth';
 
 interface Props {
   title?: string;
@@ -15,6 +16,14 @@ const {
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const esActivo = (href: string) => path === href || path.startsWith(`${href}/`);
+const rol = isAuthenticatedSSR(Astro.cookies) ? getRolSSR(Astro.cookies) : null;
+const rutaCuenta = rol === 'Admin'
+  ? '/admin'
+  : rol === 'Mecanico'
+    ? '/mecanico'
+    : rol === 'Cliente'
+      ? '/cliente/perfil'
+      : null;
 ---
 <!doctype html>
 <html lang="es">
@@ -65,8 +74,12 @@ const esActivo = (href: string) => path === href || path.startsWith(`${href}/`);
               <a href={n.href} class={esActivo(n.href) ? 'is-active' : ''} aria-current={esActivo(n.href) ? 'page' : undefined}>{n.label}</a>
             ))}
             <div class="hm-nav-cta">
-              <a href="/login" class="hm-btn hm-btn--ghost hm-btn--sm" id="btnLoginNav">Iniciar sesión</a>
-              <a href="/registro" class="hm-btn hm-btn--blue hm-btn--sm" id="btnRegistroNav">Registrarse</a>
+              {rutaCuenta
+                ? <a href={rutaCuenta} class="hm-nav-account" aria-label="Abrir mi cuenta" title="Mi cuenta"><Icon name="userCircle" size={24} /></a>
+                : <>
+                  <a href="/login" class="hm-btn hm-btn--ghost hm-btn--sm" id="btnLoginNav">Iniciar sesión</a>
+                  <a href="/registro" class="hm-btn hm-btn--blue hm-btn--sm" id="btnRegistroNav">Registrarse</a>
+                </>}
             </div>
           </nav>
         </div>
