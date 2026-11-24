@@ -14,6 +14,7 @@ import { UploadRouter } from "./Routes/uploadRoutes.ts";
 import { RepuestoRouter } from "./Routes/repuestoRoutes.ts";
 import { AdminOrdenRouter } from "./Routes/adminOrdenRoutes.ts";
 import { PedidoRepuestoRouter } from "./Routes/pedidoRepuestoRoutes.ts";
+import { WompiRouter } from "./Routes/wompiRoutes.ts";
 
 const app = new Application();
 
@@ -40,6 +41,7 @@ const routes = [
   RepuestoRouter,
   AdminOrdenRouter,
   PedidoRepuestoRouter,
+  WompiRouter,
 ];
 
 routes.forEach((router) => {

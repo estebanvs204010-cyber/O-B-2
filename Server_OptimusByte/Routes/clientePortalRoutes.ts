@@ -9,6 +9,7 @@ import {
   PostRegistrarMiVehiculo,
   GetMisCitas,
   PostSolicitarCita,
+  GetMisPagosYCompras,
 } from "../Controller/clientePortalController.ts";
 
 import {
@@ -72,6 +73,13 @@ ClientePortalRouter.post(
   authMiddleware,
   permitirRoles("Cliente"),
   PostSolicitarCita,
+);
+
+ClientePortalRouter.get(
+  "/api/cliente/mis-pagos",
+  authMiddleware,
+  permitirRoles("Cliente"),
+  GetMisPagosYCompras,
 );
 
 export { ClientePortalRouter };

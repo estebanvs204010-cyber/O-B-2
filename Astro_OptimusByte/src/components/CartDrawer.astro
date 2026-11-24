@@ -1,0 +1,737 @@
+---
+import { ShoppingCart, X, Trash2, Plus, Minus, CreditCard, ShieldCheck } from "lucide-astro";
+import { isAuthenticatedSSR, getRolSSR } from "../utils/auth";
+
+const autenticado = isAuthenticatedSSR(Astro.cookies);
+const rol = getRolSSR(Astro.cookies);
+const esCliente = autenticado && rol === "Cliente";
+---
+
+<!-- Botón flotante del carrito -->
+<button
+  id="obFloatingCartBtn"
+  class="ob-floating-cart"
+  type="button"
+  aria-label="Abrir carrito de compras"
+  aria-controls="obCartDrawer"
+  aria-expanded="false"
+>
+  <span class="ob-cart-icon-wrapper">
+    <ShoppingCart class="ob-icon-cart" />
+    <span id="obFloatingCartBadge" class="ob-cart-badge" style="display:none;">0</span>
+  </span>
+  <span class="ob-cart-floating-text">Ver carrito</span>
+</button>
+
+<!-- Drawer del Carrito -->
+<div id="obCartOverlay" class="ob-cart-overlay" hidden>
+  <div id="obCartBackdrop" class="ob-cart-backdrop"></div>
+  <aside
+    id="obCartDrawer"
+    class="ob-cart-drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="obCartTitle"
+  >
+    <div class="ob-cart-header">
+      <div class="ob-cart-header-title">
+        <ShoppingCart class="ob-icon-blue" />
+        <div>
+          <h2 id="obCartTitle">Carrito de compras</h2>
+          <p id="obCartItemsCount" class="ob-cart-subtitle">0 repuestos seleccionados</p>
+        </div>
+      </div>
+      <button id="obCartCloseBtn" class="ob-cart-close" type="button" aria-label="Cerrar carrito">
+        <X />
+      </button>
+    </div>
+
+    <div id="obCartAlert" class="ob-cart-alert" style="display:none;"></div>
+
+    <div id="obCartList" class="ob-cart-list">
+      <div class="ob-cart-empty">
+        <div class="ob-empty-icon">🛍️</div>
+        <h3>Tu carrito está vacío</h3>
+        <p>Explora nuestro catálogo de repuestos y agrega lo que tu vehículo necesita.</p>
+        <a href="/repuestos" class="hm-btn hm-btn--blue hm-btn--sm" id="obBtnExplorar">
+          Ver repuestos
+        </a>
+      </div>
+    </div>
+
+    <div id="obCartFooter" class="ob-cart-footer" style="display:none;">
+      <div class="ob-cart-notes">
+        <label for="obOrderNotes">Observaciones o notas para el taller (opcional):</label>
+        <textarea
+          id="obOrderNotes"
+          rows="2"
+          maxlength="250"
+          placeholder="Ej: Año de mi carro 2021, recogeré por la tarde..."
+        ></textarea>
+      </div>
+
+      <div class="ob-cart-summary">
+        <div class="ob-summary-row">
+          <span>Subtotal</span>
+          <strong id="obCartSubtotal">$0</strong>
+        </div>
+        <div class="ob-summary-row ob-summary-total">
+          <span>Total a pagar</span>
+          <strong id="obCartTotal">$0</strong>
+        </div>
+      </div>
+
+      <div class="ob-wompi-badge">
+        <ShieldCheck class="ob-icon-green" />
+        <span>Pago 100% seguro con <strong>Wompi Bancolombia</strong></span>
+      </div>
+
+      <button
+        id="obBtnCheckoutWompi"
+        class="ob-btn-checkout"
+        type="button"
+        data-es-cliente={esCliente ? "true" : "false"}
+      >
+        <CreditCard class="ob-btn-icon" />
+        <span id="obBtnCheckoutText">Pagar con Wompi</span>
+      </button>
+
+      <p class="ob-checkout-hint">
+        {esCliente
+          ? "Ambiente seguro de Wompi. Tarjetas, Nequi, PSE y transferencias."
+          : "Para pagar en línea debes ingresar con tu cuenta de cliente."}
+      </p>
+    </div>
+  </aside>
+</div>
+
+<style>
+  /* Botón flotante */
+  .ob-floating-cart {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 990;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #0d1526;
+    color: #ffffff;
+    border: 2px solid #2f6fed;
+    border-radius: 999px;
+    box-shadow: 0 10px 25px rgba(13, 21, 38, 0.35);
+    cursor: pointer;
+    font-family: "Poppins", sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ob-floating-cart:hover {
+    transform: translateY(-3px) scale(1.02);
+    background: #16213a;
+    box-shadow: 0 14px 30px rgba(47, 111, 237, 0.3);
+  }
+  .ob-cart-icon-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ob-icon-cart {
+    width: 22px;
+    height: 22px;
+    color: #6ea8ff;
+  }
+  .ob-cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2f6fed;
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid #0d1526;
+  }
+  .ob-cart-floating-text {
+    letter-spacing: 0.02em;
+  }
+
+  /* Overlay y Drawer */
+  .ob-cart-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .ob-cart-overlay[hidden] {
+    display: none !important;
+  }
+  .ob-cart-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 21, 38, 0.65);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    animation: obFadeIn 0.25s forwards;
+  }
+  .ob-cart-drawer {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 100%;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 35px rgba(13, 21, 38, 0.2);
+    transform: translateX(100%);
+    animation: obSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes obFadeIn {
+    to { opacity: 1; }
+  }
+  @keyframes obSlideIn {
+    to { transform: translateX(0); }
+  }
+
+  /* Header */
+  .ob-cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #eef2f8;
+    background: #f8fafc;
+  }
+  .ob-cart-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ob-cart-header-title h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .ob-cart-subtitle {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .ob-icon-blue {
+    width: 24px;
+    height: 24px;
+    color: #2f6fed;
+  }
+  .ob-cart-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    transition: background 0.2s, color 0.2s;
+  }
+  .ob-cart-close:hover {
+    background: #e2e8f0;
+    color: #0d1526;
+  }
+
+  /* Alert */
+  .ob-cart-alert {
+    margin: 12px 20px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .ob-cart-alert.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .ob-cart-alert.success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+  }
+
+  /* Lista de items */
+  .ob-cart-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .ob-cart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 16px;
+    margin: auto 0;
+  }
+  .ob-empty-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+  }
+  .ob-cart-empty h3 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    color: #0d1526;
+  }
+  .ob-cart-empty p {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #64748b;
+    max-width: 260px;
+  }
+
+  /* Item de repuesto */
+  .ob-cart-item {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #eef2f8;
+    border-radius: 12px;
+    background: #ffffff;
+    transition: border-color 0.2s;
+  }
+  .ob-cart-item:hover {
+    border-color: #cbd5e1;
+  }
+  .ob-cart-item-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f1f5f9;
+  }
+  .ob-cart-item-info h4 {
+    margin: 0 0 2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1526;
+    line-height: 1.3;
+  }
+  .ob-cart-item-ref {
+    display: inline-block;
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .ob-cart-item-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: #2f6fed;
+  }
+  .ob-cart-item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .ob-cart-qty-ctrl {
+    display: flex;
+    align-items: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .ob-qty-btn {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border: none;
+    cursor: pointer;
+    color: #334155;
+    padding: 0;
+  }
+  .ob-qty-btn:hover {
+    background: #e2e8f0;
+  }
+  .ob-qty-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .ob-qty-num {
+    min-width: 26px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .ob-item-remove {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    display: inline-flex;
+  }
+  .ob-item-remove:hover {
+    color: #ef4444;
+  }
+  .ob-item-remove svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Footer */
+  .ob-cart-footer {
+    padding: 20px 24px;
+    border-top: 1px solid #eef2f8;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ob-cart-notes label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 4px;
+  }
+  .ob-cart-notes textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: none;
+    box-sizing: border-box;
+  }
+  .ob-cart-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0;
+  }
+  .ob-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #64748b;
+  }
+  .ob-summary-total {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1526;
+    padding-top: 6px;
+    border-top: 1px dashed #cbd5e1;
+  }
+  .ob-summary-total strong {
+    color: #2f6fed;
+    font-size: 19px;
+  }
+  .ob-wompi-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #475569;
+  }
+  .ob-icon-green {
+    width: 15px;
+    height: 15px;
+    color: #10b981;
+  }
+  .ob-btn-checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    background: #2f6fed;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-family: "Poppins", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(47, 111, 237, 0.35);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .ob-btn-checkout:hover {
+    background: #1d4fd8;
+    transform: translateY(-1px);
+  }
+  .ob-btn-checkout:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .ob-btn-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .ob-checkout-hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  @media (max-width: 640px) {
+    .ob-floating-cart {
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 16px;
+    }
+    .ob-cart-floating-text {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import {
+    obtenerCarrito,
+    modificarCantidad,
+    eliminarDelCarrito,
+    calcularTotalCarrito,
+    contarItemsCarrito,
+    formatoMonedaCOP,
+  } from "../lib/cart";
+  import { procesarPagoConWompi } from "../lib/wompi";
+
+  const overlay = document.getElementById("obCartOverlay");
+  const backdrop = document.getElementById("obCartBackdrop");
+  const closeBtn = document.getElementById("obCartCloseBtn");
+  const floatBtn = document.getElementById("obFloatingCartBtn");
+  const floatBadge = document.getElementById("obFloatingCartBadge");
+  const listEl = document.getElementById("obCartList");
+  const footerEl = document.getElementById("obCartFooter");
+  const subtotalEl = document.getElementById("obCartSubtotal");
+  const totalEl = document.getElementById("obCartTotal");
+  const countEl = document.getElementById("obCartItemsCount");
+  const alertEl = document.getElementById("obCartAlert");
+  const checkoutBtn = document.getElementById("obBtnCheckoutWompi") as HTMLButtonElement | null;
+  const checkoutText = document.getElementById("obBtnCheckoutText");
+  const notesInput = document.getElementById("obOrderNotes") as HTMLTextAreaElement | null;
+
+  function abrirDrawer() {
+    if (!overlay) return;
+    overlay.hidden = false;
+    floatBtn?.setAttribute("aria-expanded", "true");
+    document.body.style.overflow = "hidden";
+    renderizarCarrito();
+  }
+
+  function cerrarDrawer() {
+    if (!overlay) return;
+    overlay.hidden = true;
+    floatBtn?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "";
+  }
+
+  floatBtn?.addEventListener("click", abrirDrawer);
+  backdrop?.addEventListener("click", cerrarDrawer);
+  closeBtn?.addEventListener("click", cerrarDrawer);
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !overlay?.hidden) {
+      cerrarDrawer();
+    }
+  });
+
+  // Exponer para abrir desde navbar o catálogo
+  window.addEventListener("optimusbyte:open_cart", () => {
+    abrirDrawer();
+  });
+
+  function renderizarCarrito() {
+    const items = obtenerCarrito();
+    const conteo = contarItemsCarrito();
+    const total = calcularTotalCarrito();
+
+    // Actualizar badge flotante
+    if (floatBadge) {
+      floatBadge.textContent = String(conteo);
+      floatBadge.style.display = conteo > 0 ? "inline-flex" : "none";
+    }
+
+    // Actualizar badges en navbar si existen
+    const navBadges = document.querySelectorAll(".ob-nav-cart-badge");
+    navBadges.forEach((b) => {
+      b.textContent = String(conteo);
+      (b as HTMLElement).style.display = conteo > 0 ? "inline-flex" : "none";
+    });
+
+    if (countEl) {
+      countEl.textContent = `${conteo} repuesto${conteo === 1 ? "" : "s"} seleccionado${conteo === 1 ? "" : "s"}`;
+    }
+
+    if (subtotalEl) subtotalEl.textContent = formatoMonedaCOP.format(total);
+    if (totalEl) totalEl.textContent = formatoMonedaCOP.format(total);
+
+    if (items.length === 0) {
+      if (listEl) {
+        listEl.innerHTML = `
+          <div class="ob-cart-empty">
+            <div class="ob-empty-icon">🛍️</div>
+            <h3>Tu carrito está vacío</h3>
+            <p>Explora nuestro catálogo de repuestos y agrega lo que tu vehículo necesita.</p>
+            <a href="/repuestos" class="hm-btn hm-btn--blue hm-btn--sm">Ver repuestos</a>
+          </div>
+        `;
+      }
+      if (footerEl) footerEl.style.display = "none";
+      return;
+    }
+
+    if (footerEl) footerEl.style.display = "flex";
+
+    if (listEl) {
+      listEl.innerHTML = items
+        .map((item) => {
+          const imgUrl = item.imagen_url || "/images/repuestos/general.svg";
+          return `
+            <article class="ob-cart-item" data-id="${item.id_repuesto}">
+              <img src="${imgUrl}" alt="${item.nombre}" class="ob-cart-item-img" onerror="this.src='/images/repuestos/general.svg'" />
+              <div class="ob-cart-item-info">
+                <h4>${item.nombre}</h4>
+                <span class="ob-cart-item-ref">Ref: ${item.referencia}</span>
+                <div class="ob-cart-item-price">${formatoMonedaCOP.format(item.precio_unitario * item.cantidad)}</div>
+              </div>
+              <div class="ob-cart-item-actions">
+                <button class="ob-item-remove" data-action="remove" title="Eliminar" aria-label="Eliminar ${item.nombre}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+                <div class="ob-cart-qty-ctrl">
+                  <button class="ob-qty-btn" data-action="minus" aria-label="Disminuir cantidad">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+                  </button>
+                  <span class="ob-qty-num">${item.cantidad}</span>
+                  <button class="ob-qty-btn" data-action="plus" aria-label="Aumentar cantidad">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      // Vincular eventos de botones de la lista
+      listEl.querySelectorAll<HTMLButtonElement>("[data-action]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const card = btn.closest<HTMLElement>(".ob-cart-item");
+          const id = Number(card?.dataset.id);
+          const action = btn.dataset.action;
+
+          if (!id) return;
+          if (action === "remove") eliminarDelCarrito(id);
+          else if (action === "plus") modificarCantidad(id, 1);
+          else if (action === "minus") modificarCantidad(id, -1);
+
+          renderizarCarrito();
+        });
+      });
+    }
+  }
+
+  // Escuchar evento global de actualización
+  window.addEventListener("optimusbyte:cart_updated", renderizarCarrito);
+  renderizarCarrito();
+
+  // Proceso de Checkout con Wompi
+  checkoutBtn?.addEventListener("click", async () => {
+    const items = obtenerCarrito();
+    if (items.length === 0) return;
+
+    const esCliente = checkoutBtn.dataset.esCliente === "true";
+    if (!esCliente) {
+      // Si no ha iniciado sesión, guardamos el intento y enviamos a login
+      if (alertEl) {
+        alertEl.className = "ob-cart-alert error";
+        alertEl.textContent = "Debes iniciar sesión con tu cuenta de cliente para completar el pago.";
+        alertEl.style.display = "block";
+      }
+      setTimeout(() => {
+        const destino = window.location.pathname.startsWith("/repuestos") ? "/repuestos" : "/";
+        window.location.href = `/login?next=${encodeURIComponent(destino)}&motivo=checkout`;
+      }, 1200);
+      return;
+    }
+
+    if (alertEl) alertEl.style.display = "none";
+    checkoutBtn.disabled = true;
+    if (checkoutText) checkoutText.textContent = "Conectando con Wompi...";
+
+    try {
+      // Cerrar drawer para dar paso a la pasarela
+      cerrarDrawer();
+
+      const notas = notesInput?.value.trim() ?? "";
+      const resultado = await procesarPagoConWompi(items, notas);
+
+      if (resultado.status === "UNAUTHENTICATED") {
+        abrirDrawer();
+        if (alertEl) {
+          alertEl.className = "ob-cart-alert error";
+          alertEl.textContent = "Tu sesión ha expirado. Por favor inicia sesión nuevamente.";
+          alertEl.style.display = "block";
+        }
+        setTimeout(() => {
+          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}&motivo=checkout`;
+        }, 1200);
+        return;
+      }
+
+      if (resultado.success) {
+        window.location.href = `/cliente/pagos?referencia=${encodeURIComponent(resultado.referencia || "")}`;
+      } else if (resultado.status === "PENDING") {
+        window.location.href = `/cliente/pagos?referencia=${encodeURIComponent(resultado.referencia || "")}`;
+      } else if (resultado.status === "CLOSED") {
+        abrirDrawer();
+        if (alertEl) {
+          alertEl.className = "ob-cart-alert";
+          alertEl.textContent = "La ventana de Wompi se cerró. Tus productos siguen en el carrito.";
+          alertEl.style.display = "block";
+        }
+      } else {
+        abrirDrawer();
+        if (alertEl) {
+          alertEl.className = "ob-cart-alert error";
+          alertEl.textContent = resultado.mensaje || "El pago no pudo ser procesado. Intenta nuevamente.";
+          alertEl.style.display = "block";
+        }
+      }
+    } catch (err: any) {
+      abrirDrawer();
+      if (alertEl) {
+        alertEl.className = "ob-cart-alert error";
+        alertEl.textContent = err?.message || "Ocurrió un error inesperado al procesar el pago.";
+        alertEl.style.display = "block";
+      }
+    } finally {
+      checkoutBtn.disabled = false;
+      if (checkoutText) checkoutText.textContent = "Pagar con Wompi";
+    }
+  });
+</script>

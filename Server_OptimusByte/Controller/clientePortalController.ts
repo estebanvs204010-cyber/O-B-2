@@ -712,3 +712,111 @@ export const PostSolicitarCita = async (ctx: Context) => {
     };
   }
 };
+
+// GET /api/cliente/mis-pagos — Pagos de servicios y compras de repuestos en línea
+export const GetMisPagosYCompras = async (ctx: Context) => {
+  const { response } = ctx;
+  const idUsuario = obtenerIdUsuario(ctx);
+
+  if (!idUsuario) {
+    response.status = 401;
+    response.body = { success: false, message: "Usuario no autenticado" };
+    return;
+  }
+
+  try {
+    const [cliente] = await conexion.query(
+      `SELECT id_cliente FROM clientes WHERE id_usuario = ? AND activo = 1`,
+      [idUsuario],
+    );
+
+    if (!cliente) {
+      response.status = 404;
+      response.body = { success: false, message: "Perfil de cliente no encontrado" };
+      return;
+    }
+
+    const idCliente = Number(cliente.id_cliente);
+
+    // 1. Facturas de taller
+    const facturas = await conexion.query(
+      `SELECT f.id_factura, f.id_orden, f.subtotal, f.iva, f.total,
+              f.estado_pago, f.metodo_pago, f.fecha_emision, f.fecha_pago,
+              o.tipo_servicio, o.descripcion_problema,
+              v.placa, v.marca, v.modelo
+       FROM facturas f
+       INNER JOIN ordenestrabajo o ON o.id_orden = f.id_orden
+       INNER JOIN vehiculos v ON v.id_vehiculo = o.id_vehiculo
+       WHERE v.id_cliente = ?
+       ORDER BY f.fecha_emision DESC`,
+      [idCliente],
+    );
+
+    // 2. Compras / Pedidos de repuestos
+    const pedidos = await conexion.query(
+      `SELECT p.id_pedido, p.estado, p.metodo_pago, p.referencia_pago,
+              p.id_transaccion_wompi, p.estado_transaccion, p.observaciones,
+              p.subtotal, p.total, p.fecha_pedido
+       FROM pedidosrepuesto p
+       WHERE p.id_cliente = ?
+       ORDER BY p.fecha_pedido DESC`,
+      [idCliente],
+    );
+
+    let pedidosConItems: any[] = [];
+    if (pedidos.length > 0) {
+      const ids = pedidos.map((p: { id_pedido: number }) => p.id_pedido);
+      const detalles = await conexion.query(
+        `SELECT d.id_pedido, d.id_repuesto, d.cantidad, d.precio_unitario, d.subtotal,
+                r.nombre, r.referencia, r.imagen_url
+         FROM pedidodetalle d
+         INNER JOIN repuestos r ON r.id_repuesto = d.id_repuesto
+         WHERE d.id_pedido IN (${ids.map(() => "?").join(",")})`,
+        ids,
+      );
+
+      pedidosConItems = pedidos.map((p: { id_pedido: number }) => ({
+        ...p,
+        items: detalles.filter((d: { id_pedido: number }) => d.id_pedido === p.id_pedido),
+      }));
+    }
+
+    // Totales calculados
+    let totalPagado = 0;
+    let totalPendiente = 0;
+
+    for (const f of facturas) {
+      const tot = Number(f.total) || 0;
+      if (f.estado_pago === "Pagada") totalPagado += tot;
+      else if (f.estado_pago === "Pendiente") totalPendiente += tot;
+    }
+
+    for (const p of pedidos) {
+      const tot = Number(p.total) || 0;
+      if (p.estado === "Pagado" || p.estado_transaccion === "APPROVED") totalPagado += tot;
+      else if (p.estado === "Pendiente") totalPendiente += tot;
+    }
+
+    response.status = 200;
+    response.body = {
+      success: true,
+      data: {
+        facturas,
+        pedidos: pedidosConItems,
+        resumen: {
+          total_pagado: totalPagado,
+          total_pendiente: totalPendiente,
+          conteo_facturas: facturas.length,
+          conteo_pedidos: pedidos.length,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("[GET MIS PAGOS] Error:", error);
+    response.status = 500;
+    response.body = {
+      success: false,
+      message: error instanceof Error ? error.message : "Error al cargar tus pagos y compras",
+    };
+  }
+};

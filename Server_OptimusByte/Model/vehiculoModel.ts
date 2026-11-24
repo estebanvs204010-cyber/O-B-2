@@ -241,6 +241,35 @@ export class Vehiculo {
     };
   }
 
+  // ---------- Actualizar kilometraje ----------
+  public async ActualizarKm(id_vehiculo: number, km_nuevo: number) {
+    const vehiculoActual = await this.ObtenerPorId(id_vehiculo);
+
+    if (!vehiculoActual) {
+      return {
+        success: false,
+        message: "El vehículo no existe",
+      };
+    }
+
+    if (km_nuevo < vehiculoActual.km_actuales) {
+      return {
+        success: false,
+        message: `El kilometraje no puede ser menor al actual (${vehiculoActual.km_actuales} km)`,
+      };
+    }
+
+    await conexion.execute(
+      `UPDATE vehiculos SET km_actuales = ? WHERE id_vehiculo = ?`,
+      [km_nuevo, id_vehiculo],
+    );
+
+    return {
+      success: true,
+      message: "Kilometraje actualizado correctamente",
+    };
+  }
+
   // ---------- Desactivar vehículo ----------
   public async Desactivar(id_vehiculo: number) {
     const vehiculoActual = await this.ObtenerPorId(id_vehiculo);

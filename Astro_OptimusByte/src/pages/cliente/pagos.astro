@@ -2,17 +2,349 @@
 import ClienteLayout from "../../layouts/ClienteLayout.astro";
 ---
 
-<ClienteLayout title="Pagos y facturas" active="pagos">
-  <section class="panel client-section">
+<ClienteLayout title="Pagos y Compras" active="pagos">
+  <!-- Banner / Resumen -->
+  <section class="card summary-panel">
+    <h2>Resumen Financiero</h2>
+    <p class="sub">Historial de compras de repuestos en línea y facturas de servicios en taller.</p>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-card-header">
+          <h3>Total Pagado</h3>
+          <div class="summary-card-icon">✓</div>
+        </div>
+        <strong id="statTotalPagado">$0</strong>
+        <p>Transacciones confirmadas</p>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-card-header">
+          <h3>Total Pendiente</h3>
+          <div class="summary-card-icon" style="background:#fffbeb; color:#d97706;">⏳</div>
+        </div>
+        <strong id="statTotalPendiente">$0</strong>
+        <p>Pagos o facturas por abonar</p>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-card-header">
+          <h3>Compras Repuestos</h3>
+          <div class="summary-card-icon" style="background:#ecfdf5; color:#059669;">🛍️</div>
+        </div>
+        <strong id="statTotalPedidos">0</strong>
+        <p>Pedidos en línea</p>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-card-header">
+          <h3>Facturas Taller</h3>
+          <div class="summary-card-icon" style="background:#eff6ff; color:#2563eb;">📄</div>
+        </div>
+        <strong id="statTotalFacturas">0</strong>
+        <p>Órdenes de servicio</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mensaje de estado de transacción Wompi si viene de pasarela -->
+  <div id="alertaTransaccion" class="alert" style="display:none;"></div>
+
+  <!-- Pestañas -->
+  <div class="pagos-tabs" role="tablist">
+    <button class="pago-tab active" id="tabCompras" type="button" role="tab" aria-selected="true">
+      Compras en Línea (Wompi)
+    </button>
+    <button class="pago-tab" id="tabFacturas" type="button" role="tab" aria-selected="false">
+      Facturas de Servicios
+    </button>
+  </div>
+
+  <!-- Contenedor Compras Wompi -->
+  <div id="seccionCompras" class="panel">
     <div class="panel-heading-row">
       <div>
-        <h2>Pagos y facturas</h2>
-        <p>Consulta tus facturas y pagos registrados.</p>
+        <h2>Compras y Pedidos de Repuestos</h2>
+        <p>Seguimiento de pedidos realizados en la tienda con pasarela Wompi.</p>
+      </div>
+      <a href="/repuestos" class="btn btn-outline btn-sm">
+        + Comprar más repuestos
+      </a>
+    </div>
+
+    <div id="comprasEstado" class="loading">Cargando tus compras...</div>
+    <div id="comprasLista"></div>
+    <div id="comprasVacio" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">🛍️</div>
+      <h3>Aún no has realizado compras</h3>
+      <p>Visita nuestro catálogo de repuestos y adquiere las piezas que tu auto necesita.</p>
+      <a href="/repuestos" class="btn btn-primary btn-sm">Explorar catálogo</a>
+    </div>
+  </div>
+
+  <!-- Contenedor Facturas de Taller -->
+  <div id="seccionFacturas" class="panel" style="display:none;">
+    <div class="panel-heading-row">
+      <div>
+        <h2>Facturas de Taller</h2>
+        <p>Facturación emitida por servicios mecánicos y mano de obra.</p>
       </div>
     </div>
 
-    <div class="empty-state">
-      <p>No tienes pagos o facturas registradas.</p>
+    <div id="facturasEstado" class="loading">Cargando facturas...</div>
+    <div id="facturasLista"></div>
+    <div id="facturasVacio" class="empty-state" style="display:none;">
+      <div class="empty-state-icon">📄</div>
+      <h3>No tienes facturas de servicio registradas</h3>
+      <p>Cuando lleves tu vehículo al taller y se cierre una orden de trabajo, tu factura aparecerá aquí.</p>
     </div>
-  </section>
+  </div>
 </ClienteLayout>
+
+<script>
+  import { apiFetch } from "../../lib/api";
+
+  const formatoCOP = new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
+
+  const tabCompras = document.getElementById("tabCompras");
+  const tabFacturas = document.getElementById("tabFacturas");
+  const seccionCompras = document.getElementById("seccionCompras");
+  const seccionFacturas = document.getElementById("seccionFacturas");
+
+  const statPagado = document.getElementById("statTotalPagado");
+  const statPendiente = document.getElementById("statTotalPendiente");
+  const statPedidos = document.getElementById("statTotalPedidos");
+  const statFacturas = document.getElementById("statTotalFacturas");
+
+  const comprasEstado = document.getElementById("comprasEstado");
+  const comprasLista = document.getElementById("comprasLista");
+  const comprasVacio = document.getElementById("comprasVacio");
+
+  const facturasEstado = document.getElementById("facturasEstado");
+  const facturasLista = document.getElementById("facturasLista");
+  const facturasVacio = document.getElementById("facturasVacio");
+
+  const alertaBox = document.getElementById("alertaTransaccion");
+
+  // Manejo de tabs
+  tabCompras?.addEventListener("click", () => {
+    tabCompras.classList.add("active");
+    tabFacturas?.classList.remove("active");
+    if (seccionCompras) seccionCompras.style.display = "block";
+    if (seccionFacturas) seccionFacturas.style.display = "none";
+  });
+
+  tabFacturas?.addEventListener("click", () => {
+    tabFacturas.classList.add("active");
+    tabCompras?.classList.remove("active");
+    if (seccionFacturas) seccionFacturas.style.display = "block";
+    if (seccionCompras) seccionCompras.style.display = "none";
+  });
+
+  function formatearFecha(iso?: string) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  function renderBadgeEstado(estado: string, estadoTransaccion?: string) {
+    const est = (estadoTransaccion || estado || "Pendiente").toUpperCase();
+    if (est === "APPROVED" || est === "PAGADO" || est === "PAGADA") {
+      return `<span class="badge badge-pagado">✓ Pago Aprobado</span>`;
+    }
+    if (est === "PENDING" || est === "PENDIENTE") {
+      return `<span class="badge badge-pendiente">⏳ Pendiente de Pago</span>`;
+    }
+    if (est === "DECLINED" || est === "RECHAZADO") {
+      return `<span class="badge badge-rechazado">✕ Pago Rechazado</span>`;
+    }
+    if (est === "CANCELADO") {
+      return `<span class="badge badge-cancelado">Cancelado</span>`;
+    }
+    return `<span class="badge badge-pendiente">${estado}</span>`;
+  }
+
+  async function verificarTransaccionWompi(referencia: string, idTransaccion?: string, btnEl?: HTMLButtonElement) {
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = "Verificando con Wompi...";
+    }
+    try {
+      const resp = await apiFetch<any>("/api/pagos/wompi/verificar", {
+        method: "POST",
+        body: JSON.stringify({ referencia, idTransaccion }),
+      });
+
+      if (alertaBox) {
+        alertaBox.className = "alert alert-ok";
+        alertaBox.textContent = `Estado actualizado: ${resp.data?.wompi?.estado || resp.data?.estado}`;
+        alertaBox.style.display = "block";
+      }
+      await cargarPagos();
+    } catch (err: any) {
+      if (alertaBox) {
+        alertaBox.className = "alert alert-error";
+        alertaBox.textContent = err?.message || "No se pudo sincronizar el estado con Wompi";
+        alertaBox.style.display = "block";
+      }
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Verificar estado";
+      }
+    }
+  }
+
+  async function cargarPagos() {
+    try {
+      const resp = await apiFetch<any>("/api/cliente/mis-pagos");
+      const { facturas = [], pedidos = [], resumen = {} } = resp.data || {};
+
+      // Actualizar métricas
+      if (statPagado) statPagado.textContent = formatoCOP.format(resumen.total_pagado || 0);
+      if (statPendiente) statPendiente.textContent = formatoCOP.format(resumen.total_pendiente || 0);
+      if (statPedidos) statPedidos.textContent = String(resumen.conteo_pedidos || 0);
+      if (statFacturas) statFacturas.textContent = String(resumen.conteo_facturas || 0);
+
+      // Render Compras
+      if (comprasEstado) comprasEstado.style.display = "none";
+      if (pedidos.length === 0) {
+        if (comprasVacio) comprasVacio.style.display = "block";
+        if (comprasLista) comprasLista.innerHTML = "";
+      } else {
+        if (comprasVacio) comprasVacio.style.display = "none";
+        if (comprasLista) {
+          comprasLista.innerHTML = pedidos
+            .map((p: any) => {
+              const itemsHtml = (p.items || [])
+                .map(
+                  (item: any) => `
+                    <div class="compra-item-row">
+                      <span>• <strong>${item.nombre}</strong> (Ref: ${item.referencia}) × ${item.cantidad}</span>
+                      <span>${formatoCOP.format(item.subtotal || item.precio_unitario * item.cantidad)}</span>
+                    </div>
+                  `,
+                )
+                .join("");
+
+              const puedeVerificar = p.estado === "Pendiente" || p.estado_transaccion === "PENDING";
+
+              return `
+                <article class="compra-card" data-ref="${p.referencia_pago}">
+                  <div class="compra-header">
+                    <div>
+                      <strong>Pedido #${p.id_pedido}</strong> · <span class="compra-ref">${p.referencia_pago || "Sin ref"}</span>
+                      <div class="sub" style="margin-top:4px;">${formatearFecha(p.fecha_pedido)} · Método: <strong>${p.metodo_pago || "Wompi"}</strong></div>
+                    </div>
+                    <div>${renderBadgeEstado(p.estado, p.estado_transaccion)}</div>
+                  </div>
+
+                  <div class="compra-items">
+                    ${itemsHtml || '<p class="sub">Sin desglose de items</p>'}
+                  </div>
+
+                  <div class="compra-footer">
+                    <div>
+                      ${p.id_transaccion_wompi ? `<small class="sub">ID Wompi: ${p.id_transaccion_wompi}</small>` : ""}
+                      ${puedeVerificar ? `<button class="btn btn-outline btn-sm btn-verificar-wompi" data-ref="${p.referencia_pago}" data-tx="${p.id_transaccion_wompi || ''}">Verificar con Wompi</button>` : ""}
+                    </div>
+                    <div class="compra-total">
+                      Total: ${formatoCOP.format(p.total)}
+                    </div>
+                  </div>
+                </article>
+              `;
+            })
+            .join("");
+
+          // Event listeners para botones verificar
+          comprasLista.querySelectorAll<HTMLButtonElement>(".btn-verificar-wompi").forEach((b) => {
+            b.addEventListener("click", () => {
+              verificarTransaccionWompi(b.dataset.ref || "", b.dataset.tx || undefined, b);
+            });
+          });
+        }
+      }
+
+      // Render Facturas
+      if (facturasEstado) facturasEstado.style.display = "none";
+      if (facturas.length === 0) {
+        if (facturasVacio) facturasVacio.style.display = "block";
+        if (facturasLista) facturasLista.innerHTML = "";
+      } else {
+        if (facturasVacio) facturasVacio.style.display = "none";
+        if (facturasLista) {
+          facturasLista.innerHTML = facturas
+            .map(
+              (f: any) => `
+                <article class="compra-card">
+                  <div class="compra-header">
+                    <div>
+                      <strong>Factura #${f.id_factura}</strong> · Orden OT-${f.id_orden}
+                      <div class="sub" style="margin-top:4px;">
+                        Vehículo: <strong>${f.placa}</strong> (${f.marca} ${f.modelo}) · ${formatearFecha(f.fecha_emision)}
+                      </div>
+                    </div>
+                    <div>${renderBadgeEstado(f.estado_pago)}</div>
+                  </div>
+
+                  <div class="compra-items">
+                    <div class="compra-item-row">
+                      <span>Servicio: <strong>${f.tipo_servicio}</strong></span>
+                      <span>Subtotal: ${formatoCOP.format(f.subtotal)}</span>
+                    </div>
+                    <div class="compra-item-row">
+                      <span class="sub">IVA aplicado</span>
+                      <span class="sub">${formatoCOP.format(f.iva)}</span>
+                    </div>
+                  </div>
+
+                  <div class="compra-footer">
+                    <small class="sub">Método: ${f.metodo_pago || "En taller"}</small>
+                    <div class="compra-total">
+                      Total: ${formatoCOP.format(f.total)}
+                    </div>
+                  </div>
+                </article>
+              `,
+            )
+            .join("");
+        }
+      }
+
+      // Si viene referencia en URL, verificar de inmediato
+      const urlParams = new URLSearchParams(window.location.search);
+      const refUrl = urlParams.get("referencia");
+      if (refUrl) {
+        const idTxUrl = urlParams.get("id");
+        if (alertaBox) {
+          alertaBox.className = "alert alert-ok";
+          alertaBox.textContent = `Verificando estado de tu compra con referencia ${refUrl}...`;
+          alertaBox.style.display = "block";
+        }
+        await verificarTransaccionWompi(refUrl, idTxUrl || undefined);
+      }
+    } catch (err: any) {
+      if (comprasEstado) {
+        comprasEstado.className = "alert alert-error";
+        comprasEstado.textContent = err?.message || "Error al cargar el historial de pagos.";
+      }
+    }
+  }
+
+  void cargarPagos();
+</script>

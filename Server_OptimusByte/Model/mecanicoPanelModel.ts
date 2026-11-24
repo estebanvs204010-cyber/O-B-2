@@ -17,11 +17,11 @@ export class MecanicoPanel {
   ) {
     try {
       const resultado = await conexion.transaction(async (conn) => {
-        const [orden] = await conn.query(
+        const [orden] = (await conn.query(
           `SELECT id_orden FROM ordenestrabajo
                      WHERE id_orden = ? AND id_mecanico = ? FOR UPDATE`,
           [id_orden, id_mecanico],
-        );
+        )) as any[];
         if (!orden) {
           return {
             success: false,
@@ -30,11 +30,11 @@ export class MecanicoPanel {
           };
         }
 
-        const [repuesto] = await conn.query(
+        const [repuesto] = (await conn.query(
           `SELECT id_repuesto, precio_unitario, stock_actual
                      FROM repuestos WHERE id_repuesto = ? AND activo = 1 FOR UPDATE`,
           [id_repuesto],
-        );
+        )) as any[];
         if (!repuesto) {
           return {
             success: false,
@@ -56,10 +56,10 @@ export class MecanicoPanel {
           [cantidad, id_repuesto, cantidad],
         );
 
-        const [usoExistente] = await conn.query(
+        const [usoExistente] = (await conn.query(
           `SELECT id_orden FROM ordenrepuestos WHERE id_orden = ? AND id_repuesto = ? FOR UPDATE`,
           [id_orden, id_repuesto],
-        );
+        )) as any[];
         if (usoExistente) {
           await conn.execute(
             `UPDATE ordenrepuestos SET cantidad = cantidad + ? WHERE id_orden = ? AND id_repuesto = ?`,

@@ -30,13 +30,7 @@ const MOTOR_IMG = "/motor.svg";
       <!-- Panel visual -->
       <aside class="auth-visual" aria-hidden="false">
         <a href="/" class="auth-logo" aria-label="OptimusByte, ir al inicio">
-          <span class="auth-logo-mark">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          </span>
-          <span class="auth-logo-text">
-            <small>TALLER</small>
-            <strong>Optimus<span>Byte</span></strong>
-          </span>
+          <img src="/images/logo.png" alt="OptimusByte" class="auth-logo-img" />
         </a>
 
         <div class="auth-visual-copy">
@@ -62,7 +56,9 @@ const MOTOR_IMG = "/motor.svg";
       <main class="auth-panel">
         <div class:list={["auth-card", { wide }]}>
           <a href="/" class="auth-back">&larr; Volver al inicio</a>
-          <div class="auth-brand">Optimus<span class="accent">Byte</span></div>
+          <a href="/" style="display:inline-block; margin-bottom: 12px;">
+            <img src="/images/logo.png" alt="OptimusByte" class="auth-brand-img" />
+          </a>
           <p class="auth-eyebrow auth-eyebrow--form">Bienvenido</p>
           <h1 class="auth-title">{title}</h1>
           <slot />
