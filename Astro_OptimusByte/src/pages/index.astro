@@ -1,45 +1,27 @@
 ---
-import PublicLayout from '../layouts/PublicLayout.astro';
-import QuoteForm from '../components/QuoteForm.astro';
-import Icon from '../components/Icon.astro';
-import { TALLER, servicios, pasos, repuestos, promos, articulos } from '../data/taller';
-
-const serviciosHome = servicios.slice(0, 4);
-const articulosHome = articulos.slice(0, 3);
-const fechaLarga = (iso: string) =>
-  new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+import '../styles/global.css';
 ---
-<PublicLayout>
-  <!-- ═════════ HERO ═════════ -->
-  <section class="hm-hero">
-    <div class="hm-wrap hm-hero-grid">
-      <div>
-        <p class="hm-eyebrow">Servicio automotriz especializado</p>
-        <h1>Taller<br />mecánico<br /><span>OptimusByte</span></h1>
-        <p class="hm-hero-lead">
-          Mantenimiento, diagnóstico y reparación con seguimiento en línea de cada orden. Tu vehículo en manos expertas.
-        </p>
-        <div class="hm-hero-actions">
-          <a href="/reservas" class="hm-btn">Reserva tu servicio</a>
-          <a href="/login?next=/cliente/index" class="hm-btn hm-btn--ghost">Mi área de cliente</a>
-        </div>
-        <a href="/cliente" id="btnCliente" class="hm-hero-link">¿Ya eres cliente? Consulta el estado de tu orden   →</a>
-      </div>
-      <div class="hm-hero-art">
-        <img src="./img/carro.png" alt="Vehículo con vista interna del motor y la suspensión" width="760" height="400" />
-      </div>
-    </div>
-  </section>
-
-  <!-- ═════════ CIFRAS ═════════ -->
-  <section class="hm-strip" aria-label="Datos del taller">
-    <div class="hm-wrap hm-strip-grid">
-      <div class="hm-strip-item"><strong>+<em>{TALLER.anosExperiencia}</em></strong><span>Años de experiencia</span></div>
-      <div class="hm-strip-item"><strong>+<em>500</em></strong><span>Vehículos atendidos</span></div>
-      <div class="hm-strip-item"><strong><em>100</em>%</strong><span>Seguimiento en línea</span></div>
-      <div class="hm-strip-item"><strong><em>24</em>/7</strong><span>Consulta tu orden</span></div>
-    </div>
-  </section>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>OptimusByte</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="ob-home">
+      <div class="ob-container">
+        <nav class="ob-navbar">
+          <div class="ob-logo">
+            <div class="ob-logo-icon">🔧</div>
+            <div class="ob-logo-text" style="color:white;">Optimus<span>Byte</span></div>
+          </div>
+          <div class="ob-navbar-actions">
+            <button id="btnLoginNav" class="ob-btn ob-btn-outline" style="background:transparent; color:white; border-color:rgba(255,255,255,0.3);">Iniciar sesión</button>
+            <button id="btnRegistroNav" class="ob-btn ob-btn-primary">Registrarse</button>
+          </div>
+        </nav>
 
   <!-- ═════════ NOSOTROS ═════════ -->
   <section class="hm-section">
