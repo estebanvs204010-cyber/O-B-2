@@ -1,0 +1,915 @@
+---
+import PublicLayout from "../layouts/PublicLayout.astro";
+import { isAuthenticatedSSR, getRolSSR } from "../utils/auth";
+
+const autenticado = isAuthenticatedSSR(Astro.cookies);
+const rol = getRolSSR(Astro.cookies);
+---
+
+<PublicLayout title="Finalizar Compra · Wompi Checkout | OptimusByte">
+  <div class="checkout-page hm-wrap">
+    <!-- Breadcrumb -->
+    <nav class="checkout-breadcrumb" aria-label="Navegación">
+      <a href="/">Inicio</a>
+      <span class="sep">/</span>
+      <a href="/repuestos">Catálogo de Repuestos</a>
+      <span class="sep">/</span>
+      <span class="current">Checkout Seguro</span>
+    </nav>
+
+    <div class="checkout-header">
+      <div class="badge-secure">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-lock">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Pasarela de Pago Segura Wompi · Colombia</span>
+      </div>
+      <h1>Finalizar Compra y Pago</h1>
+      <p class="subtitle">Confirma tus datos y procede al pago oficial con tarjetas de crédito/débito en ambiente Sandbox.</p>
+    </div>
+
+    <!-- Contenedor Principal en Grid -->
+    <div class="checkout-layout">
+      <!-- Columna Izquierda: Datos y Método -->
+      <div class="checkout-main">
+        <!-- Paso 1: Datos del Comprador -->
+        <section class="checkout-card">
+          <div class="card-head">
+            <span class="step-num">1</span>
+            <div>
+              <h2>Información de Facturación y Contacto</h2>
+              <p class="card-desc">Tus datos para la emisión de la factura y entrega de repuestos.</p>
+            </div>
+          </div>
+
+          <form id="formCheckoutDatos" class="checkout-form" onsubmit="return false;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clienteNombre">Nombre completo *</label>
+                <input
+                  type="text"
+                  id="clienteNombre"
+                  name="nombre"
+                  required
+                  placeholder="Ej: Carlos Gómez"
+                  class="form-input"
+                />
+              </div>
+              <div class="form-group">
+                <label for="clienteCorreo">Correo electrónico *</label>
+                <input
+                  type="email"
+                  id="clienteCorreo"
+                  name="correo"
+                  required
+                  placeholder="carlos@ejemplo.com"
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clienteTelefono">Teléfono móvil (WhatsApp) *</label>
+                <input
+                  type="tel"
+                  id="clienteTelefono"
+                  name="telefono"
+                  required
+                  placeholder="Ej: 3001234567"
+                  maxlength="10"
+                  class="form-input"
+                />
+              </div>
+              <div class="form-group">
+                <label for="clienteCiudad">Ciudad de recogida / entrega</label>
+                <input
+                  type="text"
+                  id="clienteCiudad"
+                  name="ciudad"
+                  value="Bogotá D.C."
+                  class="form-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="clienteNotas">Notas u observaciones para el taller (opcional):</label>
+              <textarea
+                id="clienteNotas"
+                rows="2"
+                placeholder="Ej: Año de mi vehículo 2022, recogeré personalmente en taller..."
+                class="form-input"
+              ></textarea>
+            </div>
+          </form>
+        </section>
+
+        <!-- Paso 2: Método de Pago Wompi -->
+        <section class="checkout-card">
+          <div class="card-head">
+            <span class="step-num">2</span>
+            <div>
+              <h2>Método de Pago Oficial</h2>
+              <p class="card-desc">Transacciones procesadas en pesos colombianos (COP).</p>
+            </div>
+          </div>
+
+          <div class="payment-method-selector selected">
+            <div class="method-radio">
+              <span class="radio-dot"></span>
+            </div>
+            <div class="method-info">
+              <div class="method-title-row">
+                <strong>Wompi Colombia (Bancolombia)</strong>
+                <span class="badge-sandbox">SANDBOX</span>
+              </div>
+              <p>Tarjetas de Crédito y Débito (Visa, Mastercard, American Express), PSE y Nequi en entorno seguro con firma criptográfica SHA-256.</p>
+              <div class="method-badges">
+                <span class="tag-card">Visa</span>
+                <span class="tag-card">Mastercard</span>
+                <span class="tag-card">Amex</span>
+                <span class="tag-card">Nequi</span>
+                <span class="tag-card">PSE</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerta de estado / error en checkout -->
+          <div id="checkoutAlert" class="checkout-alert" style="display:none;"></div>
+        </section>
+      </div>
+
+      <!-- Columna Derecha: Resumen del Pedido -->
+      <aside class="checkout-sidebar">
+        <div class="checkout-card sticky-card">
+          <h2>Resumen de la Orden</h2>
+          
+          <div id="checkoutItemsList" class="order-items-list">
+            <div class="empty-state">Cargando productos del carrito...</div>
+          </div>
+
+          <div class="order-summary-totals">
+            <div class="summary-line">
+              <span>Subtotal repuestos</span>
+              <strong id="summarySubtotal">$0</strong>
+            </div>
+            <div class="summary-line">
+              <span>Impuestos / IVA (19%)</span>
+              <span class="text-muted">Incluido</span>
+            </div>
+            <div class="summary-line">
+              <span>Reserva de stock</span>
+              <span class="text-success">Garantizada</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-line total-line">
+              <span>Total a Pagar (COP)</span>
+              <strong id="summaryTotal">$0</strong>
+            </div>
+          </div>
+
+          <button id="btnPagarWompi" type="button" class="btn-pagar-wompi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <span id="btnPagarTexto">Pagar con Wompi</span>
+          </button>
+
+          <div class="security-guarantee">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" class="icon-shield">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <div>
+              <p class="sec-title">Garantía de Inventario Seguro</p>
+              <p class="sec-desc">Tu stock se reserva temporalmente. El inventario solo se descuenta definitivamente cuando el banco confirme el pago aprobado.</p>
+            </div>
+          </div>
+
+          <a href="/repuestos" class="link-volver">← Modificar carrito o ver repuestos</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  .checkout-page {
+    padding: 32px 16px 64px;
+    font-family: 'Poppins', sans-serif;
+    color: #0d1526;
+  }
+  .checkout-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 20px;
+  }
+  .checkout-breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+  }
+  .checkout-breadcrumb a:hover {
+    color: #2f6fed;
+    text-decoration: underline;
+  }
+  .checkout-breadcrumb .current {
+    color: #0d1526;
+    font-weight: 600;
+  }
+  .checkout-header {
+    margin-bottom: 32px;
+  }
+  .badge-secure {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ecfdf5;
+    color: #059669;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    border: 1px solid #a7f3d0;
+  }
+  .icon-lock {
+    width: 14px;
+    height: 14px;
+  }
+  .checkout-header h1 {
+    margin: 0 0 6px;
+    font-size: 32px;
+    font-weight: 800;
+    color: #0d1526;
+  }
+  .subtitle {
+    margin: 0;
+    color: #64748b;
+    font-size: 15px;
+  }
+
+  /* Grid Layout */
+  .checkout-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .checkout-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .checkout-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  }
+
+  .sticky-card {
+    position: sticky;
+    top: 24px;
+  }
+
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .step-num {
+    background: #2f6fed;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .card-head h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .card-desc {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  /* Form */
+  .checkout-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .form-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #0d1526;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: #2f6fed;
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.15);
+  }
+
+  /* Payment Selector */
+  .payment-method-selector {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border: 2px solid #2f6fed;
+    background: #f8fafc;
+    border-radius: 12px;
+  }
+  .method-radio {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #2f6fed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .radio-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2f6fed;
+  }
+  .method-info {
+    flex: 1;
+  }
+  .method-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .method-title-row strong {
+    font-size: 15px;
+    color: #0d1526;
+  }
+  .badge-sandbox {
+    background: #fef3c7;
+    color: #b45309;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .method-info p {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+  .method-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  /* Items List */
+  .order-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 16px 0;
+    padding-right: 4px;
+  }
+  .order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .item-title-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .item-title-col strong {
+    color: #0d1526;
+  }
+  .item-title-col span {
+    font-size: 11px;
+    color: #64748b;
+  }
+  .item-price-col {
+    font-weight: 700;
+    color: #0d1526;
+    white-space: nowrap;
+  }
+
+  /* Totals */
+  .order-summary-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #64748b;
+  }
+  .summary-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 6px 0;
+  }
+  .total-line {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .total-line strong {
+    font-size: 20px;
+    color: #2f6fed;
+  }
+  .text-muted {
+    color: #94a3b8;
+  }
+  .text-success {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  /* Button Pagar */
+  .btn-pagar-wompi {
+    width: 100%;
+    background: #2f6fed;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(47, 111, 237, 0.35);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .btn-pagar-wompi:hover {
+    background: #1d4fd8;
+    transform: translateY(-1px);
+  }
+  .btn-pagar-wompi:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Security Guarantee */
+  .security-guarantee {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-top: 18px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  .icon-shield {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .sec-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .sec-desc {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.35;
+  }
+
+  .link-volver {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #64748b;
+    text-decoration: none;
+  }
+  .link-volver:hover {
+    color: #2f6fed;
+    text-decoration: underline;
+  }
+
+  .checkout-alert {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .checkout-alert.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .checkout-alert.info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+  }
+
+  @media (max-width: 900px) {
+    .checkout-layout {
+      grid-template-columns: 1fr;
+    }
+    .sticky-card {
+      position: static;
+    }
+  }
+  @media (max-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  import { obtenerCarrito, vaciarCarrito, formatoMonedaCOP } from "../lib/cart";
+  import { apiFetch } from "../lib/api";
+
+  declare global {
+    interface Window {
+      WidgetCheckout?: any;
+    }
+  }
+
+  const itemsListEl = document.getElementById("checkoutItemsList");
+  const subtotalEl = document.getElementById("summarySubtotal");
+  const totalEl = document.getElementById("summaryTotal");
+  const btnPagar = document.getElementById("btnPagarWompi") as HTMLButtonElement | null;
+  const btnTexto = document.getElementById("btnPagarTexto");
+  const alertEl = document.getElementById("checkoutAlert");
+
+  const inputNombre = document.getElementById("clienteNombre") as HTMLInputElement | null;
+  const inputCorreo = document.getElementById("clienteCorreo") as HTMLInputElement | null;
+  const inputTelefono = document.getElementById("clienteTelefono") as HTMLInputElement | null;
+  const inputNotas = document.getElementById("clienteNotas") as HTMLTextAreaElement | null;
+
+  function mostrarAlerta(mensaje: string, tipo: "error" | "info" = "error") {
+    if (!alertEl) return;
+    alertEl.className = `checkout-alert ${tipo}`;
+    alertEl.textContent = mensaje;
+    alertEl.style.display = "block";
+  }
+
+  function ocultarAlerta() {
+    if (alertEl) alertEl.style.display = "none";
+  }
+
+  // Prellenar datos de usuario si está logueado
+  async function prellenarUsuario() {
+    try {
+      const resp = await apiFetch<any>("/api/cliente/perfil");
+      if (resp.data) {
+        if (inputNombre && !inputNombre.value) inputNombre.value = resp.data.nombre_completo || "";
+        if (inputCorreo && !inputCorreo.value) inputCorreo.value = resp.data.correo || "";
+        if (inputTelefono && !inputTelefono.value) inputTelefono.value = resp.data.telefono || "";
+      }
+    } catch {
+      // Usuario no autenticado como cliente, mantiene campos vacíos para llenar
+    }
+  }
+
+  // Renderizar items del resumen
+  function renderizarResumen() {
+    const items = obtenerCarrito();
+
+    if (items.length === 0) {
+      if (itemsListEl) {
+        itemsListEl.innerHTML = `
+          <div class="empty-state" style="text-align:center; padding:20px 0; color:#64748b;">
+            <p>Tu carrito está vacío.</p>
+            <a href="/repuestos" style="color:#2f6fed; font-weight:600;">Explorar repuestos</a>
+          </div>
+        `;
+      }
+      if (btnPagar) btnPagar.disabled = true;
+      if (subtotalEl) subtotalEl.textContent = "$0";
+      if (totalEl) totalEl.textContent = "$0";
+      return;
+    }
+
+    let subtotal = 0;
+    const html = items
+      .map((item) => {
+        const itemTotal = item.precio_unitario * item.cantidad;
+        subtotal += itemTotal;
+        return `
+          <div class="order-item-row">
+            <div class="item-title-col">
+              <strong>${item.nombre}</strong>
+              <span>Ref: ${item.referencia} · Cant: ${item.cantidad}</span>
+            </div>
+            <div class="item-price-col">
+              ${formatoMonedaCOP.format(itemTotal)}
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    if (itemsListEl) itemsListEl.innerHTML = html;
+    if (subtotalEl) subtotalEl.textContent = formatoMonedaCOP.format(subtotal);
+    if (totalEl) totalEl.textContent = formatoMonedaCOP.format(subtotal);
+    if (btnPagar) btnPagar.disabled = false;
+  }
+
+  // Cargar script de Wompi de manera asíncrona
+  function cargarScriptWompi(): Promise<void> {
+    if (window.WidgetCheckout) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.wompi.co/widget.js";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("No se pudo cargar el script oficial de Wompi"));
+      document.head.appendChild(script);
+    });
+  }
+
+  // Modal interactivo de simulación Sandbox cuando no se cuenta con credenciales activas en comercios.wompi.co
+  function abrirModalSimulacionLocal(sesion: any) {
+    return new Promise<{ status: string; idTransaccion: string }>((resolve) => {
+      const modalId = "wompi-checkout-sim-modal";
+      const existing = document.getElementById(modalId);
+      if (existing) existing.remove();
+
+      const overlay = document.createElement("div");
+      overlay.id = modalId;
+      overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 999999;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(13, 21, 38, 0.8); backdrop-filter: blur(4px);
+        padding: 16px; font-family: 'Poppins', sans-serif;
+      `;
+
+      overlay.innerHTML = `
+        <div style="background:#fff; border-radius:16px; max-width:460px; width:100%; padding:26px; box-shadow:0 20px 40px rgba(0,0,0,0.3); border:2px solid #2f6fed;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="background:#2f6fed; color:#fff; width:32px; height:32px; border-radius:8px; display:grid; place-items:center; font-weight:800;">W</span>
+              <div>
+                <h3 style="margin:0; font-size:16px; color:#0d1526; font-weight:700;">Wompi Sandbox · Test</h3>
+                <small style="color:#64748b;">Simulador de Pasarela Oficial</small>
+              </div>
+            </div>
+            <span style="background:#fef3c7; color:#b45309; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700;">SANDBOX</span>
+          </div>
+
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:16px; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="color:#64748b;">Referencia:</span>
+              <strong style="font-family:monospace; color:#0d1526;">${sesion.referencia}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="color:#64748b;">Monto en centavos:</span>
+              <strong>${sesion.montoEnCentavos} (${sesion.moneda})</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed #cbd5e1; padding-top:6px; font-size:15px;">
+              <span>Total factura:</span>
+              <strong style="color:#2f6fed;">${formatoMonedaCOP.format(sesion.total)}</strong>
+            </div>
+          </div>
+
+          <p style="font-size:12px; color:#475569; margin-bottom:18px; line-height:1.4;">
+            Selecciona la respuesta de la entidad bancaria para probar la reserva de stock, firma y actualización de estado:
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button id="btnSimApprove" type="button" style="background:#10b981; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">
+              ✓ Simular Pago APROBADO (Descontar inventario definitivamente)
+            </button>
+            <button id="btnSimDecline" type="button" style="background:#ef4444; color:#fff; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">
+              ✕ Simular Pago RECHAZADO (Devolver inventario reservado)
+            </button>
+            <button id="btnSimCancel" type="button" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:10px; border-radius:8px; font-weight:500; cursor:pointer;">
+              Cerrar sin procesar
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const bApp = document.getElementById("btnSimApprove");
+      const bDec = document.getElementById("btnSimDecline");
+      const bCan = document.getElementById("btnSimCancel");
+
+      bApp?.addEventListener("click", () => {
+        overlay.remove();
+        resolve({ status: "APPROVED", idTransaccion: `SIM_${Date.now()}` });
+      });
+      bDec?.addEventListener("click", () => {
+        overlay.remove();
+        resolve({ status: "DECLINED", idTransaccion: `SIM_${Date.now()}` });
+      });
+      bCan?.addEventListener("click", () => {
+        overlay.remove();
+        resolve({ status: "CLOSED", idTransaccion: "" });
+      });
+    });
+  }
+
+  // Click en "Pagar con Wompi"
+  btnPagar?.addEventListener("click", async () => {
+    ocultarAlerta();
+    const items = obtenerCarrito();
+
+    if (items.length === 0) {
+      mostrarAlerta("Tu carrito está vacío. Agrega repuestos antes de pagar.");
+      return;
+    }
+
+    const nombre = inputNombre?.value.trim();
+    const correo = inputCorreo?.value.trim();
+    const telefono = inputTelefono?.value.trim();
+    const observaciones = inputNotas?.value.trim();
+
+    if (!nombre || !correo || !telefono) {
+      mostrarAlerta("Por favor completa los campos de nombre, correo y teléfono.");
+      return;
+    }
+
+    btnPagar.disabled = true;
+    if (btnTexto) btnTexto.textContent = "Creando factura y reservando inventario...";
+
+    try {
+      // 1. Llamar al backend para crear la factura en PENDIENTE y reservar stock
+      const respCheckout = await apiFetch<any>("/api/payments/checkout", {
+        method: "POST",
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            id_repuesto: i.id_repuesto,
+            cantidad: i.cantidad,
+          })),
+          cliente: { nombre, correo, telefono },
+          observaciones,
+        }),
+      });
+
+      if (!respCheckout.data) {
+        throw new Error(respCheckout.message || "No se pudo iniciar el proceso de checkout");
+      }
+
+      const sesion = respCheckout.data;
+
+      // 2. Si las credenciales son de test sin activar en comercio de Wompi, abrimos simulador
+      if (sesion.comercioValido === false) {
+        const resultadoSim = await abrirModalSimulacionLocal(sesion);
+        if (resultadoSim.status === "APPROVED" || resultadoSim.status === "DECLINED") {
+          // Notificar al backend la simulación
+          await apiFetch("/api/payments/simular", {
+            method: "POST",
+            body: JSON.stringify({
+              referencia: sesion.referencia,
+              estadoSimulado: resultadoSim.status,
+              idTransaccion: resultadoSim.idTransaccion,
+            }),
+          });
+
+          if (resultadoSim.status === "APPROVED") {
+            vaciarCarrito();
+          }
+
+          // Redireccionar a la página de respuesta
+          window.location.href = `/pago-respuesta?reference=${encodeURIComponent(sesion.referencia)}&id=${encodeURIComponent(resultadoSim.idTransaccion)}`;
+          return;
+        } else {
+          mostrarAlerta("La ventana de pago fue cerrada sin completar la transacción.", "info");
+          btnPagar.disabled = false;
+          if (btnTexto) btnTexto.textContent = "Pagar con Wompi";
+          return;
+        }
+      }
+
+      // 3. Cargar script de Wompi oficial
+      if (btnTexto) btnTexto.textContent = "Abriendo pasarela Wompi...";
+      await cargarScriptWompi();
+
+      if (!window.WidgetCheckout) {
+        throw new Error("No se pudo inicializar el Widget oficial de Wompi.");
+      }
+
+      // 4. Instanciar y abrir Widget oficial de Wompi
+      const redirectTarget = `${window.location.origin}/pago-respuesta?reference=${encodeURIComponent(sesion.referencia)}`;
+
+      const checkoutWidget = new window.WidgetCheckout({
+        currency: sesion.moneda || "COP",
+        amountInCents: sesion.montoEnCentavos,
+        reference: sesion.referencia,
+        publicKey: sesion.publicKey,
+        signature: {
+          integrity: sesion.firmaIntegridad,
+        },
+        redirectUrl: redirectTarget,
+        customerData: {
+          email: correo,
+          fullName: nombre,
+          phoneNumber: telefono.replace(/\D/g, "").slice(-10),
+          phoneNumberPrefix: "+57",
+        },
+      });
+
+      checkoutWidget.open(async (result: any) => {
+        const transaction = result?.transaction;
+        if (!transaction) {
+          mostrarAlerta("La ventana de pago fue cancelada por el usuario.", "info");
+          btnPagar.disabled = false;
+          if (btnTexto) btnTexto.textContent = "Pagar con Wompi";
+          return;
+        }
+
+        const idTx = transaction.id || "";
+        const statusTx = String(transaction.status || "").toUpperCase();
+
+        if (statusTx === "APPROVED") {
+          vaciarCarrito();
+        }
+
+        // Redirigir a la página de respuesta oficial
+        window.location.href = `/pago-respuesta?reference=${encodeURIComponent(sesion.referencia)}&id=${encodeURIComponent(idTx)}`;
+      });
+    } catch (err: any) {
+      console.error("[CHECKOUT] Error:", err);
+      mostrarAlerta(err?.message || "Ocurrió un error al procesar el pago. Por favor intenta nuevamente.");
+      btnPagar.disabled = false;
+      if (btnTexto) btnTexto.textContent = "Pagar con Wompi";
+    }
+  });
+
+  void prellenarUsuario();
+  renderizarResumen();
+</script>
