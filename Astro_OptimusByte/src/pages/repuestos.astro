@@ -598,6 +598,11 @@ const mostrarAreaCliente = isAuthenticatedSSR(Astro.cookies) &&
     window.dispatchEvent(new CustomEvent("optimusbyte:open_cart"));
   });
 
+  function renderCatalogo() {
+    clearTimeout(temporizadorBusqueda);
+    temporizadorBusqueda = setTimeout(() => void cargarCatalogo(true), 320);
+  }
+
   buscarInput.addEventListener("input", renderCatalogo);
   categoriaSelect.addEventListener("change", renderCatalogo);
   cartToggle?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("optimusbyte:open_cart")));
