@@ -1,0 +1,537 @@
+---
+import PublicLayout from "../layouts/PublicLayout.astro";
+---
+
+<PublicLayout title="Resultado de la Transacción · OptimusByte">
+  <div class="respuesta-container hm-wrap">
+    <!-- Estado de Carga Inicial -->
+    <div id="pantallaCargando" class="estado-cargando">
+      <div class="spinner"></div>
+      <h2>Consultando el estado de tu pago con el servidor...</h2>
+      <p>Estamos verificando de forma segura la confirmación bancaria con Wompi.</p>
+    </div>
+
+    <!-- Tarjeta Principal de Resultado -->
+    <article id="tarjetaResultado" class="resultado-card" style="display:none;">
+      <!-- Encabezado con Icono de Estado Dinámico -->
+      <div id="resultadoHeader" class="resultado-header">
+        <div id="iconoEstado" class="icono-estado"></div>
+        <div class="resultado-textos">
+          <span id="badgeEstado" class="badge-estado"></span>
+          <h1 id="tituloResultado">Verificando...</h1>
+          <p id="descripcionResultado"></p>
+        </div>
+      </div>
+
+      <!-- Detalles de la Transacción Oficial -->
+      <section class="seccion-detalles">
+        <h3 class="seccion-titulo">Detalles del Comprobante</h3>
+        
+        <div class="detalles-grid">
+          <div class="detalle-item">
+            <span class="label">Referencia de Pago:</span>
+            <strong id="resReferencia" class="mono">—</strong>
+          </div>
+          <div class="detalle-item">
+            <span class="label">Factura No:</span>
+            <strong id="resIdFactura">—</strong>
+          </div>
+          <div class="detalle-item">
+            <span class="label">ID Transacción Wompi:</span>
+            <strong id="resIdTransaccion" class="mono">—</strong>
+          </div>
+          <div class="detalle-item">
+            <span class="label">Método de Pago:</span>
+            <strong id="resMetodoPago">Tarjeta (Wompi)</strong>
+          </div>
+          <div class="detalle-item">
+            <span class="label">Fecha y Hora:</span>
+            <strong id="resFecha">—</strong>
+          </div>
+          <div class="detalle-item">
+            <span class="label">Moneda:</span>
+            <strong>COP (Pesos Colombianos)</strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- Desglose de Items Comprados -->
+      <section class="seccion-items">
+        <h3 class="seccion-titulo">Resumen de Repuestos</h3>
+        <div id="resumenItemsLista" class="items-lista"></div>
+
+        <div class="total-bloque">
+          <span>Total Pagado:</span>
+          <strong id="resTotal">$0</strong>
+        </div>
+      </section>
+
+      <!-- Mensaje sobre inventario -->
+      <div id="notaInventario" class="nota-inventario"></div>
+
+      <!-- Botones de Acción -->
+      <div class="resultado-acciones">
+        <button id="btnImprimir" type="button" class="btn-secundario">
+          🖨️ Imprimir Comprobante
+        </button>
+        <a id="btnIrMisPagos" href="/cliente/pagos" class="btn-primario" style="display:none;">
+          Ver mis compras en mi panel
+        </a>
+        <a href="/repuestos" class="btn-primario">
+          Volver a la Tienda de Repuestos
+        </a>
+      </div>
+    </article>
+
+    <!-- Estado de Error de Consulta -->
+    <div id="pantallaError" class="estado-error" style="display:none;">
+      <div class="icono-error">⚠️</div>
+      <h2>No se pudo verificar la transacción</h2>
+      <p id="mensajeError">No encontramos una referencia válida en la solicitud.</p>
+      <div style="margin-top:20px; display:flex; gap:12px; justify-content:center;">
+        <button id="btnReintentar" type="button" class="btn-primario">Reintentar verificación</button>
+        <a href="/repuestos" class="btn-secundario">Ir al catálogo</a>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
+
+<style>
+  .respuesta-container {
+    padding: 48px 16px 80px;
+    max-width: 760px;
+    margin: 0 auto;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Spinner */
+  .estado-cargando, .estado-error {
+    text-align: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #2f6fed;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Card */
+  .resultado-card {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(13, 21, 38, 0.05);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .resultado-header {
+    padding: 32px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid #eef2f8;
+  }
+  .resultado-header.aprobado {
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+    border-bottom-color: #a7f3d0;
+  }
+  .resultado-header.rechazado {
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    border-bottom-color: #fecaca;
+  }
+  .resultado-header.pendiente {
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+    border-bottom-color: #fde68a;
+  }
+
+  .icono-estado {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .aprobado .icono-estado {
+    background: #10b981;
+    color: #ffffff;
+  }
+  .rechazado .icono-estado {
+    background: #ef4444;
+    color: #ffffff;
+  }
+  .pendiente .icono-estado {
+    background: #f59e0b;
+    color: #ffffff;
+  }
+
+  .resultado-textos h1 {
+    margin: 4px 0 2px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #0d1526;
+  }
+  .resultado-textos p {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .badge-estado {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-aprobado {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .badge-rechazado {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .badge-pendiente {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  /* Secciones */
+  .seccion-detalles, .seccion-items {
+    padding: 24px 28px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .seccion-titulo {
+    margin: 0 0 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+
+  .detalles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+  }
+  .detalle-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .detalle-item .label {
+    font-size: 11px;
+    color: #64748b;
+  }
+  .detalle-item strong {
+    font-size: 13px;
+    color: #0d1526;
+  }
+  .mono {
+    font-family: monospace;
+    font-size: 12px !important;
+  }
+
+  /* Items */
+  .items-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .item-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .item-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .item-info span {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .total-bloque {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 2px solid #e2e8f0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1526;
+  }
+  .total-bloque strong {
+    font-size: 22px;
+    color: #2f6fed;
+  }
+
+  .nota-inventario {
+    margin: 20px 28px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .nota-inventario.ok {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+  }
+  .nota-inventario.warn {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+  .nota-inventario.pending {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+
+  /* Acciones */
+  .resultado-acciones {
+    padding: 24px 28px;
+    background: #f8fafc;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+  }
+  .btn-primario, .btn-secundario {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primario {
+    background: #2f6fed;
+    color: #ffffff;
+    border: none;
+  }
+  .btn-primario:hover {
+    background: #1d4fd8;
+  }
+  .btn-secundario {
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+  .btn-secundario:hover {
+    background: #f1f5f9;
+  }
+
+  @media (max-width: 600px) {
+    .detalles-grid {
+      grid-template-columns: 1fr;
+    }
+    .resultado-acciones {
+      flex-direction: column;
+    }
+    .btn-primario, .btn-secundario {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media print {
+    .resultado-acciones, .checkout-breadcrumb, header, footer {
+      display: none !important;
+    }
+    .resultado-card {
+      box-shadow: none;
+      border: 1px solid #000;
+    }
+  }
+</style>
+
+<script>
+  import { apiFetch } from "../lib/api";
+  import { vaciarCarrito, formatoMonedaCOP } from "../lib/cart";
+
+  const pantallaCargando = document.getElementById("pantallaCargando");
+  const tarjetaResultado = document.getElementById("tarjetaResultado");
+  const pantallaError = document.getElementById("pantallaError");
+  const mensajeError = document.getElementById("mensajeError");
+
+  const headerEl = document.getElementById("resultadoHeader");
+  const iconoEl = document.getElementById("iconoEstado");
+  const badgeEl = document.getElementById("badgeEstado");
+  const tituloEl = document.getElementById("tituloResultado");
+  const descEl = document.getElementById("descripcionResultado");
+
+  const refEl = document.getElementById("resReferencia");
+  const facturaEl = document.getElementById("resIdFactura");
+  const txEl = document.getElementById("resIdTransaccion");
+  const metodoEl = document.getElementById("resMetodoPago");
+  const fechaEl = document.getElementById("resFecha");
+  const itemsListaEl = document.getElementById("resumenItemsLista");
+  const totalEl = document.getElementById("resTotal");
+  const notaInvEl = document.getElementById("notaInventario");
+  const btnIrMisPagos = document.getElementById("btnIrMisPagos");
+  const btnImprimir = document.getElementById("btnImprimir");
+  const btnReintentar = document.getElementById("btnReintentar");
+
+  btnImprimir?.addEventListener("click", () => window.print());
+  btnReintentar?.addEventListener("click", () => void consultarEstadoOficial());
+
+  function formatearFecha(iso?: string) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString("es-CO", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  /**
+   * Consulta el estado REAL desde el backend Deno (NUNCA confía en parámetros de la URL).
+   */
+  async function consultarEstadoOficial() {
+    if (pantallaCargando) pantallaCargando.style.display = "block";
+    if (tarjetaResultado) tarjetaResultado.style.display = "none";
+    if (pantallaError) pantallaError.style.display = "none";
+
+    // 1. Obtener referencia desde URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referencia = urlParams.get("reference") || urlParams.get("referencia") || "";
+    const idTransaccion = urlParams.get("id") || urlParams.get("idTransaccion") || "";
+
+    if (!referencia) {
+      if (pantallaCargando) pantallaCargando.style.display = "none";
+      if (pantallaError) pantallaError.style.display = "block";
+      if (mensajeError) mensajeError.textContent = "No se proporcionó una referencia de factura válida en la solicitud.";
+      return;
+    }
+
+    try {
+      // 2. Consulta segura al endpoint del backend
+      const endpoint = `/api/payments/status/${encodeURIComponent(referencia)}${idTransaccion ? `?idTransaccion=${encodeURIComponent(idTransaccion)}` : ""}`;
+      const respuesta = await apiFetch<any>(endpoint);
+
+      if (!respuesta.data || !respuesta.data.factura) {
+        throw new Error(respuesta.message || "No se pudo recuperar la factura.");
+      }
+
+      const { factura, items = [] } = respuesta.data;
+      const estadoFactura = String(factura.estado || "PENDIENTE").toUpperCase();
+
+      // Renderizar valores
+      if (refEl) refEl.textContent = factura.referencia;
+      if (facturaEl) facturaEl.textContent = `#${factura.id_factura}`;
+      if (txEl) txEl.textContent = factura.id_transaccion_wompi || idTransaccion || "Pendiente";
+      if (metodoEl) metodoEl.textContent = factura.metodo_pago || "Wompi Pasarela";
+      if (fechaEl) fechaEl.textContent = formatearFecha(factura.fecha_pago || factura.fecha_emision);
+      if (totalEl) totalEl.textContent = formatoMonedaCOP.format(factura.total);
+
+      // Renderizar lista de items
+      if (itemsListaEl) {
+        itemsListaEl.innerHTML = items
+          .map(
+            (i: any) => `
+              <div class="item-fila">
+                <div class="item-info">
+                  <strong>${i.nombre}</strong>
+                  <span>Ref: ${i.repuesto_referencia || i.referencia || "—"} · Cantidad: ${i.cantidad}</span>
+                </div>
+                <strong>${formatoMonedaCOP.format(i.subtotal || i.precio_unitario * i.cantidad)}</strong>
+              </div>
+            `,
+          )
+          .join("");
+      }
+
+      // 3. Evaluar estado verificado
+      if (estadoFactura === "PAGADA" || estadoFactura === "APPROVED") {
+        vaciarCarrito(); // Vaciar carrito local al confirmar pago
+
+        if (headerEl) headerEl.className = "resultado-header aprobado";
+        if (iconoEl) iconoEl.textContent = "✓";
+        if (badgeEl) {
+          badgeEl.className = "badge-estado badge-aprobado";
+          badgeEl.textContent = "Pago Aprobado";
+        }
+        if (tituloEl) tituloEl.textContent = "¡Tu pago ha sido confirmado!";
+        if (descEl) descEl.textContent = "Wompi procesó exitosamente la transacción y tu factura ha sido liquidada.";
+
+        if (notaInvEl) {
+          notaInvEl.className = "nota-inventario ok";
+          notaInvEl.innerHTML = "<strong>✅ Inventario Confirmado:</strong> La salida definitiva de los repuestos fue registrada exitosamente en el sistema de inventario.";
+        }
+      } else if (estadoFactura === "RECHAZADA" || estadoFactura === "DECLINED" || estadoFactura === "ERROR") {
+        if (headerEl) headerEl.className = "resultado-header rechazado";
+        if (iconoEl) iconoEl.textContent = "✕";
+        if (badgeEl) {
+          badgeEl.className = "badge-estado badge-rechazado";
+          badgeEl.textContent = "Pago Rechazado";
+        }
+        if (tituloEl) tituloEl.textContent = "La transacción no pudo ser aprobada";
+        if (descEl) descEl.textContent = "Tu entidad bancaria rechazó la solicitud o el proceso fue cancelado.";
+
+        if (notaInvEl) {
+          notaInvEl.className = "nota-inventario warn";
+          notaInvEl.innerHTML = "<strong>ℹ️ Inventario Liberado:</strong> Los repuestos que habían sido reservados preventivamente fueron devueltos al inventario disponible.";
+        }
+      } else {
+        // PENDIENTE
+        if (headerEl) headerEl.className = "resultado-header pendiente";
+        if (iconoEl) iconoEl.textContent = "⏳";
+        if (badgeEl) {
+          badgeEl.className = "badge-estado badge-pendiente";
+          badgeEl.textContent = "Pendiente de Confirmación";
+        }
+        if (tituloEl) tituloEl.textContent = "Tu pago se encuentra en proceso";
+        if (descEl) descEl.textContent = "Estamos a la espera de la notificación definitiva de Wompi o tu banco.";
+
+        if (notaInvEl) {
+          notaInvEl.className = "nota-inventario pending";
+          notaInvEl.innerHTML = "<strong>⏳ Reserva Activa:</strong> Tus repuestos permanecen reservados mientras se confirma la transacción bancaria.";
+        }
+      }
+
+      if (btnIrMisPagos) btnIrMisPagos.style.display = "inline-flex";
+
+      if (pantallaCargando) pantallaCargando.style.display = "none";
+      if (tarjetaResultado) tarjetaResultado.style.display = "block";
+    } catch (err: any) {
+      console.error("[PAGO RESPUESTA] Error:", err);
+      if (pantallaCargando) pantallaCargando.style.display = "none";
+      if (pantallaError) pantallaError.style.display = "block";
+      if (mensajeError) mensajeError.textContent = err?.message || "No se pudo sincronizar el estado del pago con el servidor.";
+    }
+  }
+
+  void consultarEstadoOficial();
+</script>
